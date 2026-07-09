@@ -62,6 +62,37 @@ describe("compound-criterion", () => {
     expect(rules("Checkout returns the total and tax fields")).toEqual([]);
   });
 
+  it('flags a second bare "and" as a list of behaviours', () => {
+    expect(rules("A refund restores stock and credits the customer and emails them")).toEqual([
+      "compound-criterion",
+    ]);
+  });
+
+  it("counts mixed bare conjunctions", () => {
+    expect(rules("Delete archives the record and revokes tokens or sessions")).toEqual([
+      "compound-criterion",
+    ]);
+  });
+
+  it("names the second conjunction in the message", () => {
+    const violation = lintStatement("Export saves the file or emails it or prints it").find(
+      (v) => v.rule === "compound-criterion",
+    );
+    expect(violation?.message).toBe('compound criterion: a second bare "or" joins another clause');
+  });
+
+  it("does not count conjunctions inside a condition", () => {
+    expect(
+      rules(
+        "Payment fails when the card is expired and the retry limit is reached and the user is offline",
+      ),
+    ).toEqual([]);
+  });
+
+  it("does not count conjunctions inside code spans", () => {
+    expect(rules("Parser accepts the `and` and `or` keywords")).toEqual([]);
+  });
+
   it('does not treat "e.g." as a sentence end', () => {
     expect(rules("Parser rejects reserved names e.g. admin accounts")).toEqual([]);
   });

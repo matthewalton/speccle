@@ -70,7 +70,7 @@ function weaselWording(spec: ParsedSpec, c: WellFormedCriterion): Violation[] {
   }));
 }
 
-/** A bare "and"/"or" never flags — a compound noun phrase names one thing. */
+/** One bare "and"/"or" never flags — a compound noun phrase names one thing. */
 const COMPOUND_SIGNALS: readonly {
   regex: RegExp;
   message: (match: RegExpExecArray) => string;
@@ -89,6 +89,8 @@ const COMPOUND_SIGNALS: readonly {
 
 const ABBREVIATIONS = /\b(e\.g\.|i\.e\.|vs\.|etc\.)/gi;
 
+const BARE_CONJUNCTION = /\b(and|or)\b/gi;
+
 function compoundCriterion(spec: ParsedSpec, c: WellFormedCriterion): Violation[] {
   const target = stripCodeSpans(c.statement).replace(ABBREVIATIONS, " ");
   for (const signal of COMPOUND_SIGNALS) {
@@ -104,7 +106,27 @@ function compoundCriterion(spec: ParsedSpec, c: WellFormedCriterion): Violation[
       ];
     }
   }
+  const second = secondBareConjunction(target);
+  if (second !== null) {
+    return [
+      {
+        rule: "compound-criterion",
+        file: spec.file,
+        line: c.line,
+        message: `compound criterion: a second bare "${second}" joins another clause`,
+      },
+    ];
+  }
   return [];
+}
+
+/** Two bare conjunctions in the main clause read as a list of behaviours. Conjunctions
+ *  inside a condition ("when the card is expired and the retry limit is reached")
+ *  qualify one outcome and are not counted. */
+function secondBareConjunction(target: string): string | null {
+  const mainClause = target.split(SUBORDINATOR)[0] ?? "";
+  const conjunctions = mainClause.match(BARE_CONJUNCTION) ?? [];
+  return conjunctions.length >= 2 ? conjunctions[1]!.toLowerCase() : null;
 }
 
 /**

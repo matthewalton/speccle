@@ -93,6 +93,12 @@ configuration. The rule set:
 Quality rules (`weasel-wording`, `compound-criterion`, `unmeasurable`) judge the heading
 statement only — the body is never linted.
 
+`compound-criterion` exempts one bare `and`/`or` — a compound noun phrase names one
+thing (`restores stock and credit`). A second bare conjunction in the main clause flags:
+it reads as a list of behaviours (`restores stock and credits the customer and emails
+them`). Conjunctions inside a condition (`when the card is expired and the retry limit
+is reached`) qualify one outcome and are not counted.
+
 `unmeasurable` never allow-lists the verbs a statement may use. It flags a closed list of
 predicates that name activity without an outcome (`is handled`, `works`, `supports`, …)
 and main clauses that name a property (`The dashboard is beautiful`). Any other verb
