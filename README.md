@@ -30,7 +30,8 @@ Tax is computed per line item and rounded half-up to 2dp before summing.
 
 Edge cases:
 
-- 3 × £1.99 at 20% → £1.20 tax, not £1.19
+- three line items of £1.99 at 20% → £1.20 tax; taxing the £5.97 basket total would give
+  £1.19
 ```
 
 A test defends a criterion when the token appears anywhere in its full name — so one

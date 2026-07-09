@@ -8,7 +8,7 @@ const lines = (count: number): Basket =>
   Array.from({ length: count }, (_, i) => line(`sku-${i}`, 100));
 
 describe("[CHECKOUT-1] tax rounds half-up to 2dp per line item", () => {
-  it("rounds each line's tax before summing: 3 × £1.99 at 20% is £1.20", () => {
+  it("rounds each line's tax before summing: three £1.99 line items at 20% is £1.20", () => {
     const basket = [line("a", 199), line("b", 199), line("c", 199)];
     expect(checkout(basket, 0.2).tax).toBe(120);
   });
