@@ -18,24 +18,35 @@ describe("oracle strength", () => {
   it("credits a kill to every covering criterion, not only the killing one (ADR-0011)", () => {
     // Mutant 2 is covered by ALPHA-1 and ALPHA-2, and killed only by ALPHA-1's test.
     const alpha2 = criteria.get("ALPHA-2")!;
-    expect(alpha2.covered).toBe(3);
+    expect(alpha2.covered).toBe(4);
     expect(alpha2.killed).toBe(2);
-    expect(alpha2.strength).toBeCloseTo(2 / 3);
+    expect(alpha2.strength).toBe(0.5);
+    expect(alpha2.survivors.map((s) => s.line)).not.toContain(4);
   });
 
   it("counts a timeout as a kill", () => {
-    expect(criteria.get("ALPHA-2")!.survivors.map((s) => s.mutator)).toEqual(["StringLiteral"]);
+    // Mutant 4 times out under ALPHA-2's test, so it never reaches the survivor list.
+    expect(criteria.get("ALPHA-2")!.survivors.map((s) => s.mutator)).toEqual([
+      "StringLiteral",
+      "BooleanLiteral",
+    ]);
   });
 
   it("names the exact code change a survivor made", () => {
-    expect(criteria.get("ALPHA-2")!.survivors).toEqual([
-      {
-        file: "features/alpha/alpha.ts",
-        line: 5,
-        column: 11,
-        mutator: "StringLiteral",
-        replacement: '""',
-      },
+    expect(criteria.get("ALPHA-2")!.survivors[0]).toEqual({
+      file: "features/alpha/alpha.ts",
+      line: 5,
+      column: 11,
+      mutator: "StringLiteral",
+      replacement: '""',
+    });
+  });
+
+  it("orders survivors by source position, since Stryker's mutant order is not stable", () => {
+    // The fixture lists the line-7 mutant before the line-5 one.
+    expect(criteria.get("ALPHA-2")!.survivors.map((s) => [s.line, s.column])).toEqual([
+      [5, 11],
+      [7, 2],
     ]);
   });
 
@@ -52,9 +63,9 @@ describe("oracle strength", () => {
 
   it("excludes mutants the run never scored", () => {
     // NoCoverage (5) and CompileError (6) sit in neither numerator nor denominator.
-    expect(report.covered).toBe(4);
+    expect(report.covered).toBe(5);
     expect(report.killed).toBe(3);
-    expect(report.strength).toBeCloseTo(0.75);
+    expect(report.strength).toBe(0.6);
   });
 
   it("counts scored mutants that no criterion covers", () => {
@@ -69,7 +80,7 @@ describe("oracle strength", () => {
   it("aggregates a feature over the mutants its criteria cover, counting each once", () => {
     const [feature] = report.features;
     expect(feature).toMatchObject({ key: "ALPHA", spec: "features/alpha/SPEC.md" });
-    expect(feature).toMatchObject({ covered: 4, killed: 3 });
+    expect(feature).toMatchObject({ covered: 5, killed: 3 });
   });
 
   it("reads line coverage as the naive baseline, separate from strength", () => {
@@ -100,7 +111,7 @@ describe("oracle strength", () => {
       coverageSummary: "no-such-file.json",
     });
     expect(bare.lineCoverage).toBeNull();
-    expect(bare.strength).toBeCloseTo(0.75);
+    expect(bare.strength).toBe(0.6);
   });
 
   it("fails when the mutation report is missing", async () => {

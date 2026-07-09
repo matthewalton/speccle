@@ -88,7 +88,7 @@ describe("speccle-oracle strength (e2e)", () => {
     const { status, stdout } = run("strength", STRENGTH, ...REPORTS, "--json");
     expect(status).toBe(0);
     const report = JSON.parse(stdout) as StrengthReport;
-    expect(report.strength).toBeCloseTo(0.75);
+    expect(report.strength).toBe(0.6);
     expect(report.lineCoverage).toBe(0.8);
     expect(report.unclaimed).toEqual(["ALPHA-3"]);
     expect(report.features.flatMap((f) => f.criteria.map((c) => c.id))).toEqual([
@@ -103,11 +103,11 @@ describe("speccle-oracle strength (e2e)", () => {
     expect(status).toBe(0);
     expect(stdout).toContain("features/alpha/SPEC.md");
     expect(stdout).toContain("ALPHA-2");
-    expect(stdout).toContain("66.7%");
+    expect(stdout).toContain("50.0%");
     expect(stdout).toContain("features/alpha/alpha.ts:5:11  StringLiteral");
-    expect(stdout).toContain("oracle strength 75.0% (3/4)");
+    expect(stdout).toContain("oracle strength 60.0% (3/5)");
     expect(stdout).toContain("line coverage 80.0%");
-    expect(stdout).toContain("1 surviving mutant");
+    expect(stdout).toContain("2 surviving mutants");
   });
 
   it("marks an unclaimed criterion rather than scoring it zero", () => {

@@ -156,7 +156,7 @@ export async function strength(
           covered: entry?.covered ?? 0,
           killed: entry?.killed ?? 0,
           strength: ratio(entry?.killed ?? 0, entry?.covered ?? 0),
-          survivors: entry?.survivors ?? [],
+          survivors: (entry?.survivors ?? []).sort(bySourcePosition),
         };
       })
       .sort(byCriterionId);
@@ -198,6 +198,11 @@ function toSurvivor(mutant: Mutant): Survivor {
     mutator: mutant.mutator,
     replacement: mutant.replacement,
   };
+}
+
+/** Stryker does not order mutants stably across runs; a Speccle tool's output must be. */
+function bySourcePosition(a: Survivor, b: Survivor): number {
+  return a.file.localeCompare(b.file) || a.line - b.line || a.column - b.column;
 }
 
 function byCriterionId(a: { id: string }, b: { id: string }): number {
