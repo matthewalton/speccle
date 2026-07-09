@@ -15,7 +15,7 @@ v1 tooling targets one stack: TypeScript projects using vitest, StrykerJS with
 `perTest` coverage analysis, and Istanbul `json-summary` coverage — the stack the old
 repo proved the join on.
 
-The convention itself (feature folders, spec.md, CONTEXT.md, test tokens) is
+The convention itself (feature folders, SPEC.md, CONTEXT.md, test tokens) is
 language-agnostic; only the `strengthen` tooling is stack-constrained.
 
 ## Consequences

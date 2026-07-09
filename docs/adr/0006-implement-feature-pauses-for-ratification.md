@@ -6,7 +6,7 @@
 ## Context
 
 How a developer specs is their business — prose, a ticket, a file, or an
-already-conventioned spec.md. But something must become the conventioned spec, and the
+already-conventioned SPEC.md. But something must become the conventioned spec, and the
 question is when the human sees the criteria: before code exists, or after.
 
 Also at stake: what "done" means. Folding oracle strength into the skill's inner loop
@@ -15,7 +15,7 @@ projects without Stryker.
 
 ## Decision
 
-`implement-feature` accepts any input. It drafts the conventioned `spec.md` +
+`implement-feature` accepts any input. It drafts the conventioned `SPEC.md` +
 `CONTEXT.md`, lints them, then **stops at the ratify pause**: the developer approves
 the criteria before any test or code is written. Already-conventioned input passes
 straight through the pause.

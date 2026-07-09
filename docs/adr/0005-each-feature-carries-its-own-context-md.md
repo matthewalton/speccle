@@ -9,14 +9,14 @@ A spec's criteria can't express everything: domain terms, entities, and decision
 span criteria need a home. A single project-level CONTEXT.md (the grill-with-docs
 pattern) piles feature-specific language into one global file — part of what makes
 projects feel messy. And with criterion bodies now free-form (ADR-0003), content could
-smear across spec.md and any companion file without a crisp boundary.
+smear across SPEC.md and any companion file without a crisp boundary.
 
 ## Decision
 
-Every feature folder holds a `CONTEXT.md` beside its `spec.md`: the feature's glossary
+Every feature folder holds a `CONTEXT.md` beside its `SPEC.md`: the feature's glossary
 (terms with _Avoid_ lines) plus decisions that span criteria. The boundary rule: about
 a word or a cross-cutting choice → `CONTEXT.md`; about one behaviour → that criterion's
-body in `spec.md`.
+body in `SPEC.md`.
 
 ## Consequences
 
