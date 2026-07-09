@@ -76,8 +76,22 @@ describe("compound-criterion", () => {
 });
 
 describe("unmeasurable", () => {
-  it("flags a statement with no outcome signal", () => {
+  it("flags a statement naming a property rather than an outcome", () => {
     expect(rules("The dashboard is beautiful")).toEqual(["unmeasurable"]);
+  });
+
+  it("flags a vacuous predicate", () => {
+    expect(rules("Refunds are handled")).toEqual(["unmeasurable"]);
+  });
+
+  it("names the vacuous predicate in the message", () => {
+    const violation = lintStatement("Checkout works").find((v) => v.rule === "unmeasurable");
+    expect(violation?.message).toBe('no measurable outcome: "works" asserts nothing observable');
+  });
+
+  it("accepts any domain verb, enumerated or not", () => {
+    expect(rules("A refund credits the customer the full line-item total")).toEqual([]);
+    expect(rules("A trade novates to the central counterparty")).toEqual([]);
   });
 
   it("accepts an outcome verb", () => {
@@ -94,6 +108,15 @@ describe("unmeasurable", () => {
 
   it("accepts a copula followed by a literal", () => {
     expect(rules("The status is `done` after payment")).toEqual([]);
+  });
+
+  it("accepts a copula naming a state, not a property", () => {
+    expect(rules("The order is cancelled")).toEqual([]);
+  });
+
+  it("judges the main clause, not a condition", () => {
+    expect(rules("Payment fails when the card is expired")).toEqual([]);
+    expect(rules("Checkout returns the total when the basket is large")).toEqual([]);
   });
 
   it("does not flag a statement already lacking a token or statement", () => {

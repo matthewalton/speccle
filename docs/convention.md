@@ -72,7 +72,7 @@ coverage reports already carry full names, so the join is mechanical.
 ## Lint
 
 `oracle lint` enforces this contract deterministically. Fixed rules, one severity, no
-configuration. The rule set (to be implemented — the contract, not yet the code):
+configuration. The rule set:
 
 | Rule                 | Judges                                                         |
 | -------------------- | -------------------------------------------------------------- |
@@ -88,6 +88,13 @@ configuration. The rule set (to be implemented — the contract, not yet the cod
 
 Quality rules (`weasel-wording`, `compound-criterion`, `unmeasurable`) judge the heading
 statement only — the body is never linted.
+
+`unmeasurable` never allow-lists the verbs a statement may use. It flags a closed list of
+predicates that name activity without an outcome (`is handled`, `works`, `supports`, …)
+and main clauses that name a property (`The dashboard is beautiful`). Any other verb
+passes, including a domain verb the rule has never seen (`a refund credits the
+customer`). It under-flags by design
+([ADR-0010](adr/0010-unmeasurable-flags-vacuous-shapes-not-unlisted-verbs.md)).
 
 ## v1 target stack
 

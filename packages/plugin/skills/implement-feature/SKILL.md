@@ -81,11 +81,11 @@ heading statement only. When one fires, rewrite the statement — do not move th
 words down into the body to dodge the rule. A `compound-criterion` usually means you owe
 the spec a second criterion, not a shorter sentence.
 
-`unmeasurable` recognises a closed list of outcome verbs, so it can fire on a statement
-that is genuinely measurable but phrased with a domain verb the list has never heard of
-("a refund **credits** the customer…"). Rephrase around the observable outcome rather
-than arguing with it — and say so when you hand back, because a criterion that had to be
-contorted to satisfy the linter is worth a human's attention.
+`unmeasurable` does not police vocabulary — any domain verb passes ("a refund **credits**
+the customer…"). It fires only on a statement that asserts nothing: a vacuous predicate
+("refunds **are handled**") or a bare property ("the dashboard **is beautiful**"). Say
+what is observably true instead; the rule is telling you the criterion has no outcome to
+test, not that it dislikes your wording.
 
 The rules are fixed and unconfigurable, and there is one severity: a spec lints clean or
 it does not ([ADR-0007](../../../../docs/adr/0007-lint-rules-are-fixed-heuristics.md)).

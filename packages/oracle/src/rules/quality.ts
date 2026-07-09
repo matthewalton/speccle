@@ -107,81 +107,34 @@ function compoundCriterion(spec: ParsedSpec, c: WellFormedCriterion): Violation[
   return [];
 }
 
-export const OUTCOME_VERBS: readonly string[] = [
-  "returns",
-  "emits",
-  "exits",
-  "throws",
-  "rejects",
-  "resolves",
-  "prints",
-  "writes",
-  "reads",
-  "parses",
-  "produces",
-  "reports",
-  "renders",
-  "outputs",
-  "fails",
-  "passes",
-  "flags",
-  "marks",
-  "treats",
-  "ignores",
-  "skips",
-  "includes",
-  "excludes",
-  "omits",
-  "contains",
-  "equals",
-  "matches",
-  "sets",
-  "records",
-  "collects",
-  "links",
-  "strips",
-  "maps",
-  "counts",
-  "normalises",
-  "normalizes",
-  "rounds",
-  "sums",
-  "totals",
-  "computes",
-  "shows",
-  "displays",
-  "hides",
-  "sorts",
-  "filters",
-  "validates",
-  "redirects",
-  "sends",
-  "saves",
-  "stores",
-  "loads",
-  "creates",
-  "updates",
-  "deletes",
-  "removes",
-  "adds",
-  "applies",
-  "clears",
-  "enables",
-  "disables",
-  "prompts",
-  "increments",
-  "decrements",
-  "expires",
-  "locks",
-  "retries",
-  "blocks",
-  "allows",
-  "denies",
-  "requires",
-  "defaults",
-  "preserves",
-  "retains",
-  "keeps",
+/**
+ * Predicates that name activity without naming an outcome. Contract, not config: this is
+ * the whole of what `unmeasurable` knows, so the rule under-flags rather than gatekeeping
+ * a spec's vocabulary — an unrecognised domain verb ("a refund credits the customer") is
+ * measurable and passes.
+ */
+export const VACUOUS_PREDICATES: readonly string[] = [
+  "is handled",
+  "are handled",
+  "is supported",
+  "are supported",
+  "is implemented",
+  "are implemented",
+  "is done",
+  "are done",
+  "is correct",
+  "are correct",
+  "is responsible for",
+  "are responsible for",
+  "works",
+  "working",
+  "behaves",
+  "happens",
+  "occurs",
+  "handles",
+  "supports",
+  "deals with",
+  "takes care of",
 ];
 
 export const OUTCOME_COMPARATORS: readonly string[] = [
@@ -207,27 +160,45 @@ export const OUTCOME_COMPARATORS: readonly string[] = [
   "unchanged",
 ];
 
-const OUTCOME_MATCHERS = [...OUTCOME_VERBS, ...OUTCOME_COMPARATORS].map(wordBoundaryRegex);
+const VACUOUS_MATCHERS = VACUOUS_PREDICATES.map((predicate) => ({
+  predicate,
+  regex: wordBoundaryRegex(predicate),
+}));
 
-const COPULA_LITERAL = /\b(is|are)\s+[`"']/i;
+const COMPARATOR_MATCHERS = OUTCOME_COMPARATORS.map(wordBoundaryRegex);
 
 const QUANTITY = /\d|%/;
 
+const SUBORDINATOR = /\b(?:when|whenever|if|unless|after|before|while|until|once|given)\b/i;
+
+/**
+ * A trailing `is <adjective>` names a property. Lowercase-only: a capitalised word is a
+ * literal ("the response is JSON"), as is a code span, which is stripped before matching.
+ * An `-ed` word is a participle naming an outcome ("the order is cancelled").
+ */
+const COPULA_PROPERTY = /\b(?:is|are)\s+(?:not\s+)?([a-z][a-z-]*)\s*$/;
+
 function unmeasurable(spec: ParsedSpec, c: WellFormedCriterion): Violation[] {
   const target = stripCodeSpans(c.statement);
-  const measurable =
-    OUTCOME_MATCHERS.some((regex) => regex.test(target)) ||
-    COPULA_LITERAL.test(c.statement) ||
-    QUANTITY.test(target);
-  if (measurable) return [];
-  return [
-    {
-      rule: "unmeasurable",
-      file: spec.file,
-      line: c.line,
-      message: "no measurable outcome: expected an outcome verb, a comparator, or a quantity",
-    },
-  ];
+  const vacuous = VACUOUS_MATCHERS.find(({ regex }) => regex.test(target));
+  const message = vacuous
+    ? `no measurable outcome: "${vacuous.predicate}" asserts nothing observable`
+    : namesOnlyAProperty(target)
+      ? "no measurable outcome: names a property, not an observable outcome"
+      : null;
+  if (message === null) return [];
+  return [{ rule: "unmeasurable", file: spec.file, line: c.line, message }];
+}
+
+/** Only the main clause is judged — a copula inside a condition ("when the basket is large")
+ *  qualifies an outcome asserted elsewhere in the statement. */
+function namesOnlyAProperty(target: string): boolean {
+  if (QUANTITY.test(target) || COMPARATOR_MATCHERS.some((regex) => regex.test(target))) {
+    return false;
+  }
+  const mainClause = target.split(SUBORDINATOR)[0] ?? target;
+  const match = COPULA_PROPERTY.exec(mainClause);
+  return match !== null && !match[1]!.endsWith("ed");
 }
 
 function stripCodeSpans(text: string): string {
