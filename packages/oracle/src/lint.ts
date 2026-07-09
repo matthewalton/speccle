@@ -5,17 +5,14 @@ import { parseSpec } from "./spec.ts";
 import { runRules } from "./rules/index.ts";
 import type { Violation } from "./violation.ts";
 
-/** The typed JSON contract of `speccle-oracle lint --json`. */
+/** The JSON contract of `speccle-oracle lint --json`; files are root-relative and sorted. */
 export interface LintReport {
-  /** Absolute path the file paths are relative to. */
   root: string;
-  /** Spec files linted, root-relative, sorted. */
   files: string[];
   violations: Violation[];
   clean: boolean;
 }
 
-/** Lint every spec.md under target (a directory), or target itself (a file). */
 export async function lint(target: string): Promise<LintReport> {
   const abs = resolve(target);
   let stats;

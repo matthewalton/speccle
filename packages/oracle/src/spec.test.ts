@@ -81,7 +81,10 @@ describe("parseSpec criteria", () => {
   });
 
   it("handles CRLF line endings", () => {
-    const spec = parseSpec("---\r\nkey: CHECKOUT\r\n---\r\n\r\n## [CHECKOUT-1] Works on CRLF\r\n", FILE);
+    const spec = parseSpec(
+      "---\r\nkey: CHECKOUT\r\n---\r\n\r\n## [CHECKOUT-1] Works on CRLF\r\n",
+      FILE,
+    );
     expect(spec.key?.valid).toBe(true);
     expect(spec.criteria).toHaveLength(1);
   });

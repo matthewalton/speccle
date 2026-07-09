@@ -23,10 +23,7 @@ describe("speccle-oracle lint (e2e)", () => {
     expect(status).toBe(0);
     const report = JSON.parse(stdout) as LintReport;
     expect(report.clean).toBe(true);
-    expect(report.files).toEqual([
-      "features/basket/spec.md",
-      "features/checkout/spec.md",
-    ]);
+    expect(report.files).toEqual(["features/basket/spec.md", "features/checkout/spec.md"]);
     expect(report.violations).toEqual([]);
   });
 
@@ -35,9 +32,7 @@ describe("speccle-oracle lint (e2e)", () => {
     expect(status).toBe(1);
     const report = JSON.parse(stdout) as LintReport;
     expect(report.clean).toBe(false);
-    expect(
-      report.violations.map((v) => ({ rule: v.rule, file: v.file, line: v.line })),
-    ).toEqual([
+    expect(report.violations.map((v) => ({ rule: v.rule, file: v.file, line: v.line }))).toEqual([
       { rule: "key-collision", file: "features/alpha/spec.md", line: 2 },
       { rule: "duplicate-id", file: "features/alpha/spec.md", line: 13 },
       { rule: "empty-statement", file: "features/alpha/spec.md", line: 15 },

@@ -1,10 +1,6 @@
 import type { ParsedSpec, WellFormedCriterion } from "../spec.ts";
 import type { Violation } from "../violation.ts";
 
-/**
- * The six structural rules: missing-key, key-collision, key-mismatch,
- * malformed-id, duplicate-id, empty-statement (ADR-0007).
- */
 export function structuralRules(specs: ParsedSpec[]): Violation[] {
   return [
     ...missingKey(specs),

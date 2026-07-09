@@ -53,7 +53,7 @@ _Avoid_: review step, confirmation, approval gate.
 
 **Oracle strength**:
 The fraction of covered mutants a criterion's tests actually kill (`killed ÷ covered`),
-per criterion and as one headline number. The measure of whether tests *defend* code,
+per criterion and as one headline number. The measure of whether tests _defend_ code,
 as opposed to merely executing it.
 _Avoid_: test strength, mutation score (as a synonym), quality score.
 
@@ -65,7 +65,7 @@ _Avoid_: using "coverage" alone to mean strength.
 **Machine path / human path**:
 The two exits from a weak criterion in `strengthen`. **Machine path**: a surviving
 mutant is a test gap — write the killing test and re-run. **Human path**: a persistently
-weak criterion is a *spec* problem — draft a sharper criterion and a human ratifies it.
+weak criterion is a _spec_ problem — draft a sharper criterion and a human ratifies it.
 _Avoid_: auto-fix / manual, fast path / slow path.
 
 **Speccle tool**:

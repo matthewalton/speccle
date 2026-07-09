@@ -1,12 +1,7 @@
 import type { ParsedSpec, WellFormedCriterion } from "../spec.ts";
 import type { Violation } from "../violation.ts";
 
-/**
- * The three quality heuristics: weasel-wording, compound-criterion,
- * unmeasurable. They judge the heading statement ONLY — the body is never
- * linted (ADR-0007). The word lists are contract, not config: extending one
- * means changing the contract in docs/convention.md.
- */
+/** Quality rules judge the heading statement only — the body is never linted (ADR-0007). */
 export function qualityRules(specs: ParsedSpec[]): Violation[] {
   const out: Violation[] = [];
   for (const spec of specs) {
@@ -18,7 +13,7 @@ export function qualityRules(specs: ParsedSpec[]): Violation[] {
   return out;
 }
 
-/** Hedge words and phrases that defer judgement instead of stating behaviour. */
+/** Contract, not config: extending this list means changing docs/convention.md. */
 export const WEASEL_TERMS: readonly string[] = [
   "should",
   "appropriately",
@@ -75,16 +70,11 @@ function weaselWording(spec: ParsedSpec, c: WellFormedCriterion): Violation[] {
   }));
 }
 
-/**
- * A statement is compound when a clause-joining signal appears: a semicolon, a
- * comma directly before a conjunction, an "and also"/"as well as", or a second
- * sentence. A bare "and"/"or" never flags — a compound noun phrase names one
- * thing. One violation per criterion, naming the first signal in fixed order.
- */
-const COMPOUND_SIGNALS: ReadonlyArray<{
+/** A bare "and"/"or" never flags — a compound noun phrase names one thing. */
+const COMPOUND_SIGNALS: readonly {
   regex: RegExp;
   message: (match: RegExpExecArray) => string;
-}> = [
+}[] = [
   { regex: /;/, message: () => "a semicolon joins independent clauses" },
   {
     regex: /,\s+(and|or)\b/i,
@@ -97,7 +87,6 @@ const COMPOUND_SIGNALS: ReadonlyArray<{
   { regex: /[.!?]\s+/, message: () => "a second sentence starts mid-statement" },
 ];
 
-/** Abbreviations whose period must not read as a sentence end. */
 const ABBREVIATIONS = /\b(e\.g\.|i\.e\.|vs\.|etc\.)/gi;
 
 function compoundCriterion(spec: ParsedSpec, c: WellFormedCriterion): Violation[] {
@@ -118,11 +107,6 @@ function compoundCriterion(spec: ParsedSpec, c: WellFormedCriterion): Violation[
   return [];
 }
 
-/**
- * Openly a heuristic: a statement must carry at least one outcome signal — an
- * outcome verb, a comparator/quantifier, a quantity, or a copula followed by a
- * literal value.
- */
 export const OUTCOME_VERBS: readonly string[] = [
   "returns",
   "emits",
@@ -225,7 +209,6 @@ export const OUTCOME_COMPARATORS: readonly string[] = [
 
 const OUTCOME_MATCHERS = [...OUTCOME_VERBS, ...OUTCOME_COMPARATORS].map(wordBoundaryRegex);
 
-/** A copula followed by a literal value is an outcome; a bare copula is not. */
 const COPULA_LITERAL = /\b(is|are)\s+[`"']/i;
 
 const QUANTITY = /\d|%/;
@@ -247,7 +230,6 @@ function unmeasurable(spec: ParsedSpec, c: WellFormedCriterion): Violation[] {
   ];
 }
 
-/** Inline code names an identifier, not prose — quality rules never judge it. */
 function stripCodeSpans(text: string): string {
   return text.replace(/`[^`]*`/g, " ");
 }

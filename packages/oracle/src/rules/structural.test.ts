@@ -50,9 +50,7 @@ describe("key-collision", () => {
 describe("key-mismatch", () => {
   it("flags a criterion whose key differs from the declared key", () => {
     const violations = lintOne("---\nkey: ALPHA\n---\n\n## [BETA-1] Total returns zero\n");
-    expect(violations).toEqual([
-      expect.objectContaining({ rule: "key-mismatch", line: 5 }),
-    ]);
+    expect(violations).toEqual([expect.objectContaining({ rule: "key-mismatch", line: 5 })]);
   });
 
   it("does not run when the declared key is itself invalid", () => {
@@ -64,9 +62,7 @@ describe("key-mismatch", () => {
 describe("malformed-id", () => {
   it("flags an H2 without a token", () => {
     const violations = lintOne("---\nkey: ALPHA\n---\n\n## Some section\n");
-    expect(violations).toEqual([
-      expect.objectContaining({ rule: "malformed-id", line: 5 }),
-    ]);
+    expect(violations).toEqual([expect.objectContaining({ rule: "malformed-id", line: 5 })]);
   });
 
   it("flags a malformed token", () => {
@@ -80,9 +76,7 @@ describe("duplicate-id", () => {
     const violations = lintOne(
       "---\nkey: ALPHA\n---\n\n## [ALPHA-1] Total returns zero\n\n## [ALPHA-1] Discount returns zero\n",
     );
-    expect(violations).toEqual([
-      expect.objectContaining({ rule: "duplicate-id", line: 7 }),
-    ]);
+    expect(violations).toEqual([expect.objectContaining({ rule: "duplicate-id", line: 7 })]);
     expect(violations[0]?.message).toContain("spec.md:5");
   });
 
@@ -97,8 +91,6 @@ describe("duplicate-id", () => {
 describe("empty-statement", () => {
   it("flags a token with no statement", () => {
     const violations = lintOne("---\nkey: ALPHA\n---\n\n## [ALPHA-1]\n");
-    expect(violations).toEqual([
-      expect.objectContaining({ rule: "empty-statement", line: 5 }),
-    ]);
+    expect(violations).toEqual([expect.objectContaining({ rule: "empty-statement", line: 5 })]);
   });
 });

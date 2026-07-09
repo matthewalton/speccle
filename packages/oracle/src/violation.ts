@@ -1,4 +1,4 @@
-/** The nine fixed rules, in the order of the table in docs/convention.md. */
+/** Order matches the table in docs/convention.md and drives violation sorting. */
 export const RULE_IDS = [
   "missing-key",
   "key-collision",
@@ -13,12 +13,11 @@ export const RULE_IDS = [
 
 export type RuleId = (typeof RULE_IDS)[number];
 
-/** One deterministic rule finding. One severity, no configuration. */
 export interface Violation {
   rule: RuleId;
-  /** Spec file path, relative to the lint root (posix). */
+  /** Root-relative posix path. */
   file: string;
-  /** 1-based line the violation anchors to. */
+  /** 1-based. */
   line: number;
   message: string;
 }

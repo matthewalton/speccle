@@ -31,6 +31,7 @@ Optional intro prose about the feature.
 Tax is computed per line item and rounded half-up to 2dp before summing.
 
 Edge cases:
+
 - 3 × £1.99 at 20% → £1.20 tax, not £1.19
 
 ## [CHECKOUT-2] Empty basket totals zero
@@ -73,17 +74,17 @@ coverage reports already carry full names, so the join is mechanical.
 `oracle lint` enforces this contract deterministically. Fixed rules, one severity, no
 configuration. The rule set (to be implemented — the contract, not yet the code):
 
-| Rule | Judges |
-| ---- | ------ |
-| `missing-key` | Frontmatter `key` absent or malformed |
-| `key-collision` | Two specs declare the same key |
-| `key-mismatch` | A criterion id's key differs from the spec's declared key |
-| `malformed-id` | H2 without a well-formed `[KEY-n]` token |
-| `duplicate-id` | The same id appears twice |
-| `empty-statement` | Criterion heading has a token but no statement |
-| `weasel-wording` | Statement hedges (`should`, `appropriately`, `as expected`, …) |
-| `compound-criterion` | Statement contains more than one testable clause |
-| `unmeasurable` | Statement asserts nothing observable |
+| Rule                 | Judges                                                         |
+| -------------------- | -------------------------------------------------------------- |
+| `missing-key`        | Frontmatter `key` absent or malformed                          |
+| `key-collision`      | Two specs declare the same key                                 |
+| `key-mismatch`       | A criterion id's key differs from the spec's declared key      |
+| `malformed-id`       | H2 without a well-formed `[KEY-n]` token                       |
+| `duplicate-id`       | The same id appears twice                                      |
+| `empty-statement`    | Criterion heading has a token but no statement                 |
+| `weasel-wording`     | Statement hedges (`should`, `appropriately`, `as expected`, …) |
+| `compound-criterion` | Statement contains more than one testable clause               |
+| `unmeasurable`       | Statement asserts nothing observable                           |
 
 Quality rules (`weasel-wording`, `compound-criterion`, `unmeasurable`) judge the heading
 statement only — the body is never linted.

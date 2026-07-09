@@ -1,20 +1,10 @@
-/**
- * spec.md parsing, written once and shared by lint and the oracle-strength
- * heatmap (ADR-0002). The format is docs/convention.md.
- */
-
-/** A feature key: `[A-Z][A-Z0-9]{1,9}`, unique across the repo. */
 export const KEY_PATTERN = /^[A-Z][A-Z0-9]{1,9}$/;
 
-/** A well-formed bracketed criterion id token, e.g. `[CHECKOUT-1]`. */
 const ID_TOKEN = /^\[([A-Z][A-Z0-9]{1,9})-([1-9][0-9]*)\]$/;
 
 export interface SpecKey {
-  /** The declared value, verbatim (unquoted). */
   raw: string;
-  /** 1-based line of the `key:` declaration. */
   line: number;
-  /** Whether raw matches KEY_PATTERN. */
   valid: boolean;
 }
 
@@ -24,11 +14,8 @@ export interface WellFormedCriterion {
   id: string;
   key: string;
   n: number;
-  /** Heading text after the token; may be empty. */
   statement: string;
-  /** 1-based line of the H2 heading. */
   line: number;
-  /** Full heading text after `## `. */
   heading: string;
 }
 
@@ -41,11 +28,9 @@ export interface MalformedCriterion {
 export type Criterion = WellFormedCriterion | MalformedCriterion;
 
 export interface ParsedSpec {
-  /** Path as given by the caller (relative, posix). */
   file: string;
-  /** The frontmatter key declaration; undefined when absent entirely. */
   key: SpecKey | undefined;
-  /** Every H2 in document order — criteria per convention rule 5. */
+  /** Every H2 in document order is a criterion (convention rule 5). */
   criteria: Criterion[];
 }
 
@@ -97,7 +82,7 @@ function parseHeading(heading: string, line: number): Criterion {
     if (id) {
       return {
         wellFormed: true,
-        id: `${id[1]}-${id[2]}`,
+        id: `${id[1]!}-${id[2]!}`,
         key: id[1]!,
         n: Number(id[2]),
         statement: token[2]!.trim(),

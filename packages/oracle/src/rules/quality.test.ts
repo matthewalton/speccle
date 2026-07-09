@@ -51,9 +51,7 @@ describe("compound-criterion", () => {
   });
 
   it('flags "as well as"', () => {
-    expect(rules("Login returns a token as well as sets a cookie")).toEqual([
-      "compound-criterion",
-    ]);
+    expect(rules("Login returns a token as well as sets a cookie")).toEqual(["compound-criterion"]);
   });
 
   it("flags a second sentence", () => {

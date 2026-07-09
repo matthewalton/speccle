@@ -9,11 +9,5 @@
   "homepage": "https://github.com/matthewalton/speccle",
   "repository": "https://github.com/matthewalton/speccle",
   "license": "MIT",
-  "keywords": [
-    "spec",
-    "testing",
-    "mutation-testing",
-    "vertical-slices",
-    "oracle-strength"
-  ]
+  "keywords": ["spec", "testing", "mutation-testing", "vertical-slices", "oracle-strength"]
 }

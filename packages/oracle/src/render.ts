@@ -1,6 +1,5 @@
 import type { LintReport } from "./lint.ts";
 
-/** Human terminal output for a lint report. The JSON form is the contract. */
 export function renderHuman(report: LintReport): string {
   if (report.files.length === 0) return "No spec.md files found.";
 

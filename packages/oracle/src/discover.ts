@@ -3,10 +3,6 @@ import { join } from "node:path";
 
 const SKIP_DIRS = new Set(["node_modules", "dist"]);
 
-/**
- * Every spec.md under root, as sorted root-relative posix paths. Skips
- * node_modules, dist, and dot-directories.
- */
 export async function discoverSpecs(root: string): Promise<string[]> {
   const found: string[] = [];
 

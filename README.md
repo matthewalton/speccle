@@ -29,6 +29,7 @@ key: CHECKOUT
 Tax is computed per line item and rounded half-up to 2dp before summing.
 
 Edge cases:
+
 - 3 × £1.99 at 20% → £1.20 tax, not £1.19
 ```
 
@@ -39,16 +40,16 @@ The full format is a written contract: [`docs/convention.md`](docs/convention.md
 
 ## The skills
 
-| Skill | What it does |
-| ----- | ------------ |
-| `implement-feature` | Takes a spec in any form — prose, a ticket, a file — drafts the conventioned `spec.md` + `CONTEXT.md`, lints them, then **pauses for you to ratify the criteria** before writing a single test or line of code. Done = spec lints clean, every criterion has at least one tagged test, all tests green. |
-| `strengthen` | Runs mutation testing + coverage and renders the per-criterion heatmap — `oracle strength = killed mutants ÷ covered mutants`. Coverage says the code ran; oracle strength says the tests would *notice*. Each weak criterion is routed: **machine path** (a test gap — write the killing test) or **human path** (a vague spec — propose a sharper criterion for you to ratify). |
+| Skill               | What it does                                                                                                                                                                                                                                                                                                                                                                      |
+| ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `implement-feature` | Takes a spec in any form — prose, a ticket, a file — drafts the conventioned `spec.md` + `CONTEXT.md`, lints them, then **pauses for you to ratify the criteria** before writing a single test or line of code. Done = spec lints clean, every criterion has at least one tagged test, all tests green.                                                                           |
+| `strengthen`        | Runs mutation testing + coverage and renders the per-criterion heatmap — `oracle strength = killed mutants ÷ covered mutants`. Coverage says the code ran; oracle strength says the tests would _notice_. Each weak criterion is routed: **machine path** (a test gap — write the killing test) or **human path** (a vague spec — propose a sharper criterion for you to ratify). |
 
 ## Packages
 
-| Package | Role |
-| ------- | ---- |
-| [`packages/plugin`](packages/plugin) | The Claude Code plugin: the skills. |
+| Package                              | Role                                                                                                              |
+| ------------------------------------ | ----------------------------------------------------------------------------------------------------------------- |
+| [`packages/plugin`](packages/plugin) | The Claude Code plugin: the skills.                                                                               |
 | [`packages/oracle`](packages/oracle) | The deterministic tooling the skills invoke: one bin, `lint` and the oracle-strength heatmap. Never calls an LLM. |
 
 ## Status
