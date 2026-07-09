@@ -8,13 +8,13 @@ description: Build a feature as a vertical slice — draft its SPEC.md and CONTE
 Turn a feature description — in whatever form it arrives — into a vertical slice: a
 folder holding `SPEC.md`, `CONTEXT.md`, and the tagged tests and code that satisfy them.
 
-The shape of that folder is fixed by [the convention](../../../../docs/convention.md).
-The words for talking about it are fixed by [CONTEXT.md](../../../../CONTEXT.md) — say
+The shape of that folder is fixed by [the convention](https://github.com/matthewalton/speccle/blob/main/docs/convention.md).
+The words for talking about it are fixed by [CONTEXT.md](https://github.com/matthewalton/speccle/blob/main/CONTEXT.md) — say
 "criterion id", not "tag"; "lint violation", not "error". Read both before drafting.
 
 **This skill does not measure oracle strength.** A slice can finish here well-specified
 and weakly defended; closing that gap is `strengthen`'s job, on its own cadence
-([ADR-0006](../../../../docs/adr/0006-implement-feature-pauses-for-ratification.md)).
+([ADR-0006](https://github.com/matthewalton/speccle/blob/main/docs/adr/0006-implement-feature-pauses-for-ratification.md)).
 
 ## 1. Take the input as it comes
 
@@ -50,7 +50,7 @@ go wrong:
 - **The `CONTEXT.md` boundary.** About a word, or a choice spanning criteria →
   `CONTEXT.md`. About one behaviour → that criterion's body. Every term gets an _Avoid_
   line naming the synonyms the feature will not use
-  ([ADR-0005](../../../../docs/adr/0005-each-feature-carries-its-own-context-md.md)).
+  ([ADR-0005](https://github.com/matthewalton/speccle/blob/main/docs/adr/0005-each-feature-carries-its-own-context-md.md)).
 
 Two files per feature is the floor, even for a tiny one.
 
@@ -88,7 +88,7 @@ what is observably true instead; the rule is telling you the criterion has no ou
 test, not that it dislikes your wording.
 
 The rules are fixed and unconfigurable, and there is one severity: a spec lints clean or
-it does not ([ADR-0007](../../../../docs/adr/0007-lint-rules-are-fixed-heuristics.md)).
+it does not ([ADR-0007](https://github.com/matthewalton/speccle/blob/main/docs/adr/0007-lint-rules-are-fixed-heuristics.md)).
 
 ## 4. The ratify pause — stop here
 

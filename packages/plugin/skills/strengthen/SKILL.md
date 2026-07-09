@@ -6,15 +6,15 @@ description: Measure how well a feature's tests defend its code — run mutation
 # strengthen
 
 A slice can be green and badly defended. `implement-feature` leaves it that way on
-purpose ([ADR-0006](../../../../docs/adr/0006-implement-feature-pauses-for-ratification.md));
+purpose ([ADR-0006](https://github.com/matthewalton/speccle/blob/main/docs/adr/0006-implement-feature-pauses-for-ratification.md));
 this skill closes the gap.
 
 Measure oracle strength per criterion, then act on every **surviving mutant** — the exact
 code change no test noticed. The routing call is the whole job, and
-[ADR-0012](../../../../docs/adr/0012-strengthen-routes-on-the-survivor-not-the-score.md)
+[ADR-0012](https://github.com/matthewalton/speccle/blob/main/docs/adr/0012-strengthen-routes-on-the-survivor-not-the-score.md)
 fixes how to make it. Read it before routing anything.
 
-The words are fixed by [CONTEXT.md](../../../../CONTEXT.md) — say "oracle strength", not
+The words are fixed by [CONTEXT.md](https://github.com/matthewalton/speccle/blob/main/CONTEXT.md) — say "oracle strength", not
 "mutation score"; "surviving mutant", not "missed mutation".
 
 ## 1. Resolve the oracle
@@ -32,7 +32,7 @@ If neither resolves, point the user at the install steps in Speccle's README and
 
 Oracle strength needs to know which tests covered each mutant, and that constrains the
 target to TypeScript + vitest + StrykerJS
-([ADR-0008](../../../../docs/adr/0008-v1-targets-ts-vitest-stryker-only.md)). Check for
+([ADR-0008](https://github.com/matthewalton/speccle/blob/main/docs/adr/0008-v1-targets-ts-vitest-stryker-only.md)). Check for
 all four before running anything:
 
 | Requirement                       | Where                                |
@@ -102,7 +102,7 @@ question of it:
 **Machine path — yes.** The statement already promises the behaviour this mutant breaks;
 the suite just never checked it. Write the killing test under that criterion id, exactly
 as `implement-feature` does — the `[KEY-n]` token in the full concatenated name
-([ADR-0004](../../../../docs/adr/0004-tests-claim-criteria-in-the-full-test-name.md)).
+([ADR-0004](https://github.com/matthewalton/speccle/blob/main/docs/adr/0004-tests-claim-criteria-in-the-full-test-name.md)).
 Re-run, confirm the survivor is gone. No pause; this is why it is the machine path.
 
 **Human path — no, and the behaviour matters.** No criterion entails it, so the spec is
@@ -136,7 +136,7 @@ mutant, and it is how mutation testing rots into a score chase.
 These survivors are the human path. The spec owes a criterion about what the rejection
 tells the caller. Draft it, get it ratified, test it — and watch `[CHECKOUT-3]` reach 100%
 untouched, because a kill counts for every criterion covering the mutant
-([ADR-0011](../../../../docs/adr/0011-oracle-strength-credits-a-kill-to-every-covering-criterion.md)).
+([ADR-0011](https://github.com/matthewalton/speccle/blob/main/docs/adr/0011-oracle-strength-credits-a-kill-to-every-covering-criterion.md)).
 
 Rising oracle strength and a sharpening spec are the same motion. If strength rose and the
 spec did not change, check that you did not fit a test to a mutant.
