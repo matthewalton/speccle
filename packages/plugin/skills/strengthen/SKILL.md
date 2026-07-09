@@ -109,9 +109,12 @@ Re-run, confirm the survivor is gone. No pause; this is why it is the machine pa
 
 **Human path — no, and the behaviour matters.** No criterion entails it, so the spec is
 silent or too vague to test. Draft a sharper statement, or the new criterion the spec
-owes, taking the next never-used number under the key. Lint it clean, then **stop at the
-ratify pause**: show the id and statement, ask for approval, and write nothing until the
-human answers. Once ratified, the survivor takes the machine path under the new id.
+owes, taking the next never-used number under the key. Draft it in the target's `SPEC.md`
+itself — the spec edit _is_ the draft, and lint reads the real file. Lint it clean, then
+**stop at the ratify pause**: show the id and statement, ask for approval, and write no
+test until the human answers; a declined draft is reverted from the spec. This is
+`implement-feature`'s pause exactly — the draft sits on disk, ratification gates the test.
+Once ratified, the survivor takes the machine path under the new id.
 
 **Equivalent mutant — no, and no test ever could.** The mutated code means the same thing.
 Annotate it where it lives and move on:
