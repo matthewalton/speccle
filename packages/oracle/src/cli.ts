@@ -5,7 +5,7 @@ import { renderHuman } from "./render.ts";
 const USAGE = `Usage: speccle-oracle <command> [options]
 
 Commands:
-  lint [path] [--json]   Lint every spec.md under path (default: current directory)
+  lint [path] [--json]   Lint every SPEC.md under path (default: current directory)
   strength               Oracle-strength heatmap (not implemented yet)
 
 Exit codes: 0 clean, 1 violations, 2 usage error`;

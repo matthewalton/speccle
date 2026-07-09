@@ -24,7 +24,7 @@ typed JSON, never calls an LLM (see [CONTEXT.md](../../CONTEXT.md)).
 speccle-oracle lint [path] [--json]
 ```
 
-Lints every `spec.md` under `path` (default: current directory; a file path lints just
+Lints every `SPEC.md` under `path` (default: current directory; a file path lints just
 that file) against the nine fixed rules in
 [docs/convention.md](../../docs/convention.md) — six structural, three quality
 heuristics judging the heading statement only (ADR-0007). One severity, no

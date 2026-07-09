@@ -1,7 +1,7 @@
 import type { LintReport } from "./lint.ts";
 
 export function renderHuman(report: LintReport): string {
-  if (report.files.length === 0) return "No spec.md files found.";
+  if (report.files.length === 0) return "No SPEC.md files found.";
 
   const lines: string[] = [];
   if (report.violations.length > 0) {

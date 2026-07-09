@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { parseSpec, type WellFormedCriterion } from "./spec.ts";
 
-const FILE = "features/checkout/spec.md";
+const FILE = "features/checkout/SPEC.md";
 
 function wellFormed(content: string): WellFormedCriterion[] {
   return parseSpec(content, FILE).criteria.filter((c) => c.wellFormed);

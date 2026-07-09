@@ -23,7 +23,7 @@ describe("speccle-oracle lint (e2e)", () => {
     expect(status).toBe(0);
     const report = JSON.parse(stdout) as LintReport;
     expect(report.clean).toBe(true);
-    expect(report.files).toEqual(["features/basket/spec.md", "features/checkout/spec.md"]);
+    expect(report.files).toEqual(["features/basket/SPEC.md", "features/checkout/SPEC.md"]);
     expect(report.violations).toEqual([]);
   });
 
@@ -33,34 +33,34 @@ describe("speccle-oracle lint (e2e)", () => {
     const report = JSON.parse(stdout) as LintReport;
     expect(report.clean).toBe(false);
     expect(report.violations.map((v) => ({ rule: v.rule, file: v.file, line: v.line }))).toEqual([
-      { rule: "key-collision", file: "features/alpha/spec.md", line: 2 },
-      { rule: "duplicate-id", file: "features/alpha/spec.md", line: 13 },
-      { rule: "empty-statement", file: "features/alpha/spec.md", line: 15 },
-      { rule: "key-mismatch", file: "features/alpha/spec.md", line: 17 },
-      { rule: "malformed-id", file: "features/alpha/spec.md", line: 19 },
-      { rule: "malformed-id", file: "features/alpha/spec.md", line: 21 },
-      { rule: "weasel-wording", file: "features/alpha/spec.md", line: 23 },
-      { rule: "compound-criterion", file: "features/alpha/spec.md", line: 25 },
-      { rule: "unmeasurable", file: "features/alpha/spec.md", line: 27 },
-      { rule: "key-collision", file: "features/beta/spec.md", line: 2 },
-      { rule: "missing-key", file: "features/delta/spec.md", line: 1 },
-      { rule: "missing-key", file: "features/gamma/spec.md", line: 2 },
+      { rule: "key-collision", file: "features/alpha/SPEC.md", line: 2 },
+      { rule: "duplicate-id", file: "features/alpha/SPEC.md", line: 13 },
+      { rule: "empty-statement", file: "features/alpha/SPEC.md", line: 15 },
+      { rule: "key-mismatch", file: "features/alpha/SPEC.md", line: 17 },
+      { rule: "malformed-id", file: "features/alpha/SPEC.md", line: 19 },
+      { rule: "malformed-id", file: "features/alpha/SPEC.md", line: 21 },
+      { rule: "weasel-wording", file: "features/alpha/SPEC.md", line: 23 },
+      { rule: "compound-criterion", file: "features/alpha/SPEC.md", line: 25 },
+      { rule: "unmeasurable", file: "features/alpha/SPEC.md", line: 27 },
+      { rule: "key-collision", file: "features/beta/SPEC.md", line: 2 },
+      { rule: "missing-key", file: "features/delta/SPEC.md", line: 1 },
+      { rule: "missing-key", file: "features/gamma/SPEC.md", line: 2 },
     ]);
   });
 
   it("renders violations grouped per file for humans", () => {
     const { status, stdout } = run("lint", DIRTY);
     expect(status).toBe(1);
-    expect(stdout).toContain("features/alpha/spec.md");
+    expect(stdout).toContain("features/alpha/SPEC.md");
     expect(stdout).toContain("weasel-wording");
     expect(stdout).toContain("4 spec files, 12 violations");
   });
 
   it("lints a single spec file when given a file path", () => {
-    const { status, stdout } = run("lint", resolve(DIRTY, "features/gamma/spec.md"), "--json");
+    const { status, stdout } = run("lint", resolve(DIRTY, "features/gamma/SPEC.md"), "--json");
     expect(status).toBe(1);
     const report = JSON.parse(stdout) as LintReport;
-    expect(report.files).toEqual(["spec.md"]);
+    expect(report.files).toEqual(["SPEC.md"]);
     expect(report.violations.map((v) => v.rule)).toEqual(["missing-key"]);
   });
 

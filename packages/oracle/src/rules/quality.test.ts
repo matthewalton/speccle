@@ -5,7 +5,7 @@ import type { Violation } from "../violation.ts";
 
 function lintStatement(statement: string): Violation[] {
   const content = `---\nkey: ALPHA\n---\n\n## [ALPHA-1] ${statement}\n`;
-  return qualityRules([parseSpec(content, "spec.md")]);
+  return qualityRules([parseSpec(content, "SPEC.md")]);
 }
 
 function rules(statement: string): string[] {
@@ -98,7 +98,7 @@ describe("unmeasurable", () => {
 
   it("does not flag a statement already lacking a token or statement", () => {
     const content = "---\nkey: ALPHA\n---\n\n## [ALPHA-1]\n\n## No token here\n";
-    expect(qualityRules([parseSpec(content, "spec.md")])).toEqual([]);
+    expect(qualityRules([parseSpec(content, "SPEC.md")])).toEqual([]);
   });
 });
 
@@ -114,6 +114,6 @@ describe("the body is never linted", () => {
       "The body should work properly; it is beautiful, and easy. Etc.",
       "",
     ].join("\n");
-    expect(qualityRules([parseSpec(content, "spec.md")])).toEqual([]);
+    expect(qualityRules([parseSpec(content, "SPEC.md")])).toEqual([]);
   });
 });

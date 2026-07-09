@@ -8,14 +8,14 @@ defined in [`CONTEXT.md`](../CONTEXT.md); decisions behind this shape are in
 
 A feature is a directory subtree owning one vertical slice. At its root sit exactly:
 
-- `spec.md` — the acceptance criteria
+- `SPEC.md` — the acceptance criteria
 - `CONTEXT.md` — the feature's language and cross-criterion decisions
 - the code and tests that satisfy them (in whatever layout the project prefers)
 
 Everything about the feature lives inside the subtree. An agent landing in the folder
 needs nothing else to understand it.
 
-## spec.md
+## SPEC.md
 
 ```markdown
 ---
@@ -59,7 +59,7 @@ Glossary + decisions, in the style of this repo's own root `CONTEXT.md`:
   line naming the synonyms not to use.
 - **Decisions**: choices that span criteria (mini-ADR entries: what was decided and why).
 
-The boundary with `spec.md`: about a word or a cross-cutting choice → `CONTEXT.md`;
+The boundary with `SPEC.md`: about a word or a cross-cutting choice → `CONTEXT.md`;
 about one behaviour → that criterion's body.
 
 ## Test linking

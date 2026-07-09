@@ -4,7 +4,7 @@ import { structuralRules } from "./structural.ts";
 import type { Violation } from "../violation.ts";
 
 function lintOne(content: string): Violation[] {
-  return structuralRules([parseSpec(content, "spec.md")]);
+  return structuralRules([parseSpec(content, "SPEC.md")]);
 }
 
 const CLEAN = "---\nkey: ALPHA\n---\n\n## [ALPHA-1] Total returns zero\n";
@@ -29,19 +29,19 @@ describe("missing-key", () => {
 
 describe("key-collision", () => {
   it("flags every spec declaring the same key, naming the others", () => {
-    const a = parseSpec("---\nkey: ALPHA\n---\n", "a/spec.md");
-    const b = parseSpec("---\nkey: ALPHA\n---\n", "b/spec.md");
+    const a = parseSpec("---\nkey: ALPHA\n---\n", "a/SPEC.md");
+    const b = parseSpec("---\nkey: ALPHA\n---\n", "b/SPEC.md");
     const violations = structuralRules([a, b]);
     expect(violations).toEqual([
-      expect.objectContaining({ rule: "key-collision", file: "a/spec.md", line: 2 }),
-      expect.objectContaining({ rule: "key-collision", file: "b/spec.md", line: 2 }),
+      expect.objectContaining({ rule: "key-collision", file: "a/SPEC.md", line: 2 }),
+      expect.objectContaining({ rule: "key-collision", file: "b/SPEC.md", line: 2 }),
     ]);
-    expect(violations[0]?.message).toContain("b/spec.md");
+    expect(violations[0]?.message).toContain("b/SPEC.md");
   });
 
   it("does not group invalid keys", () => {
-    const a = parseSpec("---\nkey: nope\n---\n", "a/spec.md");
-    const b = parseSpec("---\nkey: nope\n---\n", "b/spec.md");
+    const a = parseSpec("---\nkey: nope\n---\n", "a/SPEC.md");
+    const b = parseSpec("---\nkey: nope\n---\n", "b/SPEC.md");
     const rules = structuralRules([a, b]).map((v) => v.rule);
     expect(rules).toEqual(["missing-key", "missing-key"]);
   });
@@ -77,14 +77,14 @@ describe("duplicate-id", () => {
       "---\nkey: ALPHA\n---\n\n## [ALPHA-1] Total returns zero\n\n## [ALPHA-1] Discount returns zero\n",
     );
     expect(violations).toEqual([expect.objectContaining({ rule: "duplicate-id", line: 7 })]);
-    expect(violations[0]?.message).toContain("spec.md:5");
+    expect(violations[0]?.message).toContain("SPEC.md:5");
   });
 
   it("flags duplicates across files", () => {
-    const a = parseSpec("---\nkey: ALPHA\n---\n\n## [ALPHA-1] Total returns zero\n", "a/spec.md");
-    const b = parseSpec("---\nkey: BETA\n---\n\n## [ALPHA-1] Total returns zero\n", "b/spec.md");
+    const a = parseSpec("---\nkey: ALPHA\n---\n\n## [ALPHA-1] Total returns zero\n", "a/SPEC.md");
+    const b = parseSpec("---\nkey: BETA\n---\n\n## [ALPHA-1] Total returns zero\n", "b/SPEC.md");
     const violations = structuralRules([a, b]).filter((v) => v.rule === "duplicate-id");
-    expect(violations).toEqual([expect.objectContaining({ file: "b/spec.md", line: 5 })]);
+    expect(violations).toEqual([expect.objectContaining({ file: "b/SPEC.md", line: 5 })]);
   });
 });
 

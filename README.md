@@ -8,7 +8,7 @@ subtree owning everything one feature needs, side by side.
 
 ```
 src/checkout/
-  spec.md        ← acceptance criteria, each with a stable [CHECKOUT-n] id
+  SPEC.md        ← acceptance criteria, each with a stable [CHECKOUT-n] id
   CONTEXT.md     ← the feature's language and cross-criterion decisions
   checkout.ts
   checkout.test.ts   ← tests claim criteria by carrying the [CHECKOUT-n] token
@@ -42,7 +42,7 @@ The full format is a written contract: [`docs/convention.md`](docs/convention.md
 
 | Skill               | What it does                                                                                                                                                                                                                                                                                                                                                                      |
 | ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `implement-feature` | Takes a spec in any form — prose, a ticket, a file — drafts the conventioned `spec.md` + `CONTEXT.md`, lints them, then **pauses for you to ratify the criteria** before writing a single test or line of code. Done = spec lints clean, every criterion has at least one tagged test, all tests green.                                                                           |
+| `implement-feature` | Takes a spec in any form — prose, a ticket, a file — drafts the conventioned `SPEC.md` + `CONTEXT.md`, lints them, then **pauses for you to ratify the criteria** before writing a single test or line of code. Done = spec lints clean, every criterion has at least one tagged test, all tests green.                                                                           |
 | `strengthen`        | Runs mutation testing + coverage and renders the per-criterion heatmap — `oracle strength = killed mutants ÷ covered mutants`. Coverage says the code ran; oracle strength says the tests would _notice_. Each weak criterion is routed: **machine path** (a test gap — write the killing test) or **human path** (a vague spec — propose a sharper criterion for you to ratify). |
 
 ## Packages

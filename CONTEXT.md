@@ -8,12 +8,12 @@ It is a glossary only — no implementation detail, no usage.
 ## Language
 
 **Feature**:
-A directory subtree owning one vertical slice: its `spec.md`, its `CONTEXT.md`, and the
+A directory subtree owning one vertical slice: its `SPEC.md`, its `CONTEXT.md`, and the
 code and tests that satisfy them, colocated. The unit acceptance criteria attach to.
 _Avoid_: module, component (unqualified), epic.
 
 **Acceptance criterion**:
-One testable behaviour of a feature, written as an H2 heading in `spec.md` carrying a
+One testable behaviour of a feature, written as an H2 heading in `SPEC.md` carrying a
 **criterion id** and a **statement**, with a free-form **body** below.
 _Avoid_: requirement, rule, AC (unqualified prose).
 

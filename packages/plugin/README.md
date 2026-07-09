@@ -6,7 +6,7 @@ implement.
 
 Planned skills, in build order:
 
-1. `implement-feature` — any spec input → drafted `spec.md` + `CONTEXT.md` → lint →
+1. `implement-feature` — any spec input → drafted `SPEC.md` + `CONTEXT.md` → lint →
    ratify pause → tagged tests + implementation, green.
 2. `strengthen` — mutation + coverage → per-criterion oracle-strength heatmap → route
    weak criteria (machine path / human path).

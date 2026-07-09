@@ -1,7 +1,7 @@
 # AGENTS.md
 
 Speccle is a Claude Code plugin for building features as vertical slices — a colocated
-`spec.md`, `CONTEXT.md`, and the tagged tests that defend it — plus deterministic
+`SPEC.md`, `CONTEXT.md`, and the tagged tests that defend it — plus deterministic
 tooling that measures whether those tests would notice if the code broke. TypeScript,
 pnpm workspace, Node ≥ 24.
 
@@ -41,7 +41,7 @@ Node ≥ 24 runs TypeScript directly — no build step needed to run the CLI fro
   not example code to freely restyle. Not part of the pnpm workspace.
 - Speccle's own source does **not** follow the Speccle convention
   ([ADR-0009](docs/adr/0009-speccle-does-not-dogfood-its-own-convention.md)): don't add
-  `spec.md`, criterion ids, or tagged tests to `packages/`.
+  `SPEC.md`, criterion ids, or tagged tests to `packages/`.
 
 ## Style
 

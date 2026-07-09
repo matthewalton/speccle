@@ -11,8 +11,8 @@ export async function discoverSpecs(root: string): Promise<string[]> {
       if (entry.isDirectory()) {
         if (SKIP_DIRS.has(entry.name) || entry.name.startsWith(".")) continue;
         await walk(join(abs, entry.name), rel === "" ? entry.name : `${rel}/${entry.name}`);
-      } else if (entry.isFile() && entry.name === "spec.md") {
-        found.push(rel === "" ? "spec.md" : `${rel}/spec.md`);
+      } else if (entry.isFile() && entry.name === "SPEC.md") {
+        found.push(rel === "" ? "SPEC.md" : `${rel}/SPEC.md`);
       }
     }
   }
