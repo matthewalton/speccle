@@ -52,10 +52,18 @@ test or code: the human owns the criteria, and this pause is where that ownershi
 _Avoid_: review step, confirmation, approval gate.
 
 **Oracle strength**:
-The fraction of covered mutants a criterion's tests actually kill (`killed ÷ covered`),
-per criterion and as one headline number. The measure of whether tests _defend_ code,
-as opposed to merely executing it.
+The fraction of the mutants a criterion's tests execute that the suite kills
+(`killed ÷ covered`), per criterion and as one headline number. The measure of whether
+tests _defend_ code, as opposed to merely executing it. A kill counts for every criterion
+covering that mutant, not only the one whose test detected it
+([ADR-0011](docs/adr/0011-oracle-strength-credits-a-kill-to-every-covering-criterion.md)).
 _Avoid_: test strength, mutation score (as a synonym), quality score.
+
+**Surviving mutant**:
+A code change the mutation run made that no test noticed. The unit of a weak criterion:
+oracle strength below 100% means at least one survivor, and each one names the exact
+edit — file, line, mutator, replacement — that went undetected.
+_Avoid_: escaped mutant, missed mutation, failure.
 
 **Line coverage**:
 The naïve baseline — the percentage of lines executed by the tests, shown alongside
