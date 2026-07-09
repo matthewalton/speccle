@@ -2,6 +2,7 @@ import { spawnSync } from "node:child_process";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import type { LintReport } from "../src/lint.ts";
+import type { StrengthReport } from "../src/strength.ts";
 
 const CLI = resolve(import.meta.dirname, "../src/cli.ts");
 const TOY = resolve(import.meta.dirname, "../../..", "targets/checkout");
@@ -77,10 +78,62 @@ describe("speccle-oracle lint (e2e)", () => {
     expect(status).toBe(2);
     expect(stderr).toContain("Usage: speccle-oracle");
   });
+});
 
-  it("exits 2 for the unimplemented strength command", () => {
-    const { status, stderr } = run("strength");
+const STRENGTH = resolve(import.meta.dirname, "fixtures/strength");
+const REPORTS = ["--mutation", "mutation.json", "--coverage", "coverage-summary.json"];
+
+describe("speccle-oracle strength (e2e)", () => {
+  it("emits the typed JSON report with exit code 0", () => {
+    const { status, stdout } = run("strength", STRENGTH, ...REPORTS, "--json");
+    expect(status).toBe(0);
+    const report = JSON.parse(stdout) as StrengthReport;
+    expect(report.strength).toBeCloseTo(0.75);
+    expect(report.lineCoverage).toBe(0.8);
+    expect(report.unclaimed).toEqual(["ALPHA-3"]);
+    expect(report.features.flatMap((f) => f.criteria.map((c) => c.id))).toEqual([
+      "ALPHA-1",
+      "ALPHA-2",
+      "ALPHA-3",
+    ]);
+  });
+
+  it("renders a heatmap naming the surviving mutant and the coverage baseline", () => {
+    const { status, stdout } = run("strength", STRENGTH, ...REPORTS);
+    expect(status).toBe(0);
+    expect(stdout).toContain("features/alpha/SPEC.md");
+    expect(stdout).toContain("ALPHA-2");
+    expect(stdout).toContain("66.7%");
+    expect(stdout).toContain("features/alpha/alpha.ts:5:11  StringLiteral");
+    expect(stdout).toContain("oracle strength 75.0% (3/4)");
+    expect(stdout).toContain("line coverage 80.0%");
+    expect(stdout).toContain("1 surviving mutant");
+  });
+
+  it("marks an unclaimed criterion rather than scoring it zero", () => {
+    const { stdout } = run("strength", STRENGTH, ...REPORTS);
+    expect(stdout).toContain("unclaimed — no test carries these tokens");
+    expect(stdout).toContain("unknown claims");
+  });
+
+  it("writes no ANSI escapes when stdout is not a terminal", () => {
+    const { stdout } = run("strength", STRENGTH, ...REPORTS);
+    expect(stdout).not.toContain("\x1b[");
+  });
+
+  it("exits 2 when the mutation report is missing", () => {
+    const { status, stderr } = run("strength", STRENGTH);
     expect(status).toBe(2);
-    expect(stderr).toContain("not implemented");
+    expect(stderr).toContain("report not found");
+  });
+
+  it("exits 2 when an option is missing its value", () => {
+    const { status, stderr } = run("strength", STRENGTH, "--mutation");
+    expect(status).toBe(2);
+    expect(stderr).toContain("--mutation needs a file path");
+  });
+
+  it("exits 2 on an unknown option", () => {
+    expect(run("strength", STRENGTH, "--nope").status).toBe(2);
   });
 });

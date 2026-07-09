@@ -1,0 +1,18 @@
+{
+  "schemaVersion": "1.0",
+  "config": { "coverageAnalysis": "all" },
+  "files": {
+    "features/alpha/alpha.ts": {
+      "mutants": [
+        {
+          "id": "1",
+          "mutatorName": "EqualityOperator",
+          "replacement": "a >= b",
+          "status": "Killed",
+          "location": { "start": { "line": 3, "column": 7 } }
+        }
+      ]
+    }
+  },
+  "testFiles": {}
+}

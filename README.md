@@ -87,9 +87,9 @@ Early — freshly restarted from [`speccle-legacy`](https://github.com/matthewal
 with a redesigned convention. Build order:
 
 1. ~~Scaffold + docs (this)~~
-2. `oracle lint`
-3. `implement-feature` skill
-4. Oracle-strength heatmap
+2. ~~`oracle lint`~~
+3. ~~`implement-feature` skill~~
+4. ~~Oracle-strength heatmap~~
 5. `strengthen` skill
 
 Deferred beyond v1: `carve-feature` (retrofit existing code into a slice) and `gate`

@@ -24,13 +24,16 @@ pnpm --filter speccle-oracle typecheck
 pnpm --filter speccle-oracle build
 pnpm lint                                # eslint, repo-wide
 pnpm format:check                        # prettier, repo-wide
-node packages/oracle/src/cli.ts lint targets/checkout   # run the linter from source
+node packages/oracle/src/cli.ts lint targets/checkout       # run the linter from source
+node packages/oracle/src/cli.ts strength targets/checkout   # needs the reports below
 ```
 
 The toy target installs separately — it is not a workspace package:
 
 ```sh
 cd targets/checkout && pnpm install --ignore-workspace && pnpm test
+pnpm coverage    # → coverage/coverage-summary.json   (gitignored)
+pnpm mutation    # → reports/mutation/mutation.json   (gitignored)
 ```
 
 Node ≥ 24 runs TypeScript directly — no build step needed to run the CLI from source.
@@ -41,6 +44,9 @@ Node ≥ 24 runs TypeScript directly — no build step needed to run the CLI fro
   output, and they **never call an LLM**.
 - `packages/oracle/test/fixtures/dirty/` — specs that deliberately violate the
   convention; they are lint regression fixtures. Never "fix" them.
+- `packages/oracle/test/fixtures/strength/` — a spec plus a hand-written mutation report
+  and coverage summary, pinning the join's arithmetic. The toy target's own reports are
+  gitignored, so the `strength` e2e runs against this instead.
 - `packages/plugin` — the Claude Code plugin (the skills), one `skills/<name>/SKILL.md`
   each. Skills hold the judgement and shell out to the oracle for the deterministic parts.
 - `targets/checkout` — toy target proving the tooling: it **must** follow

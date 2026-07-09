@@ -1,0 +1,8 @@
+{
+  "total": {
+    "lines": { "total": 10, "covered": 8, "skipped": 0, "pct": 80 }
+  },
+  "features/alpha/alpha.ts": {
+    "lines": { "total": 10, "covered": 8, "skipped": 0, "pct": 80 }
+  }
+}

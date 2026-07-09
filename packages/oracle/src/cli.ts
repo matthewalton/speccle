@@ -1,22 +1,24 @@
 #!/usr/bin/env node
 import { lint } from "./lint.ts";
-import { renderHuman } from "./render.ts";
+import { renderHuman, renderStrength } from "./render.ts";
+import { DEFAULT_COVERAGE_SUMMARY, DEFAULT_MUTATION_REPORT, strength } from "./strength.ts";
 
 const USAGE = `Usage: speccle-oracle <command> [options]
 
 Commands:
-  lint [path] [--json]   Lint every SPEC.md under path (default: current directory)
-  strength               Oracle-strength heatmap (not implemented yet)
+  lint [path] [--json]       Lint every SPEC.md under path (default: current directory)
+  strength [path] [--json]   Oracle-strength heatmap: per-criterion killed ÷ covered
+
+strength options:
+  --mutation <file>   Stryker JSON report   (default: ${DEFAULT_MUTATION_REPORT})
+  --coverage <file>   Istanbul json-summary (default: ${DEFAULT_COVERAGE_SUMMARY})
 
 Exit codes: 0 clean, 1 violations, 2 usage error`;
 
 async function main(argv: string[]): Promise<number> {
   const [command, ...rest] = argv;
   if (command === "lint") return runLint(rest);
-  if (command === "strength") {
-    console.error("speccle-oracle strength is not implemented yet.");
-    return 2;
-  }
+  if (command === "strength") return runStrength(rest);
   console.error(USAGE);
   return 2;
 }
@@ -40,11 +42,58 @@ async function runLint(args: string[]): Promise<number> {
   try {
     report = await lint(positional[0] ?? ".");
   } catch (err) {
-    console.error(err instanceof Error ? err.message : String(err));
+    console.error(message(err));
     return 2;
   }
   console.log(json ? JSON.stringify(report, null, 2) : renderHuman(report));
   return report.clean ? 0 : 1;
+}
+
+async function runStrength(args: string[]): Promise<number> {
+  let json = false;
+  let mutationReport: string | undefined;
+  let coverageSummary: string | undefined;
+  const positional: string[] = [];
+
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i]!;
+    if (arg === "--json") json = true;
+    else if (arg === "--mutation" || arg === "--coverage") {
+      const value = args[++i];
+      if (value === undefined) {
+        console.error(`${arg} needs a file path\n\n${USAGE}`);
+        return 2;
+      }
+      if (arg === "--mutation") mutationReport = value;
+      else coverageSummary = value;
+    } else if (arg.startsWith("-")) {
+      console.error(`Unknown option: ${arg}\n\n${USAGE}`);
+      return 2;
+    } else positional.push(arg);
+  }
+  if (positional.length > 1) {
+    console.error(`strength takes at most one path\n\n${USAGE}`);
+    return 2;
+  }
+
+  let report;
+  try {
+    report = await strength(positional[0] ?? ".", {
+      ...(mutationReport !== undefined && { mutationReport }),
+      ...(coverageSummary !== undefined && { coverageSummary }),
+    });
+  } catch (err) {
+    console.error(message(err));
+    return 2;
+  }
+
+  const color = process.stdout.isTTY && process.env.NO_COLOR === undefined;
+  console.log(json ? JSON.stringify(report, null, 2) : renderStrength(report, color));
+  return 0;
+}
+
+function message(err: unknown): string {
+  return err instanceof Error ? err.message : String(err);
 }
 
 process.exitCode = await main(process.argv.slice(2));
