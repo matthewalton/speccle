@@ -8,8 +8,10 @@ Skills, in build order
 ([ADR-0001](../../docs/adr/0001-plugin-first-tools-serve-skills.md)):
 
 1. [`implement-feature`](skills/implement-feature/SKILL.md) — any spec input → drafted
-   `SPEC.md` + `CONTEXT.md` → lint → ratify pause → tagged tests + implementation,
-   green. **Landed.**
+   `SPEC.md` + `CONTEXT.md` → lint → ratify pause → tagged tests + implementation, one
+   criterion at a time, tracer criterion first
+   ([ADR-0013](../../docs/adr/0013-implement-feature-traces-one-criterion-end-to-end-first.md)).
+   **Landed.**
 2. [`strengthen`](skills/strengthen/SKILL.md) — mutation + coverage → per-criterion
    oracle-strength heatmap → route each surviving mutant (machine path / human path /
    equivalent mutant), never the score

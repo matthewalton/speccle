@@ -101,9 +101,43 @@ ownership of the criteria lives; it is the reason the skill exists in this order
 Skip the pause only when the input was already a conventioned `SPEC.md` that you adopted
 unchanged. Drafting anything means pausing.
 
-## 5. Implement the slice
+## 5. Implement the slice, one criterion at a time
 
-Tests first, then the code that makes them pass.
+Tests first, then the code that makes them pass — and **never more than one criterion at
+a time**. Your instinct will be to build a layer at a time: every criterion's parsing,
+then every criterion's calculation, then every criterion's persistence. Resist it. A
+feature built that way does not execute until the last layer lands, and by then the
+mistake is expensive ([ADR-0013](https://github.com/matthewalton/speccle/blob/main/docs/adr/0013-implement-feature-traces-one-criterion-end-to-end-first.md)).
+
+### Fire the tracer criterion first
+
+Pick the criterion whose passing test exercises the thinnest complete path through every
+layer the feature touches — entry to exit, nothing stubbed. Choose it for **path length,
+not importance**: the plainest success case, the one carrying the least logic. An edge
+case or a rejection is never the tracer; it short-circuits the very layers it was meant to
+prove. `[CHECKOUT-1] Tax rounds half-up per line item` traces the path;
+`[CHECKOUT-3] Checkout rejects a basket of more than 100 line items` throws before
+reaching it.
+
+Make it green. Then say so: name the criterion, and name the layers its test now runs
+through. Do not stop for approval — the green test _is_ the feedback. The ratify pause is
+this skill's only hard stop.
+
+When a feature has one layer — a pure function, a formatter — there is no path to trace.
+The first criterion is the tracer, nothing special happens, and you should not dress it up
+as though something did.
+
+### Then thicken
+
+Take the remaining criteria in document order, one at a time, each written against a
+skeleton that already runs. The suite is green at every criterion boundary — if it is not,
+finish that criterion before starting the next.
+
+If a criterion cannot be made green without dragging two others in with it, stop and look
+at the spec. That is a compound criterion that lint let through, and finding it now is
+worth more than the detour costs.
+
+### Tagging tests
 
 A test claims a criterion when the `[KEY-n]` token appears in its **full concatenated
 name** — enclosing `describe` titles count. One `describe('[CHECKOUT-1] tax rounding', …)`
