@@ -41,10 +41,10 @@ The full format is a written contract: [`docs/convention.md`](docs/convention.md
 
 ## The skills
 
-| Skill               | What it does                                                                                                                                                                                                                                                                                                                                                                      |
-| ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `implement-feature` | Takes a spec in any form — prose, a ticket, a file — drafts the conventioned `SPEC.md` + `CONTEXT.md`, lints them, then **pauses for you to ratify the criteria** before writing a single test or line of code. Done = spec lints clean, every criterion has at least one tagged test, all tests green.                                                                           |
-| `strengthen`        | Runs mutation testing + coverage and renders the per-criterion heatmap — `oracle strength = killed mutants ÷ covered mutants`. Coverage says the code ran; oracle strength says the tests would _notice_. Each weak criterion is routed: **machine path** (a test gap — write the killing test) or **human path** (a vague spec — propose a sharper criterion for you to ratify). |
+| Skill               | What it does                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `implement-feature` | Takes a spec in any form — prose, a ticket, a file — drafts the conventioned `SPEC.md` + `CONTEXT.md`, lints them, then **pauses for you to ratify the criteria** before writing a single test or line of code. Done = spec lints clean, every criterion has at least one tagged test, all tests green.                                                                                                                                             |
+| `strengthen`        | Runs mutation testing + coverage and renders the per-criterion heatmap — `oracle strength = killed mutants ÷ covered mutants`. Coverage says the code ran; oracle strength says the tests would _notice_. Then every **surviving mutant** is routed: **machine path** (the criterion promises it — write the killing test) or **human path** (no criterion promises it — propose a sharper one for you to ratify). Never a test fitted to a mutant. |
 
 ## Install
 
@@ -90,7 +90,7 @@ with a redesigned convention. Build order:
 2. ~~`oracle lint`~~
 3. ~~`implement-feature` skill~~
 4. ~~Oracle-strength heatmap~~
-5. `strengthen` skill
+5. ~~`strengthen` skill~~
 
 Deferred beyond v1: `carve-feature` (retrofit existing code into a slice) and `gate`
 (judge a diff before merge). v1 targets TypeScript projects using vitest, StrykerJS

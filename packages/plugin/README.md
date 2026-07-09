@@ -10,8 +10,11 @@ Skills, in build order
 1. [`implement-feature`](skills/implement-feature/SKILL.md) — any spec input → drafted
    `SPEC.md` + `CONTEXT.md` → lint → ratify pause → tagged tests + implementation,
    green. **Landed.**
-2. `strengthen` — mutation + coverage → per-criterion oracle-strength heatmap → route
-   weak criteria (machine path / human path). Waiting on the heatmap.
+2. [`strengthen`](skills/strengthen/SKILL.md) — mutation + coverage → per-criterion
+   oracle-strength heatmap → route each surviving mutant (machine path / human path /
+   equivalent mutant), never the score
+   ([ADR-0012](../../docs/adr/0012-strengthen-routes-on-the-survivor-not-the-score.md)).
+   **Landed.**
 
 The skills shell out to `speccle-oracle` for everything deterministic — trust comes from
 the tools, judgement from the skills. Speccle is used from a clone, so that binary comes
