@@ -1,0 +1,10 @@
+{
+  "name": "speccle-oracle",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Speccle's deterministic tooling: spec lint and the oracle-strength heatmap. Never calls an LLM.",
+  "license": "MIT",
+  "engines": {
+    "node": ">=24"
+  }
+}

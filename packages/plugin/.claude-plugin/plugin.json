@@ -1,0 +1,19 @@
+{
+  "name": "speccle",
+  "description": "Build features as vertical slices — colocated specs, context, and tests — measured by oracle strength.",
+  "version": "0.1.0",
+  "author": {
+    "name": "Matt Alton",
+    "email": "mattalton97@gmail.com"
+  },
+  "homepage": "https://github.com/matthewalton/speccle",
+  "repository": "https://github.com/matthewalton/speccle",
+  "license": "MIT",
+  "keywords": [
+    "spec",
+    "testing",
+    "mutation-testing",
+    "vertical-slices",
+    "oracle-strength"
+  ]
+}
