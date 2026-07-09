@@ -9,6 +9,8 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
+    "sync:plugin-refs": "node scripts/sync-plugin-references.mjs",
+    "check:plugin-refs": "node scripts/sync-plugin-references.mjs --check",
     "prepare": "husky"
   },
   "lint-staged": {

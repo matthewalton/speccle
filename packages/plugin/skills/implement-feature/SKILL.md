@@ -8,9 +8,14 @@ description: Build a feature as a vertical slice — draft its SPEC.md and CONTE
 Turn a feature description — in whatever form it arrives — into a vertical slice: a
 folder holding `SPEC.md`, `CONTEXT.md`, and the tagged tests and code that satisfy them.
 
-The shape of that folder is fixed by [the convention](https://github.com/matthewalton/speccle/blob/main/docs/convention.md).
-The words for talking about it are fixed by [CONTEXT.md](https://github.com/matthewalton/speccle/blob/main/CONTEXT.md) — say
-"criterion id", not "tag"; "lint violation", not "error". Read both before drafting.
+The shape of that folder is fixed by the convention, bundled beside this skill at
+`references/convention.md`. Read it before drafting — it is the written contract, and
+this skill only restates the parts drafts get wrong.
+
+Speccle's words are fixed too, and they are mandatory: "criterion id", not "tag";
+"statement", not "title"; "body", not "notes"; "lint violation", not "error" or
+"warning"; "ratify pause", not "approval gate". The canonical glossary is
+[CONTEXT.md](https://github.com/matthewalton/speccle/blob/main/CONTEXT.md).
 
 **This skill does not measure oracle strength.** A slice can finish here well-specified
 and weakly defended; closing that gap is `strengthen`'s job, on its own cadence

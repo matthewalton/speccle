@@ -10,12 +10,11 @@ purpose ([ADR-0006](https://github.com/matthewalton/speccle/blob/main/docs/adr/0
 this skill closes the gap.
 
 Measure oracle strength per criterion, then act on every **surviving mutant** — the exact
-code change no test noticed. The routing call is the whole job, and
-[ADR-0012](https://github.com/matthewalton/speccle/blob/main/docs/adr/0012-strengthen-routes-on-the-survivor-not-the-score.md)
-fixes how to make it. Read it before routing anything.
+code change no test noticed. The routing call is the whole job; §4 is how to make it.
 
-The words are fixed by [CONTEXT.md](https://github.com/matthewalton/speccle/blob/main/CONTEXT.md) — say "oracle strength", not
-"mutation score"; "surviving mutant", not "missed mutation".
+Speccle's words are mandatory: "oracle strength", not "mutation score"; "surviving
+mutant", not "missed mutation"; "test-fitting", not "gaming the score". The canonical
+glossary is [CONTEXT.md](https://github.com/matthewalton/speccle/blob/main/CONTEXT.md).
 
 ## 1. Resolve the oracle
 
@@ -93,8 +92,11 @@ Three fields are not routing work, and are worth saying out loud before you star
 
 ## 4. Route every surviving mutant
 
-Never route a criterion, and never route a percentage. Route each survivor, and ask one
-question of it:
+Never route a criterion, and never route a percentage — a criterion under 100% always has
+at least one survivor to act on, and one at 100% has none, so the number carries nothing
+the survivor list does not
+([ADR-0012](https://github.com/matthewalton/speccle/blob/main/docs/adr/0012-strengthen-routes-on-the-survivor-not-the-score.md)).
+Route each survivor, and ask one question of it:
 
 > Can I write an assertion that **follows from the criterion's statement**, and that fails
 > against this mutant?

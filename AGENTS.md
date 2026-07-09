@@ -49,6 +49,12 @@ Node ≥ 24 runs TypeScript directly — no build step needed to run the CLI fro
   gitignored, so the `strength` e2e runs against this instead.
 - `packages/plugin` — the Claude Code plugin (the skills), one `skills/<name>/SKILL.md`
   each. Skills hold the judgement and shell out to the oracle for the deterministic parts.
+  A skill may only _order_ the agent to read a doc that is bundled beside it under
+  `skills/<name>/references/`; anything reachable only over the network is a citation,
+  never an instruction. Those reference files are **generated** — edit the source under
+  `docs/` and run `pnpm sync:plugin-refs`; `pnpm check:plugin-refs` guards them in
+  pre-commit. Links out of `packages/plugin` must be absolute `github.com` URLs: an
+  installed plugin caches only that directory, so `../../` escapes it.
 - `targets/checkout` — toy target proving the tooling: it **must** follow
   [docs/convention.md](docs/convention.md), lint clean, and keep every criterion claimed
   by a tagged test. It is a regression fixture, not example code to freely restyle. Not
