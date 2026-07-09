@@ -74,4 +74,5 @@ pnpm install
 ```
 
 Project terminology lives in [`CONTEXT.md`](CONTEXT.md); design decisions in
-[`docs/adr`](docs/adr).
+[`docs/adr`](docs/adr). Agent instructions are in [`AGENTS.md`](AGENTS.md); commit
+format in [`.github/CONTRIBUTING.md`](.github/CONTRIBUTING.md).
