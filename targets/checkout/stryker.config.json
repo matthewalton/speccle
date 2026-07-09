@@ -1,0 +1,10 @@
+{
+  "$schema": "./node_modules/@stryker-mutator/core/schema/stryker-schema.json",
+  "packageManager": "pnpm",
+  "testRunner": "vitest",
+  "plugins": ["@stryker-mutator/vitest-runner"],
+  "coverageAnalysis": "perTest",
+  "reporters": ["json", "progress"],
+  "jsonReporter": { "fileName": "reports/mutation/mutation.json" },
+  "mutate": ["features/**/*.ts", "!features/**/*.test.ts"]
+}
