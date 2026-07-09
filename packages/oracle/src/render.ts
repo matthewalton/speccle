@@ -1,5 +1,5 @@
 import type { LintReport } from "./lint.ts";
-import type { CriterionStrength, StrengthReport, Survivor } from "./strength.ts";
+import type { CriterionStrength, MutantSite, StrengthReport } from "./strength.ts";
 
 export function renderHuman(report: LintReport): string {
   if (report.files.length === 0) return "No SPEC.md files found.";
@@ -51,8 +51,7 @@ export function renderStrength(report: StrengthReport, color = false): string {
     out.push(bold(feature.spec, color));
     for (const criterion of feature.criteria) {
       out.push(renderCriterion(criterion, idWidth, tint, dim));
-      for (const survivor of criterion.survivors)
-        out.push(`      ${renderSurvivor(survivor, dim)}`);
+      for (const survivor of criterion.survivors) out.push(`      ${renderSite(survivor, dim)}`);
     }
     out.push(`  ${dim(`line coverage ${percent(feature.lineCoverage)}`)}`);
     out.push("");
@@ -68,6 +67,13 @@ export function renderStrength(report: StrengthReport, color = false): string {
     for (const id of report.unknownClaims) out.push(`  ${id}`);
     out.push("");
   }
+  if (report.unclaimedMutants.length > 0) {
+    out.push(
+      `${tint(0, "unclaimed mutants")} ${dim("— scored mutants no criterion's tests cover")}`,
+    );
+    for (const site of report.unclaimedMutants) out.push(`  ${renderSite(site, dim)}`);
+    out.push("");
+  }
 
   const survivors = report.covered - report.killed;
   out.push(
@@ -80,9 +86,6 @@ export function renderStrength(report: StrengthReport, color = false): string {
       ? dim("no surviving mutants")
       : `${plural(survivors, "surviving mutant")}${dim(" — each one a change no test noticed")}`,
   );
-  if (report.unclaimedMutants > 0) {
-    out.push(dim(`${report.unclaimedMutants} scored mutants no criterion covers`));
-  }
   return out.join("\n");
 }
 
@@ -104,10 +107,10 @@ function renderCriterion(
   );
 }
 
-function renderSurvivor(survivor: Survivor, dim: (text: string) => string): string {
-  const at = `${survivor.file}:${survivor.line}:${survivor.column}`;
-  const change = survivor.replacement === undefined ? "" : ` → ${collapse(survivor.replacement)}`;
-  return dim(`${at}  ${survivor.mutator}${change}`);
+function renderSite(site: MutantSite, dim: (text: string) => string): string {
+  const at = `${site.file}:${site.line}:${site.column}`;
+  const change = site.replacement === undefined ? "" : ` → ${collapse(site.replacement)}`;
+  return dim(`${at}  ${site.mutator}${change}`);
 }
 
 /** Mutant replacements can be whole statements; the heatmap shows one line of them. */

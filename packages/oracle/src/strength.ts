@@ -11,8 +11,8 @@ export const DEFAULT_COVERAGE_SUMMARY = "coverage/coverage-summary.json";
 /** A `[KEY-n]` token anywhere in a test's full concatenated name (ADR-0004). */
 const CLAIM_TOKEN = /\[([A-Z][A-Z0-9]{1,9}-[1-9][0-9]*)\]/g;
 
-/** The exact code change no test noticed. */
-export interface Survivor {
+/** The exact edit one mutant made — where it lives and what it changed. */
+export interface MutantSite {
   file: string;
   line: number;
   column: number;
@@ -32,7 +32,8 @@ export interface CriterionStrength extends Score {
   statement: string;
   /** False when no test name carries this criterion's token. */
   claimed: boolean;
-  survivors: Survivor[];
+  /** The scored mutants this criterion's tests covered but did not kill. */
+  survivors: MutantSite[];
 }
 
 export interface FeatureStrength extends Score {
@@ -53,7 +54,7 @@ export interface StrengthReport extends Score {
   /** Tokens claimed by tests that match no criterion in any spec. */
   unknownClaims: string[];
   /** Scored mutants no claiming test covers: code the criteria do not reach. */
-  unclaimedMutants: number;
+  unclaimedMutants: MutantSite[];
 }
 
 export interface StrengthOptions {
@@ -102,11 +103,11 @@ export async function strength(
     for (const claim of claims) claimedIds.add(claim);
   }
 
-  const tally = new Map<string, { covered: number; killed: number; survivors: Survivor[] }>();
+  const tally = new Map<string, { covered: number; killed: number; survivors: MutantSite[] }>();
   const featureTally = new Map<string, { covered: number; killed: number }>();
   let covered = 0;
   let killed = 0;
-  let unclaimedMutants = 0;
+  const unclaimedMutants: MutantSite[] = [];
 
   for (const mutant of report.mutants) {
     if (!isScored(mutant.status)) continue;
@@ -118,7 +119,7 @@ export async function strength(
       }
     }
     if (claims.size === 0) {
-      unclaimedMutants++;
+      unclaimedMutants.push(toSite(mutant));
       continue;
     }
 
@@ -131,7 +132,7 @@ export async function strength(
       const entry = tally.get(id) ?? { covered: 0, killed: 0, survivors: [] };
       entry.covered++;
       if (kill) entry.killed++;
-      else entry.survivors.push(toSurvivor(mutant));
+      else entry.survivors.push(toSite(mutant));
       tally.set(id, entry);
     }
 
@@ -186,11 +187,11 @@ export async function strength(
     features,
     unclaimed,
     unknownClaims,
-    unclaimedMutants,
+    unclaimedMutants: unclaimedMutants.sort(bySourcePosition),
   };
 }
 
-function toSurvivor(mutant: Mutant): Survivor {
+function toSite(mutant: Mutant): MutantSite {
   return {
     file: mutant.file,
     line: mutant.line,
@@ -201,7 +202,7 @@ function toSurvivor(mutant: Mutant): Survivor {
 }
 
 /** Stryker does not order mutants stably across runs; a Speccle tool's output must be. */
-function bySourcePosition(a: Survivor, b: Survivor): number {
+function bySourcePosition(a: MutantSite, b: MutantSite): number {
   return a.file.localeCompare(b.file) || a.line - b.line || a.column - b.column;
 }
 

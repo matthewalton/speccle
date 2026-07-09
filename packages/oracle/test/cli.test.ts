@@ -91,6 +91,7 @@ describe("speccle-oracle strength (e2e)", () => {
     expect(report.strength).toBe(0.6);
     expect(report.lineCoverage).toBe(0.8);
     expect(report.unclaimed).toEqual(["ALPHA-3"]);
+    expect(report.unclaimedMutants.map((m) => `${m.line}:${m.column}`)).toEqual(["11:3", "12:3"]);
     expect(report.features.flatMap((f) => f.criteria.map((c) => c.id))).toEqual([
       "ALPHA-1",
       "ALPHA-2",
@@ -114,6 +115,13 @@ describe("speccle-oracle strength (e2e)", () => {
     const { stdout } = run("strength", STRENGTH, ...REPORTS);
     expect(stdout).toContain("unclaimed — no test carries these tokens");
     expect(stdout).toContain("unknown claims");
+  });
+
+  it("names the unclaimed mutants, not just a count of them", () => {
+    const { stdout } = run("strength", STRENGTH, ...REPORTS);
+    expect(stdout).toContain("unclaimed mutants — scored mutants no criterion's tests cover");
+    expect(stdout).toContain("features/alpha/alpha.ts:11:3  BooleanLiteral → false");
+    expect(stdout).toContain("features/alpha/alpha.ts:12:3  ArrayDeclaration → []");
   });
 
   it("writes no ANSI escapes when stdout is not a terminal", () => {

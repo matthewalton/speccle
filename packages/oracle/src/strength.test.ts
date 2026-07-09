@@ -68,9 +68,24 @@ describe("oracle strength", () => {
     expect(report.strength).toBe(0.6);
   });
 
-  it("counts scored mutants that no criterion covers", () => {
-    // Mutant 7 is covered by a test claiming nothing; mutant 8 by one claiming BETA-9.
-    expect(report.unclaimedMutants).toBe(2);
+  it("names each scored mutant that no criterion covers, killed or not", () => {
+    // Mutant 7 (killed) is covered by a test claiming nothing; mutant 8 by one claiming BETA-9.
+    expect(report.unclaimedMutants).toEqual([
+      {
+        file: "features/alpha/alpha.ts",
+        line: 11,
+        column: 3,
+        mutator: "BooleanLiteral",
+        replacement: "false",
+      },
+      {
+        file: "features/alpha/alpha.ts",
+        line: 12,
+        column: 3,
+        mutator: "ArrayDeclaration",
+        replacement: "[]",
+      },
+    ]);
   });
 
   it("surfaces tokens that claim a criterion no spec declares", () => {

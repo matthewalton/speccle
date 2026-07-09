@@ -87,8 +87,10 @@ Three fields are not routing work, and are worth saying out loud before you star
   `implement-feature`'s phase 5, not a survivor to route.
 - **`unknownClaims`** — a test claims an id no spec declares. Someone renamed or deleted a
   criterion. Fix the test name or restore the criterion.
-- **`unclaimedMutants`** — code the criteria do not reach at all. Not a weak criterion; a
-  hint that the spec is silent about a whole region of the code.
+- **`unclaimedMutants`** — code the criteria do not reach at all, each entry naming its
+  `file`, `line`, `column`, `mutator`, `replacement`. Not weak criteria; a map of the
+  regions the spec is silent about. Do not route these as survivors — name the region to
+  the human and let them decide whether a feature owes a spec there.
 
 ## 4. Route every surviving mutant
 
