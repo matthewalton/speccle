@@ -71,10 +71,20 @@ oracle strength precisely so the gap between them is visible. Coverage is not st
 _Avoid_: using "coverage" alone to mean strength.
 
 **Machine path / human path**:
-The two exits from a weak criterion in `strengthen`. **Machine path**: a surviving
-mutant is a test gap — write the killing test and re-run. **Human path**: a persistently
-weak criterion is a _spec_ problem — draft a sharper criterion and a human ratifies it.
+The exits `strengthen` routes a surviving mutant down — never a criterion, and never a
+score. **Machine path**: the criterion's statement already promises the behaviour the
+mutant breaks, so it is a test gap — write the killing test and re-run. **Human path**:
+no criterion promises it, so it is a _spec_ problem — draft a sharper criterion and a
+human ratifies it. A third exit, the **equivalent mutant**, is a mutant no test could
+ever detect; it is annotated in the source, and it is rare
+([ADR-0012](docs/adr/0012-strengthen-routes-on-the-survivor-not-the-score.md)).
 _Avoid_: auto-fix / manual, fast path / slow path.
+
+**Test-fitting**:
+Writing an assertion that pins a surviving mutant's exact behaviour when no criterion
+promises it — killing the mutant while defending nothing. The failure mode `strengthen`'s
+routing exists to prevent.
+_Avoid_: gaming the score, overfitting (unqualified).
 
 **Speccle tool**:
 A component that is deterministic, independently runnable, emits typed JSON, and
