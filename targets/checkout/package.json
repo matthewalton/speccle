@@ -2,5 +2,14 @@
   "name": "checkout-toy",
   "version": "0.0.0",
   "private": true,
-  "description": "Toy target project proving Speccle's tooling (ADR-0009). Not part of the workspace."
+  "type": "module",
+  "description": "Toy target project proving Speccle's tooling (ADR-0009). Not part of the workspace.",
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.10"
+  }
 }
