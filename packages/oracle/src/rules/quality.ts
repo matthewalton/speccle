@@ -6,7 +6,9 @@ export function qualityRules(specs: ParsedSpec[]): Violation[] {
   const out: Violation[] = [];
   for (const spec of specs) {
     for (const c of spec.criteria) {
-      if (!c.wellFormed || c.statement === "") continue;
+      if (!c.wellFormed) continue;
+      // Stryker disable next-line all: an empty statement yields no quality violation; the skip only saves work
+      if (c.statement === "") continue;
       out.push(...weaselWording(spec, c), ...compoundCriterion(spec, c), ...unmeasurable(spec, c));
     }
   }
@@ -84,7 +86,8 @@ const COMPOUND_SIGNALS: readonly {
     regex: /\b(and also|as well as)\b/i,
     message: (m) => `"${m[1]!.toLowerCase()}" joins independent clauses`,
   },
-  { regex: /[.!?]\s+/, message: () => "a second sentence starts mid-statement" },
+  // \s, not \s+: .test() treats them identically and \s+ leaves an unkillable mutant
+  { regex: /[.!?]\s/, message: () => "a second sentence starts mid-statement" },
 ];
 
 const ABBREVIATIONS = /\b(e\.g\.|i\.e\.|vs\.|etc\.)/gi;
@@ -125,6 +128,7 @@ function compoundCriterion(spec: ParsedSpec, c: WellFormedCriterion): Violation[
  *  qualify one outcome and are not counted. */
 function secondBareConjunction(target: string): string | null {
   const mainClause = target.split(SUBORDINATOR)[0] ?? "";
+  // Stryker disable next-line ArrayDeclaration: the fallback is read only for its length, and a planted element still leaves it under two
   const conjunctions = mainClause.match(BARE_CONJUNCTION) ?? [];
   return conjunctions.length >= 2 ? conjunctions[1]!.toLowerCase() : null;
 }

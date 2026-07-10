@@ -59,9 +59,21 @@ Node ≥ 24 runs TypeScript directly — no build step needed to run the CLI fro
   [docs/convention.md](docs/convention.md), lint clean, and keep every criterion claimed
   by a tagged test. It is a regression fixture, not example code to freely restyle. Not
   part of the pnpm workspace.
-- Speccle's own source does **not** follow the Speccle convention
-  ([ADR-0009](docs/adr/0009-speccle-does-not-dogfood-its-own-convention.md)): don't add
-  `SPEC.md`, criterion ids, or tagged tests to `packages/`.
+- `packages/oracle/src/rules/` is the one **governed slice** of Speccle's own source
+  ([ADR-0015](docs/adr/0015-dogfooding-starts-with-one-pilot-slice.md)): its `SPEC.md`
+  (key `LINT`) must lint clean and every criterion stays claimed at 100% oracle
+  strength. Run the oracle against `packages/oracle/src` — never the package root, which
+  would sweep the dirty fixtures:
+
+  ```sh
+  node packages/oracle/src/cli.ts lint packages/oracle/src
+  pnpm --filter speccle-oracle coverage && pnpm --filter speccle-oracle mutation
+  node packages/oracle/src/cli.ts strength packages/oracle/src \
+    --mutation ../reports/mutation/mutation.json --coverage ../coverage/coverage-summary.json
+  ```
+
+  The rest of Speccle's source stays off the convention: don't add `SPEC.md`, criterion
+  ids, or tagged tests anywhere else under `packages/`.
 
 ## Style
 

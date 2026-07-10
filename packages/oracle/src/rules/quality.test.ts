@@ -12,7 +12,7 @@ function rules(statement: string): string[] {
   return lintStatement(statement).map((v) => v.rule);
 }
 
-describe("weasel-wording", () => {
+describe("[LINT-7] weasel-wording", () => {
   it('flags "should"', () => {
     expect(rules("Checkout should return zero")).toContain("weasel-wording");
   });
@@ -36,12 +36,16 @@ describe("weasel-wording", () => {
     expect(rules("Parser rejects the `should` keyword")).toEqual([]);
   });
 
+  it("a stripped code span still separates words", () => {
+    expect(rules("Export runs`fast`easily")).toEqual(["weasel-wording"]);
+  });
+
   it("does not flag a clean statement", () => {
     expect(rules("Total returns zero for an empty basket")).toEqual([]);
   });
 });
 
-describe("compound-criterion", () => {
+describe("[LINT-8] compound-criterion", () => {
   it("flags a semicolon", () => {
     expect(rules("Login returns a token; logout clears it")).toEqual(["compound-criterion"]);
   });
@@ -97,6 +101,14 @@ describe("compound-criterion", () => {
     expect(rules("Parser rejects reserved names e.g. admin accounts")).toEqual([]);
   });
 
+  it("flags a comma-conjunction across extra whitespace", () => {
+    expect(rules("Login returns a token,  and logout clears it")).toEqual(["compound-criterion"]);
+  });
+
+  it("a stripped abbreviation still separates words", () => {
+    expect(rules("Login returns a token,e.g.and logout clears it")).toEqual(["compound-criterion"]);
+  });
+
   it("reports one violation naming the first signal only", () => {
     const violations = lintStatement("Login returns a token; logout clears it. Always").filter(
       (v) => v.rule === "compound-criterion",
@@ -106,7 +118,7 @@ describe("compound-criterion", () => {
   });
 });
 
-describe("unmeasurable", () => {
+describe("[LINT-9] unmeasurable", () => {
   it("flags a statement naming a property rather than an outcome", () => {
     expect(rules("The dashboard is beautiful")).toEqual(["unmeasurable"]);
   });
@@ -133,8 +145,16 @@ describe("unmeasurable", () => {
     expect(rules("The audit trail is never truncated")).toEqual([]);
   });
 
+  it("accepts a comparator that is the trailing word", () => {
+    expect(rules("The remaining balance is zero")).toEqual([]);
+  });
+
   it("accepts a quantity", () => {
     expect(rules("Tax rounds half-up to 2dp per line item")).toEqual([]);
+  });
+
+  it("accepts a quantity ahead of a trailing adjective", () => {
+    expect(rules("The p99 latency is low")).toEqual([]);
   });
 
   it("accepts a copula followed by a literal", () => {
@@ -143,6 +163,22 @@ describe("unmeasurable", () => {
 
   it("accepts a copula naming a state, not a property", () => {
     expect(rules("The order is cancelled")).toEqual([]);
+  });
+
+  it("matches a property across extra whitespace", () => {
+    expect(rules("The dashboard is  beautiful")).toEqual(["unmeasurable"]);
+  });
+
+  it("matches a negated property", () => {
+    expect(rules("The dashboard is not  beautiful")).toEqual(["unmeasurable"]);
+  });
+
+  it("judges only a trailing copula, not one mid-statement", () => {
+    expect(rules("The dashboard is beautiful to customers")).toEqual([]);
+  });
+
+  it("a trailing code span does not hide a property", () => {
+    expect(rules("The dashboard is beautiful `honestly`")).toEqual(["unmeasurable"]);
   });
 
   it("judges the main clause, not a condition", () => {
@@ -156,7 +192,7 @@ describe("unmeasurable", () => {
   });
 });
 
-describe("the body is never linted", () => {
+describe("[LINT-10] the body is never linted", () => {
   it("ignores weasel words, compounds, and vagueness in criterion bodies", () => {
     const content = [
       "---",

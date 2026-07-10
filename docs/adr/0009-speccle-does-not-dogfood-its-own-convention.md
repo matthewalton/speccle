@@ -1,6 +1,7 @@
 # 0009 — Speccle does not dogfood its own convention
 
-- Status: accepted
+- Status: superseded by
+  [ADR-0015](0015-dogfooding-starts-with-one-pilot-slice.md)
 - Date: 2026-07-09
 
 ## Context

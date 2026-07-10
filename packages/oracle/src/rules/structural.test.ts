@@ -9,7 +9,7 @@ function lintOne(content: string): Violation[] {
 
 const CLEAN = "---\nkey: ALPHA\n---\n\n## [ALPHA-1] Total returns zero\n";
 
-describe("missing-key", () => {
+describe("[LINT-1] missing-key", () => {
   it("flags an absent frontmatter key at line 1", () => {
     expect(lintOne("# Title\n")).toEqual([
       expect.objectContaining({ rule: "missing-key", line: 1 }),
@@ -27,7 +27,7 @@ describe("missing-key", () => {
   });
 });
 
-describe("key-collision", () => {
+describe("[LINT-2] key-collision", () => {
   it("flags every spec declaring the same key, naming the others", () => {
     const a = parseSpec("---\nkey: ALPHA\n---\n", "a/SPEC.md");
     const b = parseSpec("---\nkey: ALPHA\n---\n", "b/SPEC.md");
@@ -47,7 +47,7 @@ describe("key-collision", () => {
   });
 });
 
-describe("key-mismatch", () => {
+describe("[LINT-3] key-mismatch", () => {
   it("flags a criterion whose key differs from the declared key", () => {
     const violations = lintOne("---\nkey: ALPHA\n---\n\n## [BETA-1] Total returns zero\n");
     expect(violations).toEqual([expect.objectContaining({ rule: "key-mismatch", line: 5 })]);
@@ -59,7 +59,7 @@ describe("key-mismatch", () => {
   });
 });
 
-describe("malformed-id", () => {
+describe("[LINT-4] malformed-id", () => {
   it("flags an H2 without a token", () => {
     const violations = lintOne("---\nkey: ALPHA\n---\n\n## Some section\n");
     expect(violations).toEqual([expect.objectContaining({ rule: "malformed-id", line: 5 })]);
@@ -71,7 +71,7 @@ describe("malformed-id", () => {
   });
 });
 
-describe("duplicate-id", () => {
+describe("[LINT-5] duplicate-id", () => {
   it("flags the second and later occurrences, pointing at the first", () => {
     const violations = lintOne(
       "---\nkey: ALPHA\n---\n\n## [ALPHA-1] Total returns zero\n\n## [ALPHA-1] Discount returns zero\n",
@@ -88,7 +88,7 @@ describe("duplicate-id", () => {
   });
 });
 
-describe("empty-statement", () => {
+describe("[LINT-6] empty-statement", () => {
   it("flags a token with no statement", () => {
     const violations = lintOne("---\nkey: ALPHA\n---\n\n## [ALPHA-1]\n");
     expect(violations).toEqual([expect.objectContaining({ rule: "empty-statement", line: 5 })]);
