@@ -92,6 +92,8 @@ describe("speccle-oracle strength (e2e)", () => {
     expect(report.lineCoverage).toBe(0.8);
     expect(report.unclaimed).toEqual(["ALPHA-3"]);
     expect(report.unclaimedMutants.map((m) => `${m.line}:${m.column}`)).toEqual(["11:3", "12:3"]);
+    expect(report.staticMutants.killed).toBe(1);
+    expect(report.staticMutants.survivors.map((m) => m.mutator)).toEqual(["Regex"]);
     expect(report.features.flatMap((f) => f.criteria.map((c) => c.id))).toEqual([
       "ALPHA-1",
       "ALPHA-2",
@@ -108,7 +110,7 @@ describe("speccle-oracle strength (e2e)", () => {
     expect(stdout).toContain("features/alpha/alpha.ts:5:11  StringLiteral");
     expect(stdout).toContain("oracle strength 60.0% (3/5)");
     expect(stdout).toContain("line coverage 80.0%");
-    expect(stdout).toContain("2 surviving mutants");
+    expect(stdout).toContain("3 surviving mutants");
   });
 
   it("marks an unclaimed criterion rather than scoring it zero", () => {
@@ -122,6 +124,13 @@ describe("speccle-oracle strength (e2e)", () => {
     expect(stdout).toContain("unclaimed mutants — scored mutants no criterion's tests cover");
     expect(stdout).toContain("features/alpha/alpha.ts:11:3  BooleanLiteral → false");
     expect(stdout).toContain("features/alpha/alpha.ts:12:3  ArrayDeclaration → []");
+  });
+
+  it("summarises static mutants apart from the unclaimed ones, naming only survivors", () => {
+    const { stdout } = run("strength", STRENGTH, ...REPORTS);
+    expect(stdout).toContain("static mutants — run at module load, attributable to no criterion");
+    expect(stdout).toContain("1 killed, 1 survived");
+    expect(stdout).toContain("features/alpha/alpha.ts:2:14  Regex → /^$/");
   });
 
   it("writes no ANSI escapes when stdout is not a terminal", () => {

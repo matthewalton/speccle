@@ -74,8 +74,19 @@ export function renderStrength(report: StrengthReport, color = false): string {
     for (const site of report.unclaimedMutants) out.push(`  ${renderSite(site, dim)}`);
     out.push("");
   }
+  const staticSurvived = report.staticMutants.survivors.length;
+  const staticTotal = report.staticMutants.killed + staticSurvived;
+  if (staticTotal > 0) {
+    out.push(
+      `${tint(staticSurvived === 0 ? 1 : 0, "static mutants")} ` +
+        dim("— run at module load, attributable to no criterion"),
+    );
+    out.push(`  ${report.staticMutants.killed} killed, ${staticSurvived} survived`);
+    for (const site of report.staticMutants.survivors) out.push(`  ${renderSite(site, dim)}`);
+    out.push("");
+  }
 
-  const survivors = report.covered - report.killed;
+  const survivors = report.covered - report.killed + staticSurvived;
   out.push(
     `oracle strength ${tint(report.strength, percent(report.strength))} ` +
       `${dim(`(${report.killed}/${report.covered})`)}   ` +

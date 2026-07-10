@@ -76,11 +76,12 @@ features/checkout/SPEC.md
 ```
 
 Use `--json` for the routing work: `{ root, strength, lineCoverage, features[], unclaimed,
-unknownClaims, unclaimedMutants }`, each criterion carrying `survivors[]` with `file`,
-`line`, `column`, `mutator`, `replacement`. `strength` is a report, not a gate: it exits
-`0` with survivors present, `2` on a bad or missing report. Never scrape the human output.
+unknownClaims, unclaimedMutants, staticMutants }`, each criterion carrying `survivors[]`
+with `file`, `line`, `column`, `mutator`, `replacement`. `strength` is a report, not a
+gate: it exits `0` with survivors present, `2` on a bad or missing report. Never scrape
+the human output.
 
-Three fields are not routing work, and are worth saying out loud before you start:
+Four fields are not routing work, and are worth saying out loud before you start:
 
 - **`unclaimed`** — a criterion no test's name carries. It scores nothing rather than
   zero. It needs a test written against it before it can be weak; that is
@@ -91,6 +92,10 @@ Three fields are not routing work, and are worth saying out loud before you star
   `file`, `line`, `column`, `mutator`, `replacement`. Not weak criteria; a map of the
   regions the spec is silent about. Do not route these as survivors — name the region to
   the human and let them decide whether a feature owes a spec there.
+- **`staticMutants`** — mutants that run at module load (word lists, regex literals), so
+  per-test coverage can attribute them to no criterion: `{ killed, survivors[] }`. The
+  killed ones are fine — some test noticed. A survivor is a real gap, but it can never be
+  claimed by a criterion id; name it to the human alongside the unclaimed mutants.
 
 ## 4. Route every surviving mutant
 

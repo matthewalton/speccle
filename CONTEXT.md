@@ -65,6 +65,12 @@ oracle strength below 100% means at least one survivor, and each one names the e
 edit — file, line, mutator, replacement — that went undetected.
 _Avoid_: escaped mutant, missed mutation, failure.
 
+**Static mutant**:
+A mutant that runs at module load (a word list, a regex literal), so per-test coverage
+cannot attribute it to any test and no criterion can claim it. `strength` reports these
+apart — killed as a count, survivors by site — never as unclaimed mutants.
+_Avoid_: uncovered mutant, module-level mutant.
+
 **Line coverage**:
 The naïve baseline — the percentage of lines executed by the tests, shown alongside
 oracle strength precisely so the gap between them is visible. Coverage is not strength.

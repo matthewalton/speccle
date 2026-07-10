@@ -88,6 +88,25 @@ describe("oracle strength", () => {
     ]);
   });
 
+  it("reports static mutants apart, keeping them out of unclaimedMutants and the totals", () => {
+    // Mutants 9 (killed) and 10 (survived) are static; neither reaches any other bucket.
+    expect(report.staticMutants.killed).toBe(1);
+    expect(report.unclaimedMutants.map((s) => s.line)).toEqual([11, 12]);
+    expect(report.covered).toBe(5);
+  });
+
+  it("names each surviving static mutant, counting the killed ones", () => {
+    expect(report.staticMutants.survivors).toEqual([
+      {
+        file: "features/alpha/alpha.ts",
+        line: 2,
+        column: 14,
+        mutator: "Regex",
+        replacement: "/^$/",
+      },
+    ]);
+  });
+
   it("surfaces tokens that claim a criterion no spec declares", () => {
     expect(report.unknownClaims).toEqual(["BETA-9"]);
   });

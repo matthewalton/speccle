@@ -44,6 +44,12 @@ export interface FeatureStrength extends Score {
   criteria: CriterionStrength[];
 }
 
+/** Scored static mutants: they run at module load, so no criterion can claim them. */
+export interface StaticMutants {
+  killed: number;
+  survivors: MutantSite[];
+}
+
 /** The JSON contract of `speccle-oracle strength --json`. */
 export interface StrengthReport extends Score {
   root: string;
@@ -53,8 +59,9 @@ export interface StrengthReport extends Score {
   unclaimed: string[];
   /** Tokens claimed by tests that match no criterion in any spec. */
   unknownClaims: string[];
-  /** Scored mutants no claiming test covers: code the criteria do not reach. */
+  /** Scored non-static mutants no claiming test covers: code the criteria do not reach. */
   unclaimedMutants: MutantSite[];
+  staticMutants: StaticMutants;
 }
 
 export interface StrengthOptions {
@@ -108,9 +115,17 @@ export async function strength(
   let covered = 0;
   let killed = 0;
   const unclaimedMutants: MutantSite[] = [];
+  let staticKilled = 0;
+  const staticSurvivors: MutantSite[] = [];
 
   for (const mutant of report.mutants) {
     if (!isScored(mutant.status)) continue;
+
+    if (mutant.static) {
+      if (isKill(mutant.status)) staticKilled++;
+      else staticSurvivors.push(toSite(mutant));
+      continue;
+    }
 
     const claims = new Set<string>();
     for (const testId of mutant.coveredBy) {
@@ -188,6 +203,7 @@ export async function strength(
     unclaimed,
     unknownClaims,
     unclaimedMutants: unclaimedMutants.sort(bySourcePosition),
+    staticMutants: { killed: staticKilled, survivors: staticSurvivors.sort(bySourcePosition) },
   };
 }
 

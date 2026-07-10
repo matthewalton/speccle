@@ -32,6 +32,8 @@ export interface Mutant {
   mutator: string;
   replacement: string | undefined;
   status: MutantStatus;
+  /** Runs at module load, so per-test coverage cannot attribute it to any test. */
+  static: boolean;
   /** Test ids, into `MutationReport.testNames`. */
   coveredBy: readonly string[];
 }
@@ -87,6 +89,7 @@ export function parseMutationReport(json: unknown, source: string): MutationRepo
         mutator: typeof raw.mutatorName === "string" ? raw.mutatorName : "unknown",
         replacement: typeof replacement === "string" ? replacement : undefined,
         status,
+        static: raw.static === true,
         coveredBy: stringArray(raw.coveredBy),
       });
     }

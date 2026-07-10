@@ -23,7 +23,9 @@ describe("parseMutationReport", () => {
             ],
           },
           "src/b.ts": {
-            mutants: [{ id: "2", status: "Survived", location: { start: { line: 1 } } }],
+            mutants: [
+              { id: "2", status: "Survived", static: true, location: { start: { line: 1 } } },
+            ],
           },
         },
       },
@@ -39,6 +41,7 @@ describe("parseMutationReport", () => {
         mutator: "EqualityOperator",
         replacement: ">=",
         status: "Killed",
+        static: false,
         coveredBy: ["t1"],
       },
       {
@@ -49,6 +52,7 @@ describe("parseMutationReport", () => {
         mutator: "unknown",
         replacement: undefined,
         status: "Survived",
+        static: true,
         coveredBy: [],
       },
     ]);
