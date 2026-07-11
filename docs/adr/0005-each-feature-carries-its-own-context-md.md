@@ -1,6 +1,8 @@
 # 0005 — Each feature carries its own CONTEXT.md
 
-- Status: accepted
+- Status: accepted, amended by
+  [ADR-0021](0021-feature-decisions-are-adrs-context-md-is-glossary-only.md) —
+  decisions moved out of `CONTEXT.md` into the feature's `decisions/` folder
 - Date: 2026-07-09
 
 ## Context

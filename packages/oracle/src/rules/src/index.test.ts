@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseSpec } from "../spec.ts";
+import { parseSpec } from "../../spec.ts";
 import { runRules } from "./index.ts";
 
 describe("[LINT-11] violations are ordered by file, line, rule, message", () => {

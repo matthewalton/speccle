@@ -5,9 +5,9 @@ description: Bring existing, ungoverned code under the convention without changi
 
 # carve-feature
 
-Take a region of code that already works and make it a governed feature folder:
-`SPEC.md` and `CONTEXT.md` derived from its observed behaviour, and every criterion
-claimed by a tagged test. The code's behaviour does not change — a carve is a change of
+Take a region of code that already works and make it a governed feature folder: the
+markdown contract — `SPEC.md`, `CONTEXT.md`, `AGENTS.md`, `decisions/` — derived from
+its observed behaviour, and every criterion claimed by a tagged test. The code's behaviour does not change — a carve is a change of
 governance, not of code
 ([ADR-0017](https://github.com/matthewalton/speccle/blob/main/docs/adr/0017-carve-feature-specs-observed-behaviour-and-changes-no-code.md)).
 
@@ -30,15 +30,22 @@ part of handing back.
 
 ## 1. Pick the carve boundary
 
-A feature is a directory subtree. The boundary is the directory that owns the code
-being carved; `SPEC.md` and `CONTEXT.md` land at its root.
+The boundary is the directory that owns the code being carved; the markdown contract
+lands at its root. A carve never moves or edits source files, so the boundary must
+already have the convention's shape — where it does not, the fix is a **pre-carve
+refactor** the user does before carving, under whatever safety net they trust. Stop
+and show them exactly what is wrong; do not do it for them.
 
+- **The boundary is named for the feature.** An unnamed catch-all (`src/`, `lib/`) is
+  never a feature folder, even when it holds the project's only feature — renaming it
+  is the pre-carve refactor case, not a valid boundary
+  ([ADR-0019](https://github.com/matthewalton/speccle/blob/main/docs/adr/0019-a-feature-folder-is-named-and-has-a-fixed-shape.md)).
+- **Source must already sit in the boundary's `src/`.** Source loose at the boundary
+  root, or smeared across the tree, is the same case: show the user which files live
+  where and what the shape should be.
 - **Tests may live outside it** — a parallel `test/` tree is normal in existing
-  projects. They move into the subtree in phase 6.
-- **Source must already be inside it.** If the feature's source is smeared across the
-  tree, stop and show the user which files live where: colocating source is a refactor
-  they do before carving, under whatever safety net they trust. A carve never moves or
-  edits source files.
+  projects. Tests are the one thing a carve does move: they land in `src/` beside the
+  code in phase 6.
 
 Settle the feature key as `implement-feature` does: `[A-Z][A-Z0-9]{1,9}`, unique across
 the repo — read the frontmatter of every other `SPEC.md` before guessing.
@@ -67,17 +74,25 @@ code either. Record it as a finding: what the code does, why it looks unintended
 where. Findings are announced in phase 5 and ruled on by the human at the spec summary,
 not by you.
 
-## 3. Draft SPEC.md and CONTEXT.md
+## 3. Draft the markdown contract
 
 Follow the convention exactly — the drafting pitfalls `implement-feature` restates
 (one clause per statement, ids are names not order, the body is free) all apply
-unchanged. Two files is the floor, even for a small carve.
+unchanged. `SPEC.md`, `CONTEXT.md`, and `AGENTS.md` are the floor, even for a small
+carve; `decisions/` appears with the first cross-criterion choice the code turns out
+to embody.
 
 The carve-specific part is `CONTEXT.md`: adopt the language the code already uses.
 The terms are the names in the source, and the _Avoid_ lines retire the synonyms the
 codebase mixes — a carve is often the first time anyone writes down which of three
 interchangeable names is canonical
 ([ADR-0005](https://github.com/matthewalton/speccle/blob/main/docs/adr/0005-each-feature-carries-its-own-context-md.md)).
+It is a glossary only: a choice the code embodies that spans criteria (a keying
+strategy, a rounding policy) is an ADR in `decisions/`, recording what the code does
+and whatever "why" survives
+([ADR-0021](https://github.com/matthewalton/speccle/blob/main/docs/adr/0021-feature-decisions-are-adrs-context-md-is-glossary-only.md)).
+In `AGENTS.md`, state how to work the slice — run its tests, find the contract — and
+nothing about behaviour.
 
 ## 4. Lint until clean
 
@@ -122,7 +137,8 @@ change request: amend, re-lint, announce again.
 ## 6. Claim every criterion, changing nothing
 
 The carve's whole discipline in one check: when this phase ends, the diff shows test
-files, `SPEC.md`, and `CONTEXT.md` — **nothing else**.
+files and the markdown contract — `SPEC.md`, `CONTEXT.md`, `AGENTS.md`, `decisions/` —
+**nothing else**.
 
 - **Tag the existing tests.** A test claims a criterion when the `[KEY-n]` token
   appears in its full concatenated name — renaming the enclosing `describe` is the
@@ -130,9 +146,9 @@ files, `SPEC.md`, and `CONTEXT.md` — **nothing else**.
   Tag only tests that assert the criterion's behaviour, not every test that happens to
   execute the code. Tests that map to no criterion stay as they are — untagged is
   honest; do not delete or reword them.
-- **Move outside tests into the subtree.** Colocation is the convention's point. Fix
-  the moved files' own imports and confirm the runner still finds them — an include
-  pattern that no longer matches loses tests silently.
+- **Move outside tests into `src/`, beside the code they defend.** Colocation is the
+  convention's point. Fix the moved files' own imports and confirm the runner still
+  finds them — an include pattern that no longer matches loses tests silently.
 - **Write tests for unclaimed criteria**, tagged the same way. They run against code
   that already works, so they pass on first run. **A new test that fails is a
   discovery, not a draft to iterate on**: either you misread the code — fix the
@@ -149,13 +165,14 @@ Claim criteria in document order, suite green at every criterion boundary.
 
 Done means all five, verified rather than assumed:
 
-1. The feature folder holds `SPEC.md` and `CONTEXT.md`.
+1. The feature folder is named for the feature and holds the markdown contract —
+   `SPEC.md`, `CONTEXT.md`, `AGENTS.md` — with all code and tests in `src/`.
 2. `<oracle> lint <feature-folder>` exits `0`.
 3. Every criterion id appears in at least one full test name — run the suite with a
    JSON reporter and check each id against the concatenated names.
 4. The **whole project's** suite is green, not just the carved folder's — moved test
    files are exactly the change that breaks a sibling.
-5. The diff touches test files, `SPEC.md`, and `CONTEXT.md` only. Check `git status`
+5. The diff touches test files and the markdown contract only. Check `git status`
    and `git diff` rather than asserting it — this is the invariant the carve exists to
    keep, and it is the first thing to say when handing back.
 

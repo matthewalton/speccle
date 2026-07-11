@@ -1,5 +1,5 @@
-import type { ParsedSpec } from "../spec.ts";
-import { RULE_IDS, type Violation } from "../violation.ts";
+import type { ParsedSpec } from "../../spec.ts";
+import { RULE_IDS, type Violation } from "../../violation.ts";
 import { structuralRules } from "./structural.ts";
 import { qualityRules } from "./quality.ts";
 

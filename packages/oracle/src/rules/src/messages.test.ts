@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { parseSpec } from "../spec.ts";
+import { parseSpec } from "../../spec.ts";
 import { runRules } from "./index.ts";
-import type { RuleId, Violation } from "../violation.ts";
+import type { RuleId, Violation } from "../../violation.ts";
 
 function lint(content: string): Violation[] {
   return runRules([parseSpec(content, "SPEC.md")]);

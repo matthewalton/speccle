@@ -9,14 +9,34 @@ defined in [`CONTEXT.md`](https://github.com/matthewalton/speccle/blob/main/CONT
 
 ## The feature folder
 
-A feature is a directory subtree owning one vertical slice. At its root sit exactly:
+A feature is a directory **named for the feature**, owning one vertical slice. The name
+announces the slice — `scanner/`, never an unnamed catch-all like `src/` or `lib/` —
+and holds even when a project has only one feature: the slice is self-announcing, and a
+second feature has an obvious home beside it.
 
-- `SPEC.md` — the acceptance criteria
-- `CONTEXT.md` — the feature's language and cross-criterion decisions
-- the code and tests that satisfy them (in whatever layout the project prefers)
+Every feature folder has the same shape:
+
+```
+scanner/
+├── SPEC.md          ← the acceptance criteria
+├── CONTEXT.md       ← the feature's language (a glossary, nothing else)
+├── AGENTS.md        ← how an agent works the slice
+├── decisions/       ← the feature's ADRs, one file per decision
+│   └── 0001-<slug>.md
+└── src/
+    ├── scanner.ts
+    └── scanner.test.ts
+```
+
+The root holds the markdown contract and nothing else. All code and tests sit in
+`src/`, tests beside the code they defend. The subfolder is always named `src` —
+uniformity is the point: every feature folder in every project has an identical shape,
+so nothing about a particular slice needs explaining. `decisions/` appears with the
+feature's first decision; the other four entries are the floor, even for a tiny
+feature.
 
 Everything about the feature lives inside the subtree. An agent landing in the folder
-needs nothing else to understand it.
+needs nothing else to understand it — and `AGENTS.md` is where it starts reading.
 
 ## SPEC.md
 
@@ -57,14 +77,33 @@ Rules:
 
 ## CONTEXT.md (per feature)
 
-Glossary + decisions, in the style of this repo's own root `CONTEXT.md`:
+The feature's glossary, in the style of this repo's own root `CONTEXT.md`: the domain
+language — each term defined once, with an _Avoid_ line naming the synonyms not to use.
 
-- **Terms**: the feature's domain language — each term defined once, with an _Avoid_
-  line naming the synonyms not to use.
-- **Decisions**: choices that span criteria (mini-ADR entries: what was decided and why).
+A glossary only. Decisions never live here — they are ADRs in `decisions/`
+([ADR-0021](https://github.com/matthewalton/speccle/blob/main/docs/adr/0021-feature-decisions-are-adrs-context-md-is-glossary-only.md)). The
+boundary: about a word → `CONTEXT.md`; about one behaviour → that criterion's body in
+`SPEC.md`; a choice spanning criteria → `decisions/`.
 
-The boundary with `SPEC.md`: about a word or a cross-cutting choice → `CONTEXT.md`;
-about one behaviour → that criterion's body.
+## AGENTS.md (per feature)
+
+The slice's agent-facing entry point, following the cross-tool convention of the same
+name. It orients in one screenful, stating only what the folder cannot show:
+
+- what the slice does — a sentence or two
+- how to run its tests (and any other commands the slice needs)
+- where the contract lives: `SPEC.md` for the criteria, `CONTEXT.md` for the language,
+  `decisions/` for the choices — and that tests claim criteria by `[KEY-n]` token
+
+Facts about _working_ the slice belong here; facts about the feature's _behaviour_
+belong in `SPEC.md`. Duplicating either in the other is drift waiting to happen.
+
+## decisions/ (per feature)
+
+The feature's architecture decision records: choices that span criteria, one numbered
+file per decision — `decisions/0001-<slug>.md`, in the same form as any ADR (status,
+context, decision, consequences). The folder appears with the first decision. A choice
+about one behaviour is not a decision record — it is that criterion's body.
 
 ## Test linking
 

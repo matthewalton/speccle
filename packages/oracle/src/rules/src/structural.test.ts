@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { parseSpec } from "../spec.ts";
+import { parseSpec } from "../../spec.ts";
 import { structuralRules } from "./structural.ts";
-import type { Violation } from "../violation.ts";
+import type { Violation } from "../../violation.ts";
 
 function lintOne(content: string): Violation[] {
   return structuralRules([parseSpec(content, "SPEC.md")]);

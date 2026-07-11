@@ -6,7 +6,9 @@ description: Build a feature as a vertical slice — draft its SPEC.md and CONTE
 # implement-feature
 
 Turn a feature description — in whatever form it arrives — into a vertical slice: a
-folder holding `SPEC.md`, `CONTEXT.md`, and the tagged tests and code that satisfy them.
+folder named for the feature, holding the markdown contract at its root — `SPEC.md`,
+`CONTEXT.md`, `AGENTS.md`, `decisions/` — and the tagged tests and code that satisfy
+it in `src/`.
 
 The shape of that folder is fixed by the convention, bundled beside this skill at
 `references/convention.md`. Read it before drafting — it is the written contract, and
@@ -29,7 +31,9 @@ the convention. Never send the user away to reformat something first.
 Settle two things before drafting, asking only if you cannot infer them:
 
 - **Where the feature folder goes.** Match the project's existing layout. If other
-  feature folders exist, sit beside them.
+  feature folders exist, sit beside them. The folder is **named for the feature** —
+  never an unnamed catch-all like `src/` or `lib/` — even when it is the project's
+  first.
 - **The feature key.** `[A-Z][A-Z0-9]{1,9}`, unique across the repo. Check for
   collisions by reading the frontmatter of every other `SPEC.md` — `oracle lint` will
   catch a clash, but guessing again after a lint failure wastes a cycle.
@@ -37,10 +41,11 @@ Settle two things before drafting, asking only if you cannot infer them:
 If the input is already a conventioned `SPEC.md`, adopt it as-is. Do not "improve" the
 criteria; the human already owns them.
 
-## 2. Draft SPEC.md and CONTEXT.md
+## 2. Draft the markdown contract
 
-Follow the convention exactly. The parts worth restating because they are where drafts
-go wrong:
+Follow the convention exactly: `SPEC.md`, `CONTEXT.md`, and `AGENTS.md` at the feature
+root, `decisions/` when the first cross-criterion choice lands, code and tests in
+`src/`. The parts worth restating because they are where drafts go wrong:
 
 - **A statement is one testable clause.** If you cannot picture the single assertion
   that fails when it breaks, it is not one criterion. "Tax rounds half-up and the basket
@@ -52,12 +57,18 @@ go wrong:
   line items of £1.99 at 20% → £1.20 tax; taxing the £5.97 basket total would give
   £1.19" beats "3 × £1.99 → £1.20", which silently depends on whether that is one line
   item or three.
-- **The `CONTEXT.md` boundary.** About a word, or a choice spanning criteria →
-  `CONTEXT.md`. About one behaviour → that criterion's body. Every term gets an _Avoid_
-  line naming the synonyms the feature will not use
+- **The routing rule.** About a word → `CONTEXT.md`, a glossary only — every term gets
+  an _Avoid_ line naming the synonyms the feature will not use
   ([ADR-0005](https://github.com/matthewalton/speccle/blob/main/docs/adr/0005-each-feature-carries-its-own-context-md.md)).
+  About one behaviour → that criterion's body. A choice spanning criteria → an ADR in
+  `decisions/`
+  ([ADR-0021](https://github.com/matthewalton/speccle/blob/main/docs/adr/0021-feature-decisions-are-adrs-context-md-is-glossary-only.md)).
+- **`AGENTS.md` states how to work the slice**, not what it does: how to run its tests,
+  and where the contract lives. Behaviour stays in `SPEC.md` — duplicating it here is
+  drift waiting to happen.
 
-Two files per feature is the floor, even for a tiny one.
+`SPEC.md`, `CONTEXT.md`, and `AGENTS.md` are the floor, even for a tiny feature;
+`decisions/` appears with the first decision.
 
 ## 3. Lint until clean
 
@@ -110,6 +121,9 @@ When the input was already a conventioned `SPEC.md` adopted unchanged, there is 
 new to announce; say you adopted it and move on.
 
 ## 5. Implement the slice, one criterion at a time
+
+Everything in this phase lands in the feature's `src/` — tests beside the code they
+defend; the feature root stays pure markdown.
 
 Tests first, then the code that makes them pass — and **never more than one criterion at
 a time**. Your instinct will be to build a layer at a time: every criterion's parsing,
@@ -168,7 +182,8 @@ the naïve implementation would miss them.
 
 Done means all four, verified rather than assumed:
 
-1. The feature folder exists, holding `SPEC.md` and `CONTEXT.md`.
+1. The feature folder is named for the feature and has the convention's shape:
+   `SPEC.md`, `CONTEXT.md`, `AGENTS.md` at the root, code and tests in `src/`.
 2. `<oracle> lint <feature-folder>` exits `0`.
 3. Every criterion id in `SPEC.md` appears in at least one full test name.
 4. The test suite is green.

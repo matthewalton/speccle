@@ -1,4 +1,4 @@
-import type { Basket } from "../basket/basket.ts";
+import type { Basket } from "../../basket/src/basket.ts";
 
 export const MAX_LINE_ITEMS = 100;
 

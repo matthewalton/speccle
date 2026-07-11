@@ -1,5 +1,5 @@
-import type { ParsedSpec, WellFormedCriterion } from "../spec.ts";
-import type { Violation } from "../violation.ts";
+import type { ParsedSpec, WellFormedCriterion } from "../../spec.ts";
+import type { Violation } from "../../violation.ts";
 
 /** Quality rules judge the heading statement only — the body is never linted (ADR-0007). */
 export function qualityRules(specs: ParsedSpec[]): Violation[] {

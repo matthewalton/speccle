@@ -2,7 +2,7 @@ import { readFile, stat } from "node:fs/promises";
 import { basename, dirname, join, resolve } from "node:path";
 import { discoverSpecs } from "./discover.ts";
 import { parseSpec } from "./spec.ts";
-import { runRules } from "./rules/index.ts";
+import { runRules } from "./rules/src/index.ts";
 import type { Violation } from "./violation.ts";
 
 /** The JSON contract of `speccle-oracle lint --json`; files are root-relative and sorted. */

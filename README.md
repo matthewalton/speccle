@@ -26,11 +26,14 @@ unit of work is the feature folder — one directory owning everything a feature
 side by side:
 
 ```
-src/checkout/
-  SPEC.md            ← acceptance criteria, each with a stable [CHECKOUT-n] id
-  CONTEXT.md         ← the feature's language and cross-criterion decisions
-  checkout.ts
-  checkout.test.ts   ← tests claim criteria by carrying the [CHECKOUT-n] token
+checkout/              ← named for the feature, never a catch-all like src/
+  SPEC.md              ← acceptance criteria, each with a stable [CHECKOUT-n] id
+  CONTEXT.md           ← the feature's language — a glossary
+  AGENTS.md            ← how an agent works the slice
+  decisions/           ← the feature's ADRs — choices that span criteria
+  src/
+    checkout.ts
+    checkout.test.ts   ← tests claim criteria by carrying the [CHECKOUT-n] token
 ```
 
 The skills hold the judgement; everything deterministic is delegated to the
@@ -48,7 +51,7 @@ can amend or overrule:
 
 ```mermaid
 flowchart LR
-    A["any input<br/>prose · ticket · existing code"] --> B["draft<br/>SPEC.md + CONTEXT.md"]
+    A["any input<br/>prose · ticket · existing code"] --> B["draft the<br/>markdown contract"]
     B --> C{"oracle<br/>lint"}
     C -->|clean| D["📣 criteria<br/>announced"]
     D --> E["tagged tests<br/>+ green code"]
@@ -92,8 +95,8 @@ format is a written contract: [`docs/convention.md`](docs/convention.md).
 <br>
 
 Takes a spec in any form — prose, a ticket, a file — and drafts the conventioned
-`SPEC.md` + `CONTEXT.md`. Lints them clean, **announces the criteria**, and builds —
-no blocking approval step. The run ends with a **spec summary** of every criterion it
+markdown contract: `SPEC.md`, `CONTEXT.md`, `AGENTS.md`, `decisions/`. Lints the spec
+clean, **announces the criteria**, and builds — no blocking approval step. The run ends with a **spec summary** of every criterion it
 drafted, for you to amend or overrule.
 
 Done means: spec lints clean, every criterion has at least one tagged test, all tests
@@ -123,7 +126,7 @@ nothing.
 <summary><strong><code>carve-feature</code></strong> — govern what already exists</summary>
 <br>
 
-Derives `SPEC.md` + `CONTEXT.md` from what the code **observably does** — anything
+Derives the markdown contract from what the code **observably does** — anything
 that looks like a bug is a finding for you to rule on in the spec summary, never a
 silent fix — then tags the tests that already defend each criterion and writes tests
 for what nothing claims. The code's behaviour is unchanged throughout.
@@ -140,8 +143,8 @@ the entire point:
 checkout/SPEC.md
   CHECKOUT-1  ████████████████████  100.0%      4/4  Tax rounds half-up per line item
   CHECKOUT-2  ██████████░░░░░░░░░░   50.0%      2/4  An empty basket totals zero
-      src/checkout.ts:31:9  ArithmeticOperator → a + b
-      src/checkout.ts:44:2  BooleanLiteral → true
+      checkout/src/checkout.ts:31:9  ArithmeticOperator → a + b
+      checkout/src/checkout.ts:44:2  BooleanLiteral → true
   CHECKOUT-3  ░░░░░░░░░░░░░░░░░░░░  unclaimed      0/0  Discounts apply before tax
 
 oracle strength 75.0% (6/8)   line coverage 92.3%

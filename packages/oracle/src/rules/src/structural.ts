@@ -1,5 +1,5 @@
-import type { ParsedSpec, WellFormedCriterion } from "../spec.ts";
-import type { Violation } from "../violation.ts";
+import type { ParsedSpec, WellFormedCriterion } from "../../spec.ts";
+import type { Violation } from "../../violation.ts";
 
 export function structuralRules(specs: ParsedSpec[]): Violation[] {
   return [

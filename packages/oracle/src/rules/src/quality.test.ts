@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { parseSpec } from "../spec.ts";
+import { parseSpec } from "../../spec.ts";
 import { qualityRules } from "./quality.ts";
-import type { Violation } from "../violation.ts";
+import type { Violation } from "../../violation.ts";
 
 function lintStatement(statement: string): Violation[] {
   const content = `---\nkey: ALPHA\n---\n\n## [ALPHA-1] ${statement}\n`;

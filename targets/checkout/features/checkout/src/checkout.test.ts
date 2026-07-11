@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { Basket, LineItem } from "../basket/basket.ts";
+import type { Basket, LineItem } from "../../basket/src/basket.ts";
 import { checkout, MAX_LINE_ITEMS, TooManyLineItems } from "./checkout.ts";
 
 const line = (sku: string, price: number, quantity = 1): LineItem => ({ sku, price, quantity });

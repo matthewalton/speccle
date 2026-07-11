@@ -8,8 +8,11 @@ It is a glossary only — no implementation detail, no usage.
 ## Language
 
 **Feature**:
-A directory subtree owning one vertical slice: its `SPEC.md`, its `CONTEXT.md`, and the
-code and tests that satisfy them, colocated. The unit acceptance criteria attach to.
+A directory named for the feature, owning one vertical slice: the markdown contract at
+its root — `SPEC.md`, `CONTEXT.md`, `AGENTS.md`, `decisions/` — and the code and tests
+that satisfy it in `src/`
+([ADR-0019](docs/adr/0019-a-feature-folder-is-named-and-has-a-fixed-shape.md)). The
+unit acceptance criteria attach to.
 _Avoid_: module, component (unqualified), epic.
 
 **Acceptance criterion**:
@@ -41,10 +44,23 @@ its key, and an id is never renumbered or reused.
 _Avoid_: tag, label, reference.
 
 **Feature CONTEXT.md**:
-The per-feature file holding the feature's domain language (terms, entities, avoided
-synonyms) and decisions that span criteria. If it's about a word or a cross-cutting
-choice, it lives here; if it's about one behaviour, it lives in that criterion's body.
+The per-feature glossary: the feature's domain language — terms, entities, avoided
+synonyms — and nothing else. About a word → here; about one behaviour → that
+criterion's body; a choice spanning criteria → the feature's `decisions/`.
 _Avoid_: docs, notes, wiki page.
+
+**Feature AGENTS.md**:
+The slice's agent-facing entry point, following the cross-tool convention of that name:
+what the slice does, how to run its tests, where the contract lives
+([ADR-0020](docs/adr/0020-every-feature-carries-an-agents-md.md)). Facts about working
+the slice, never about its behaviour.
+_Avoid_: readme (for this file), runbook.
+
+**Feature decision**:
+A choice spanning a feature's criteria, recorded as a numbered ADR file in the
+feature's `decisions/` folder — same form as the repo's own `docs/adr/`
+([ADR-0021](docs/adr/0021-feature-decisions-are-adrs-context-md-is-glossary-only.md)).
+_Avoid_: mini-ADR, design note, decision bullet.
 
 **Carve**:
 Bringing an existing, ungoverned region of code under the convention: `SPEC.md` and
