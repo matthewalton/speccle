@@ -1,169 +1,103 @@
 ---
 name: implement-feature
-description: Build a feature as a vertical slice — draft its SPEC.md and CONTEXT.md from any input, lint them clean, announce the criteria, then write token-tagged tests and the code that makes them green, ending with a spec summary for the human to review. Use when the user wants to build, implement, or spec a new feature, hands over a ticket or prose description to turn into a slice, or says "speccle this", "implement this feature", "make a slice for this".
+description: Implement an already-specced slice — write token-tagged tests first and the code that makes them green, one criterion at a time, tracer criterion first on a new slice. Use when a linted SPEC.md exists and the user wants it implemented, wants tests and code for drafted criteria, or says "make the slice green", "implement the spec". For a feature that has no spec yet, the whole job — plan, spec, implement, strengthen — is the feature skill.
 ---
 
 # implement-feature
 
-Turn a feature description — in whatever form it arrives — into a vertical slice: a
-folder named for the feature, holding the markdown contract at its root — `SPEC.md`,
-`CONTEXT.md`, `AGENTS.md`, `decisions/` — and the tagged tests and code that satisfy
-it in `src/`.
+Write the tagged tests and the code that satisfy an existing, linted `SPEC.md` — one
+criterion at a time, tests first. Stage 3 of the `feature` pipeline
+([ADR-0022](https://github.com/matthewalton/speccle/blob/main/docs/adr/0022-feature-orchestrates-plan-spec-implement-strengthen.md)),
+and complete on its own when the spec already exists — hand-written to the
+convention, or drafted earlier by `spec-feature`.
 
-The shape of that folder is fixed by the convention, bundled beside this skill at
-`references/convention.md`. Read it before drafting — it is the written contract, and
-this skill only restates the parts drafts get wrong.
+**This skill starts from a spec.** Handed a feature with no conventioned `SPEC.md`,
+say so and point at the `feature` pipeline (or `spec-feature` for the contract alone)
+rather than drafting one here — drafting has its own skill, and an unlinted spec must
+not reach this one. Verify the precondition rather than assuming it:
+`<oracle> lint <feature-folder>` exits `0` (resolve the oracle as every Speccle skill
+does: `speccle-oracle` on `PATH`, else
+`node <speccle-repo>/packages/oracle/src/cli.ts`; if neither resolves, point at the
+README's install steps and stop).
 
-Speccle's words are fixed too, and they are mandatory: "criterion id", not "tag";
-"statement", not "title"; "body", not "notes"; "lint violation", not "error" or
-"warning"; "spec summary", not "approval gate". The canonical glossary is
+The folder shape and test-linking rules are fixed by the convention, bundled beside
+this skill at `references/convention.md`.
+
+Speccle's words are fixed and mandatory: "criterion id", not "tag"; "statement", not
+"title"; "spec summary", not "approval gate". The canonical glossary is
 [CONTEXT.md](https://github.com/matthewalton/speccle/blob/main/CONTEXT.md).
 
-**This skill does not measure oracle strength.** A slice can finish here well-specified
-and weakly defended; closing that gap is `strengthen`'s job, on its own cadence
-([ADR-0006](https://github.com/matthewalton/speccle/blob/main/docs/adr/0006-implement-feature-pauses-for-ratification.md)).
+**This skill does not measure oracle strength.** A slice can finish here
+well-specified and weakly defended; closing that gap is `strengthen`'s job — the
+`feature` pipeline runs it as the next stage, and standalone runs schedule it on
+their own cadence.
 
-## 1. Take the input as it comes
+## 1. Scope the work
 
-Prose, a ticket, a scratch file, a conversation, or a `SPEC.md` someone already wrote to
-the convention. Never send the user away to reformat something first.
+Everything this skill writes lands in the feature's `src/` — tests beside the code
+they defend; the feature root stays pure markdown.
 
-Settle two things before drafting, asking only if you cannot infer them:
+- **New slice** (no code in `src/` yet): every criterion is unimplemented; the tracer
+  rule below applies.
+- **Amended slice** (the spec changed over running code —
+  [ADR-0023](https://github.com/matthewalton/speccle/blob/main/docs/adr/0023-plan-feature-routes-new-amend-or-carve.md)):
+  implement only the criteria no test yet claims, in document order. There is **no
+  tracer** — the slice's path already runs, so there is nothing to prove; the same
+  reason a carve has none
+  ([ADR-0013](https://github.com/matthewalton/speccle/blob/main/docs/adr/0013-implement-feature-traces-one-criterion-end-to-end-first.md)).
+  A retired id takes its tests with it: delete them, and confirm the code they
+  defended is either still promised by a live criterion or removed too.
 
-- **Where the feature folder goes.** Match the project's existing layout. If other
-  feature folders exist, sit beside them. The folder is **named for the feature** —
-  never an unnamed catch-all like `src/` or `lib/` — even when it is the project's
-  first.
-- **The feature key.** `[A-Z][A-Z0-9]{1,9}`, unique across the repo. Check for
-  collisions by reading the frontmatter of every other `SPEC.md` — `oracle lint` will
-  catch a clash, but guessing again after a lint failure wastes a cycle.
+Find the unclaimed criteria mechanically, not by eye: run the suite with a JSON
+reporter (`vitest run --reporter=json`) and check each id in the spec against the
+concatenated test names.
 
-If the input is already a conventioned `SPEC.md`, adopt it as-is. Do not "improve" the
-criteria; the human already owns them.
+## 2. Red-green, one criterion at a time
 
-## 2. Draft the markdown contract
+Tests first, then the code that makes them pass — and **never more than one criterion
+at a time**. Write the criterion's tests, run them, and watch them fail before
+writing any code: a test that has never failed proves nothing. Then make it green,
+then move on. Your instinct will be to build a layer at a time: every criterion's
+parsing, then every criterion's calculation, then every criterion's persistence.
+Resist it. A feature built that way does not execute until the last layer lands, and
+by then the mistake is expensive
+([ADR-0013](https://github.com/matthewalton/speccle/blob/main/docs/adr/0013-implement-feature-traces-one-criterion-end-to-end-first.md)).
 
-Follow the convention exactly: `SPEC.md`, `CONTEXT.md`, and `AGENTS.md` at the feature
-root, `decisions/` when the first cross-criterion choice lands, code and tests in
-`src/`. The parts worth restating because they are where drafts go wrong:
+### Fire the tracer criterion first (new slice only)
 
-- **A statement is one testable clause.** If you cannot picture the single assertion
-  that fails when it breaks, it is not one criterion. "Tax rounds half-up and the basket
-  rejects over 100 items" is two criteria wearing one heading.
-- **Ids are names, not order.** A new criterion takes the next never-used number under
-  its key. Never renumber, never reuse — deleting `[CHECKOUT-2]` retires that number.
-- **The body is free and never linted.** Rationale, edge cases, worked examples. Prefer
-  a worked number over an adjective — and make it one the reader cannot misread: "three
-  line items of £1.99 at 20% → £1.20 tax; taxing the £5.97 basket total would give
-  £1.19" beats "3 × £1.99 → £1.20", which silently depends on whether that is one line
-  item or three.
-- **The routing rule.** About a word → `CONTEXT.md`, a glossary only — every term gets
-  an _Avoid_ line naming the synonyms the feature will not use
-  ([ADR-0005](https://github.com/matthewalton/speccle/blob/main/docs/adr/0005-each-feature-carries-its-own-context-md.md)).
-  About one behaviour → that criterion's body. A choice spanning criteria → an ADR in
-  `decisions/`
-  ([ADR-0021](https://github.com/matthewalton/speccle/blob/main/docs/adr/0021-feature-decisions-are-adrs-context-md-is-glossary-only.md)).
-- **`AGENTS.md` states how to work the slice**, not what it does: how to run its tests,
-  and where the contract lives. Behaviour stays in `SPEC.md` — duplicating it here is
-  drift waiting to happen.
-
-`SPEC.md`, `CONTEXT.md`, and `AGENTS.md` are the floor, even for a tiny feature;
-`decisions/` appears with the first decision.
-
-## 3. Lint until clean
-
-Resolve the oracle once, in this order, and reuse what works:
-
-1. `speccle-oracle` on `PATH` — the normal case; Speccle's install links it there.
-2. Otherwise, from a clone of the speccle repo, run it from source — Node ≥ 24 executes
-   TypeScript directly, so no build is needed:
-   `node <speccle-repo>/packages/oracle/src/cli.ts`.
-
-If neither resolves, point the user at the install steps in Speccle's README and stop.
-Do not hand-check the convention in the oracle's place: a spec that has not been linted
-has not been linted, and claiming otherwise is the one thing this workflow cannot
-survive.
-
-```sh
-<oracle> lint <feature-folder>
-```
-
-Fix and re-run until it reports clean. Exit `0` clean, `1` violations, `2` usage error.
-`--json` gives `{ root, files, violations, clean }` with each violation carrying
-`rule`, `file`, `line`, `message` — parse that rather than scraping the human output.
-
-Quality violations (`weasel-wording`, `compound-criterion`, `unmeasurable`) judge the
-heading statement only. When one fires, rewrite the statement — do not move the offending
-words down into the body to dodge the rule. A `compound-criterion` usually means you owe
-the spec a second criterion, not a shorter sentence.
-
-`unmeasurable` does not police vocabulary — any domain verb passes ("a refund **credits**
-the customer…"). It fires only on a statement that asserts nothing: a vacuous predicate
-("refunds **are handled**") or a bare property ("the dashboard **is beautiful**"). Say
-what is observably true instead; the rule is telling you the criterion has no outcome to
-test, not that it dislikes your wording.
-
-The rules are fixed and unconfigurable, and there is one severity: a spec lints clean or
-it does not ([ADR-0007](https://github.com/matthewalton/speccle/blob/main/docs/adr/0007-lint-rules-are-fixed-heuristics.md)).
-
-## 4. Announce the criteria — and keep going
-
-Show the criteria — ids and statements — and proceed straight into phase 5. Do not ask
-for approval and do not wait: the human owns the criteria, but that ownership is
-exercised in the spec summary at the end (or by interrupting now), not at a blocking
-pre-approval
-([ADR-0018](https://github.com/matthewalton/speccle/blob/main/docs/adr/0018-skills-announce-criteria-and-end-with-a-spec-summary.md)).
-
-If the human does interject — now or at any point — treat "looks good, and also…" as a
-change request: amend the spec, re-lint, announce again.
-
-When the input was already a conventioned `SPEC.md` adopted unchanged, there is nothing
-new to announce; say you adopted it and move on.
-
-## 5. Implement the slice, one criterion at a time
-
-Everything in this phase lands in the feature's `src/` — tests beside the code they
-defend; the feature root stays pure markdown.
-
-Tests first, then the code that makes them pass — and **never more than one criterion at
-a time**. Your instinct will be to build a layer at a time: every criterion's parsing,
-then every criterion's calculation, then every criterion's persistence. Resist it. A
-feature built that way does not execute until the last layer lands, and by then the
-mistake is expensive ([ADR-0013](https://github.com/matthewalton/speccle/blob/main/docs/adr/0013-implement-feature-traces-one-criterion-end-to-end-first.md)).
-
-### Fire the tracer criterion first
-
-Pick the criterion whose passing test exercises the thinnest complete path through every
-layer the feature touches — entry to exit, nothing stubbed. Choose it for **path length,
-not importance**: the plainest success case, the one carrying the least logic. An edge
-case or a rejection is never the tracer; it short-circuits the very layers it was meant to
-prove. `[CHECKOUT-1] Tax rounds half-up per line item` traces the path;
-`[CHECKOUT-3] Checkout rejects a basket of more than 100 line items` throws before
-reaching it.
+Pick the criterion whose passing test exercises the thinnest complete path through
+every layer the feature touches — entry to exit, nothing stubbed. Choose it for
+**path length, not importance**: the plainest success case, the one carrying the
+least logic. An edge case or a rejection is never the tracer; it short-circuits the
+very layers it was meant to prove. `[CHECKOUT-1] Tax rounds half-up per line item`
+traces the path; `[CHECKOUT-3] Checkout rejects a basket of more than 100 line items`
+throws before reaching it.
 
 Make it green. Then say so: name the criterion, and name the layers its test now runs
-through. Do not stop for approval — the green test _is_ the feedback, and this skill has
-no stops.
+through. Do not stop for approval — the green test _is_ the feedback, and this skill
+has no stops.
 
-When a feature has one layer — a pure function, a formatter — there is no path to trace.
-The first criterion is the tracer, nothing special happens, and you should not dress it up
-as though something did.
+When a feature has one layer — a pure function, a formatter — there is no path to
+trace. The first criterion is the tracer, nothing special happens, and you should not
+dress it up as though something did.
 
 ### Then thicken
 
 Take the remaining criteria in document order, one at a time, each written against a
-skeleton that already runs. The suite is green at every criterion boundary — if it is not,
-finish that criterion before starting the next.
+skeleton that already runs. The suite is green at every criterion boundary — if it is
+not, finish that criterion before starting the next.
 
-If a criterion cannot be made green without dragging two others in with it, stop and look
-at the spec. That is a compound criterion that lint let through, and finding it now is
-worth more than the detour costs.
+If a criterion cannot be made green without dragging two others in with it, stop and
+look at the spec. That is a compound criterion that lint let through, and finding it
+now is worth more than the detour costs. Amending the spec mid-implement is
+`spec-feature`'s §2 in miniature: next never-used ids, re-lint, announce the change.
 
 ### Tagging tests
 
 A test claims a criterion when the `[KEY-n]` token appears in its **full concatenated
-name** — enclosing `describe` titles count. One `describe('[CHECKOUT-1] tax rounding', …)`
-claims every test nested inside it, which is the idiom to reach for.
+name** — enclosing `describe` titles count. One
+`describe('[CHECKOUT-1] tax rounding', …)` claims every test nested inside it, which
+is the idiom to reach for.
 
 ```ts
 describe("[CHECKOUT-1] tax rounding", () => {
@@ -175,27 +109,30 @@ describe("[CHECKOUT-1] tax rounding", () => {
 ```
 
 Write tests that would fail if the behaviour broke, not tests that merely execute the
-code. Reach for the criterion body's edge cases — they are there because someone thought
-the naïve implementation would miss them.
+code. Reach for the criterion body's edge cases — they are there because someone
+thought the naïve implementation would miss them.
 
-## 6. Confirm done
+## 3. Confirm done
 
 Done means all four, verified rather than assumed:
 
 1. The feature folder is named for the feature and has the convention's shape:
    `SPEC.md`, `CONTEXT.md`, `AGENTS.md` at the root, code and tests in `src/`.
 2. `<oracle> lint <feature-folder>` exits `0`.
-3. Every criterion id in `SPEC.md` appears in at least one full test name.
-4. The test suite is green.
+3. Every criterion id in `SPEC.md` appears in at least one full test name — re-run
+   the JSON-reporter check from §1; an id nobody claims is an unimplemented
+   criterion, so go back to §2. On an amended slice, also confirm no test still
+   claims a retired id.
+4. The **whole project's** test suite is green, not just the slice's — on an amended
+   slice, the pre-existing tests are exactly the ones a change breaks.
 
-For (3), run the suite with a JSON reporter (`vitest run --reporter=json`) and check each
-id from the spec against the concatenated test names. An id nobody claims is an
-unimplemented criterion — go back to phase 5. Do not report done on a spec with an
-unclaimed criterion.
+Do not report done on a spec with an unclaimed criterion.
 
-Hand back with the **spec summary**: every criterion this run drafted or amended, ids
-and statements. This is where the human rules on the criteria — an overruled one is
-reverted along with its tests.
+Hand back by naming what went green: each criterion implemented this run, id and
+statement. If the spec changed mid-run (a compound criterion found in §2), that is a
+spec change and gets the **spec summary** treatment: list it for the human to rule on
+([ADR-0018](https://github.com/matthewalton/speccle/blob/main/docs/adr/0018-skills-announce-criteria-and-end-with-a-spec-summary.md)).
 
 There is no oracle-strength check here, deliberately. Say so when you hand back: the
-slice is green, and how well it is _defended_ is a question `strengthen` answers.
+slice is green, and how well it is _defended_ is a question `strengthen` answers —
+next stage in the pipeline, or a standalone run.

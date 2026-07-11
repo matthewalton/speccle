@@ -12,7 +12,7 @@
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 ![Node ≥ 24](https://img.shields.io/badge/node-%E2%89%A5%2024-brightgreen)
-![Plugin 0.4.0](https://img.shields.io/badge/plugin-0.4.0-8250df)
+![Plugin 0.5.0](https://img.shields.io/badge/plugin-0.5.0-8250df)
 ![Oracle: deterministic, no LLM](https://img.shields.io/badge/oracle-deterministic%20%C2%B7%20no%20LLM-24292f)
 
 </div>
@@ -84,23 +84,30 @@ format is a written contract: [`docs/convention.md`](docs/convention.md).
 
 ## The skills
 
-| Skill               | One line                                                                                     |
-| ------------------- | -------------------------------------------------------------------------------------------- |
-| `implement-feature` | Any input → linted spec → criteria announced → tagged tests → green code → **spec summary**. |
-| `strengthen`        | Mutation + coverage → per-criterion heatmap → every surviving mutant routed.                 |
-| `carve-feature`     | Existing code brought under the convention — **without changing it**.                        |
+| Skill               | One line                                                                                      |
+| ------------------- | --------------------------------------------------------------------------------------------- |
+| `feature`           | The pipeline: plan → spec → implement → strengthen, ending in one **spec summary**.           |
+| `plan-feature`      | Any input → the route (**new** slice, **amend** its owning slice, or a carve) + folder + key. |
+| `spec-feature`      | Draft or amend the markdown contract → lint clean → criteria announced.                       |
+| `implement-feature` | A linted spec → tagged tests → green code, one criterion at a time.                           |
+| `strengthen`        | Mutation + coverage → per-criterion heatmap → every surviving mutant routed.                  |
+| `carve-feature`     | Existing code brought under the convention — **without changing it**.                         |
 
 <details>
-<summary><strong><code>implement-feature</code></strong> — build a new slice</summary>
+<summary><strong><code>feature</code></strong> — build or change a slice, end to end</summary>
 <br>
 
-Takes a spec in any form — prose, a ticket, a file — and drafts the conventioned
-markdown contract: `SPEC.md`, `CONTEXT.md`, `AGENTS.md`, `decisions/`. Lints the spec
-clean, **announces the criteria**, and builds — no blocking approval step. The run ends with a **spec summary** of every criterion it
-drafted, for you to amend or overrule.
+The orchestrator and the normal entry point. Takes a feature request in any form —
+prose, a ticket, a file — and runs the child skills in order: `plan-feature` routes
+the work (a **new** slice, or an **amendment** to the slice that already owns the
+behaviour — extending it with new criteria or changing existing ones), `spec-feature`
+drafts or amends the contract, `implement-feature` makes it green, and `strengthen`
+measures how well the result is defended. No blocking approval step anywhere; the run
+ends with one **spec summary** of every criterion drafted, amended, or retired, for
+you to amend or overrule.
 
-Done means: spec lints clean, every criterion has at least one tagged test, all tests
-green.
+Each child is also a skill in its own right: hand a hand-written `SPEC.md` straight
+to `implement-feature`, or ask `spec-feature` for a contract with no code yet.
 
 </details>
 

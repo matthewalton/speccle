@@ -62,6 +62,16 @@ feature's `decisions/` folder — same form as the repo's own `docs/adr/`
 ([ADR-0021](docs/adr/0021-feature-decisions-are-adrs-context-md-is-glossary-only.md)).
 _Avoid_: mini-ADR, design note, decision bullet.
 
+**Amend**:
+The route for behaviour that belongs to an existing governed slice: the contract
+changes in place — new criteria take the next never-used numbers (extending the
+slice), existing statements are reworded, a retired behaviour retires its id — and
+the slice's existing vocabulary is adopted, never re-invented
+([ADR-0023](docs/adr/0023-plan-feature-routes-new-amend-or-carve.md)). The sibling
+routes are **new** (no slice owns the behaviour yet) and a **carve** (it already runs
+ungoverned).
+_Avoid_: extend (as a distinct mode), edit, update, modify (for spec changes).
+
 **Carve**:
 Bringing an existing, ungoverned region of code under the convention: `SPEC.md` and
 `CONTEXT.md` derived from its observed behaviour, existing tests tagged with criterion

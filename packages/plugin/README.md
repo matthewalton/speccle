@@ -5,25 +5,32 @@ The Claude Code plugin: the skills. See the
 [docs/convention.md](https://github.com/matthewalton/speccle/blob/main/docs/convention.md)
 for the format the skills implement.
 
-Skills, in build order
-([ADR-0001](https://github.com/matthewalton/speccle/blob/main/docs/adr/0001-plugin-first-tools-serve-skills.md)):
+The entry point is [`feature`](skills/feature/SKILL.md), an orchestrator that runs
+the pipeline **plan → spec → implement → strengthen** by invoking the child skills
+below — each of which is also invocable on its own
+([ADR-0022](https://github.com/matthewalton/speccle/blob/main/docs/adr/0022-feature-orchestrates-plan-spec-implement-strengthen.md)):
 
-1. [`implement-feature`](skills/implement-feature/SKILL.md) — any spec input → drafted
-   markdown contract → lint → criteria announced → tagged tests +
-   implementation, one criterion at a time, tracer criterion first → spec summary
+1. [`plan-feature`](skills/plan-feature/SKILL.md) — any input → explore the repo →
+   route the work (**new** slice / **amend** the slice that owns the behaviour /
+   hand to a **carve**) → announce route, folder, and key
+   ([ADR-0023](https://github.com/matthewalton/speccle/blob/main/docs/adr/0023-plan-feature-routes-new-amend-or-carve.md)).
+2. [`spec-feature`](skills/spec-feature/SKILL.md) — draft (new) or amend (existing)
+   the markdown contract → lint → criteria announced → spec summary when standalone.
+3. [`implement-feature`](skills/implement-feature/SKILL.md) — a linted spec → tagged
+   tests + implementation, red-green, one criterion at a time, tracer criterion first
+   on a new slice
    ([ADR-0013](https://github.com/matthewalton/speccle/blob/main/docs/adr/0013-implement-feature-traces-one-criterion-end-to-end-first.md)).
-   **Landed.**
-2. [`strengthen`](skills/strengthen/SKILL.md) — mutation + coverage → per-criterion
+4. [`strengthen`](skills/strengthen/SKILL.md) — mutation + coverage → per-criterion
    oracle-strength heatmap → route each surviving mutant (machine path / human path /
    equivalent mutant), never the score
    ([ADR-0012](https://github.com/matthewalton/speccle/blob/main/docs/adr/0012-strengthen-routes-on-the-survivor-not-the-score.md)).
-   **Landed.**
-3. [`carve-feature`](skills/carve-feature/SKILL.md) — existing ungoverned code →
-   markdown contract derived from observed behaviour → lint → criteria and
-   findings announced → existing tests tagged, unclaimed criteria tested, behaviour
-   unchanged → spec summary
-   ([ADR-0017](https://github.com/matthewalton/speccle/blob/main/docs/adr/0017-carve-feature-specs-observed-behaviour-and-changes-no-code.md)).
-   **Landed.**
+   The pipeline's built-in review gate, and a standalone skill.
+
+Beside the pipeline: [`carve-feature`](skills/carve-feature/SKILL.md) — existing
+ungoverned code → markdown contract derived from observed behaviour → lint → criteria
+and findings announced → existing tests tagged, unclaimed criteria tested, behaviour
+unchanged → spec summary
+([ADR-0017](https://github.com/matthewalton/speccle/blob/main/docs/adr/0017-carve-feature-specs-observed-behaviour-and-changes-no-code.md)).
 
 A skill that is _ordered to read_ a doc gets that doc bundled beside it, under the
 skill's `references/` — an installed plugin obeys its own instructions offline. Those

@@ -11,10 +11,10 @@ its observed behaviour, and every criterion claimed by a tagged test. The code's
 governance, not of code
 ([ADR-0017](https://github.com/matthewalton/speccle/blob/main/docs/adr/0017-carve-feature-specs-observed-behaviour-and-changes-no-code.md)).
 
-If the user is describing behaviour that does not exist yet, that is
-`implement-feature`, not a carve. A request that mixes the two ("spec this up and fix
-the rounding while you're in there") is a carve followed by governed work — never one
-pass.
+If the user is describing behaviour that does not exist yet, that is the `feature`
+pipeline, not a carve. A request that mixes the two ("spec this up and fix the
+rounding while you're in there") is a carve followed by governed work — never one
+pass ([ADR-0023](https://github.com/matthewalton/speccle/blob/main/docs/adr/0023-plan-feature-routes-new-amend-or-carve.md)).
 
 The shape of the folder is fixed by the convention, bundled beside this skill at
 `references/convention.md`. Read it before deriving anything.
@@ -47,7 +47,7 @@ and show them exactly what is wrong; do not do it for them.
   projects. Tests are the one thing a carve does move: they land in `src/` beside the
   code in phase 6.
 
-Settle the feature key as `implement-feature` does: `[A-Z][A-Z0-9]{1,9}`, unique across
+Settle the feature key as `plan-feature` does: `[A-Z][A-Z0-9]{1,9}`, unique across
 the repo — read the frontmatter of every other `SPEC.md` before guessing.
 
 If a conventioned `SPEC.md` already sits at the root, the criteria are already owned:
@@ -76,7 +76,7 @@ not by you.
 
 ## 3. Draft the markdown contract
 
-Follow the convention exactly — the drafting pitfalls `implement-feature` restates
+Follow the convention exactly — the drafting pitfalls `spec-feature` restates
 (one clause per statement, ids are names not order, the body is free) all apply
 unchanged. `SPEC.md`, `CONTEXT.md`, and `AGENTS.md` are the floor, even for a small
 carve; `decisions/` appears with the first cross-criterion choice the code turns out

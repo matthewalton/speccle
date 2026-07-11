@@ -12,6 +12,14 @@ const TREE_BASE = "https://github.com/matthewalton/speccle/tree/main";
 const REFERENCES = [
   {
     source: "docs/convention.md",
+    dest: "packages/plugin/skills/plan-feature/references/convention.md",
+  },
+  {
+    source: "docs/convention.md",
+    dest: "packages/plugin/skills/spec-feature/references/convention.md",
+  },
+  {
+    source: "docs/convention.md",
     dest: "packages/plugin/skills/implement-feature/references/convention.md",
   },
   {

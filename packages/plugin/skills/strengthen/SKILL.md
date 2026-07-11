@@ -6,8 +6,9 @@ description: Measure how well a feature's tests defend its code — run mutation
 # strengthen
 
 A slice can be green and badly defended. `implement-feature` leaves it that way on
-purpose ([ADR-0006](https://github.com/matthewalton/speccle/blob/main/docs/adr/0006-implement-feature-pauses-for-ratification.md));
-this skill closes the gap.
+purpose; this skill closes the gap — as the final stage of the `feature` pipeline
+([ADR-0022](https://github.com/matthewalton/speccle/blob/main/docs/adr/0022-feature-orchestrates-plan-spec-implement-strengthen.md)),
+or standalone on its own cadence.
 
 Measure oracle strength per criterion, then act on every **surviving mutant** — the exact
 code change no test noticed. The routing call is the whole job; §4 is how to make it.
@@ -85,7 +86,7 @@ Four fields are not routing work, and are worth saying out loud before you start
 
 - **`unclaimed`** — a criterion no test's name carries. It scores nothing rather than
   zero. It needs a test written against it before it can be weak; that is
-  `implement-feature`'s phase 5, not a survivor to route.
+  `implement-feature`'s job, not a survivor to route.
 - **`unknownClaims`** — a test claims an id no spec declares. Someone renamed or deleted a
   criterion. Fix the test name or restore the criterion.
 - **`unclaimedMutants`** — code the criteria do not reach at all, each entry naming its
