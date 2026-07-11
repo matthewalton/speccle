@@ -1,6 +1,7 @@
 # 0012 — strengthen routes on the survivor, not the score
 
-- Status: accepted
+- Status: accepted; the human path's ratify pause is amended by
+  [ADR-0018](0018-skills-announce-criteria-and-end-with-a-spec-summary.md)
 - Date: 2026-07-09
 
 ## Context

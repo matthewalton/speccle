@@ -1,6 +1,7 @@
 # 0006 — implement-feature accepts any input and pauses for ratification
 
-- Status: accepted
+- Status: accepted; the ratify pause is superseded by
+  [ADR-0018](0018-skills-announce-criteria-and-end-with-a-spec-summary.md)
 - Date: 2026-07-09
 
 ## Context

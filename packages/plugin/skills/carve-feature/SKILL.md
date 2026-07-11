@@ -1,6 +1,6 @@
 ---
 name: carve-feature
-description: Bring existing, ungoverned code under the convention without changing it — derive SPEC.md and CONTEXT.md from what the code observably does, lint them clean, pause for the human to ratify the derived criteria, then claim every criterion by tagging the tests that already defend it and writing tests for what nothing claims. Use when the user wants to retrofit a spec onto working code, govern an existing module, bring legacy code into a slice, or says "carve this", "carve it into a slice", "spec what this already does".
+description: Bring existing, ungoverned code under the convention without changing it — derive SPEC.md and CONTEXT.md from what the code observably does, lint them clean, announce the derived criteria and findings, then claim every criterion by tagging the tests that already defend it and writing tests for what nothing claims, ending with a spec summary the human rules on. Use when the user wants to retrofit a spec onto working code, govern an existing module, bring legacy code into a slice, or says "carve this", "carve it into a slice", "spec what this already does".
 ---
 
 # carve-feature
@@ -20,7 +20,7 @@ The shape of the folder is fixed by the convention, bundled beside this skill at
 `references/convention.md`. Read it before deriving anything.
 
 Speccle's words are fixed and mandatory: "criterion id", not "tag"; "statement", not
-"title"; "carve", not "retrofit" or "migration"; "ratify pause", not "approval gate".
+"title"; "carve", not "retrofit" or "migration"; "spec summary", not "approval gate".
 The canonical glossary is
 [CONTEXT.md](https://github.com/matthewalton/speccle/blob/main/CONTEXT.md).
 
@@ -64,7 +64,8 @@ implementation inventory, not acceptance criteria.
 **When something looks wrong, do not write the criterion you wish were true.** The
 code's spec fails against the code — that is a broken carve. Do not quietly fix the
 code either. Record it as a finding: what the code does, why it looks unintended, and
-where. Findings are for the ratify pause; the human rules on them, not you.
+where. Findings are announced in phase 5 and ruled on by the human at the spec summary,
+not by you.
 
 ## 3. Draft SPEC.md and CONTEXT.md
 
@@ -100,22 +101,23 @@ derived statement, rewrite the statement without changing what it observes: the 
 "the parser handles bad input" is naming what the parser observably does with bad
 input, which usually means going back to the code to look.
 
-## 5. The ratify pause — stop here
+## 5. Announce the derivation — and keep going
 
-**A hard stop. Touch no test until the human answers.**
+Show two things, then proceed straight into phase 6 without waiting
+([ADR-0018](https://github.com/matthewalton/speccle/blob/main/docs/adr/0018-skills-announce-criteria-and-end-with-a-spec-summary.md)):
 
-Show two things:
+- **The criteria** — ids and statements, as `implement-feature` does. What the human
+  will rule on later is more than wording: whether your reading of the code matches
+  their intent.
+- **The findings** — each behaviour you suspect is unintended. Spec what the code
+  observably does, suspicious or not — a carved spec is honest before it is
+  aspirational — and flag each finding here and again in the spec summary, where the
+  human rules: **intended**, and its criterion stands, stating what the code does; or
+  **a bug**, and the criterion comes out of the spec and the behaviour is recorded as
+  future work in whatever tracker the project uses. A carve never fixes one.
 
-- **The criteria** — ids and statements, as `implement-feature` does. The human is
-  approving more than wording here: they are confirming your reading of the code
-  matches their intent.
-- **The findings** — each behaviour you suspect is unintended. For each the human
-  rules: **intended**, and its criterion stands, stating what the code does; or **a
-  bug**, and the behaviour comes out of the spec entirely — record it as future work in
-  whatever tracker the project uses. A ratified spec never canonises a bug, and a carve
-  never fixes one.
-
-Treat "looks good, and also…" as a change request: amend, re-lint, ask again.
+If the human interjects — now or at any point — treat "looks good, and also…" as a
+change request: amend, re-lint, announce again.
 
 ## 6. Claim every criterion, changing nothing
 
@@ -134,9 +136,9 @@ files, `SPEC.md`, and `CONTEXT.md` — **nothing else**.
 - **Write tests for unclaimed criteria**, tagged the same way. They run against code
   that already works, so they pass on first run. **A new test that fails is a
   discovery, not a draft to iterate on**: either you misread the code — fix the
-  statement and re-ratify it — or you found a bug — it comes out of the spec and into
-  the tracker, like any phase-5 finding. The failing test is never a reason to touch
-  the source.
+  statement, re-lint, and announce the change — or you found a bug — it comes out of
+  the spec and into the tracker, like any phase-5 finding. The failing test is never a
+  reason to touch the source.
 
 There is no tracer criterion — the tracer proves a path connects, and a carve's path is
 proven by the code already running
@@ -156,6 +158,11 @@ Done means all five, verified rather than assumed:
 5. The diff touches test files, `SPEC.md`, and `CONTEXT.md` only. Check `git status`
    and `git diff` rather than asserting it — this is the invariant the carve exists to
    keep, and it is the first thing to say when handing back.
+
+Hand back with the **spec summary**: the derived criteria (ids and statements) and
+every finding awaiting a ruling. The human rules each finding intended-or-bug here —
+a criterion ruled a bug is reverted with its tests, and the behaviour goes to the
+tracker.
 
 Then say what done does not include: how well the new claims _defend_ the code is
 `strengthen`'s question, and a fresh carve is its natural next target.

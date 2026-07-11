@@ -12,7 +12,7 @@
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 ![Node ≥ 24](https://img.shields.io/badge/node-%E2%89%A5%2024-brightgreen)
-![Plugin 0.3.0](https://img.shields.io/badge/plugin-0.3.0-8250df)
+![Plugin 0.4.0](https://img.shields.io/badge/plugin-0.4.0-8250df)
 ![Oracle: deterministic, no LLM](https://img.shields.io/badge/oracle-deterministic%20%C2%B7%20no%20LLM-24292f)
 
 </div>
@@ -41,18 +41,21 @@ mechanically attested.
 
 ## The loop
 
-Every skill drives the same loop, and it always stops at the same place — **you own
-the criteria**, so nothing gets built until you ratify them:
+Every skill drives the same loop, and it never blocks on you — **you own the
+criteria**, but ownership is exercised by review, not pre-approval: criteria are
+announced the moment they lint clean, and every run ends with a **spec summary** you
+can amend or overrule:
 
 ```mermaid
 flowchart LR
     A["any input<br/>prose · ticket · existing code"] --> B["draft<br/>SPEC.md + CONTEXT.md"]
     B --> C{"oracle<br/>lint"}
-    C -->|clean| D(["⏸ you ratify<br/>the criteria"])
+    C -->|clean| D["📣 criteria<br/>announced"]
     D --> E["tagged tests<br/>+ green code"]
     E --> F{"oracle<br/>strength"}
     F -->|"survivor a criterion promises<br/>→ write the killing test"| E
-    F -->|"survivor nothing promises<br/>→ sharpen the spec"| D
+    F -->|"survivor nothing promises<br/>→ sharpen the spec"| B
+    E --> G(["📋 spec summary<br/>you amend or accept"])
 ```
 
 A criterion is an H2 heading with a one-line testable **statement**; the body beneath
@@ -78,19 +81,20 @@ format is a written contract: [`docs/convention.md`](docs/convention.md).
 
 ## The skills
 
-| Skill               | One line                                                                     |
-| ------------------- | ---------------------------------------------------------------------------- |
-| `implement-feature` | Any input → linted spec → **you ratify** → tagged tests → green code.        |
-| `strengthen`        | Mutation + coverage → per-criterion heatmap → every surviving mutant routed. |
-| `carve-feature`     | Existing code brought under the convention — **without changing it**.        |
+| Skill               | One line                                                                                     |
+| ------------------- | -------------------------------------------------------------------------------------------- |
+| `implement-feature` | Any input → linted spec → criteria announced → tagged tests → green code → **spec summary**. |
+| `strengthen`        | Mutation + coverage → per-criterion heatmap → every surviving mutant routed.                 |
+| `carve-feature`     | Existing code brought under the convention — **without changing it**.                        |
 
 <details>
 <summary><strong><code>implement-feature</code></strong> — build a new slice</summary>
 <br>
 
 Takes a spec in any form — prose, a ticket, a file — and drafts the conventioned
-`SPEC.md` + `CONTEXT.md`. Lints them clean, then **pauses for you to ratify the
-criteria** before writing a single test or line of code.
+`SPEC.md` + `CONTEXT.md`. Lints them clean, **announces the criteria**, and builds —
+no blocking approval step. The run ends with a **spec summary** of every criterion it
+drafted, for you to amend or overrule.
 
 Done means: spec lints clean, every criterion has at least one tagged test, all tests
 green.
@@ -104,11 +108,11 @@ green.
 Runs mutation testing + coverage and renders the heatmap. Then every **surviving
 mutant** is routed on the survivor, never the score:
 
-| The survivor breaks…             | Route                 | What happens                              |
-| -------------------------------- | --------------------- | ----------------------------------------- |
-| a behaviour a criterion promises | **machine path**      | write the killing test, re-run            |
-| something no criterion promises  | **human path**        | draft a sharper criterion — you ratify it |
-| nothing any test could detect    | **equivalent** (rare) | annotate it in the source                 |
+| The survivor breaks…             | Route                 | What happens                                                                                  |
+| -------------------------------- | --------------------- | --------------------------------------------------------------------------------------------- |
+| a behaviour a criterion promises | **machine path**      | write the killing test, re-run                                                                |
+| something no criterion promises  | **human path**        | draft a sharper criterion, test it — you overrule it in the spec summary if it doesn't belong |
+| nothing any test could detect    | **equivalent** (rare) | annotate it in the source                                                                     |
 
 Never a test fitted to a mutant: killing a survivor no criterion promises defends
 nothing.
@@ -119,11 +123,10 @@ nothing.
 <summary><strong><code>carve-feature</code></strong> — govern what already exists</summary>
 <br>
 
-Derives `SPEC.md` + `CONTEXT.md` from what the code **observably does**, pauses for
-you to ratify the derived criteria — anything that looks like a bug is a finding for
-you to rule on, never a silent fix — then tags the tests that already defend each
-criterion and writes tests for what nothing claims. The code's behaviour is unchanged
-throughout.
+Derives `SPEC.md` + `CONTEXT.md` from what the code **observably does** — anything
+that looks like a bug is a finding for you to rule on in the spec summary, never a
+silent fix — then tags the tests that already defend each criterion and writes tests
+for what nothing claims. The code's behaviour is unchanged throughout.
 
 </details>
 

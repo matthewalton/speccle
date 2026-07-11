@@ -9,8 +9,8 @@ Skills, in build order
 ([ADR-0001](https://github.com/matthewalton/speccle/blob/main/docs/adr/0001-plugin-first-tools-serve-skills.md)):
 
 1. [`implement-feature`](skills/implement-feature/SKILL.md) — any spec input → drafted
-   `SPEC.md` + `CONTEXT.md` → lint → ratify pause → tagged tests + implementation, one
-   criterion at a time, tracer criterion first
+   `SPEC.md` + `CONTEXT.md` → lint → criteria announced → tagged tests +
+   implementation, one criterion at a time, tracer criterion first → spec summary
    ([ADR-0013](https://github.com/matthewalton/speccle/blob/main/docs/adr/0013-implement-feature-traces-one-criterion-end-to-end-first.md)).
    **Landed.**
 2. [`strengthen`](skills/strengthen/SKILL.md) — mutation + coverage → per-criterion
@@ -19,8 +19,9 @@ Skills, in build order
    ([ADR-0012](https://github.com/matthewalton/speccle/blob/main/docs/adr/0012-strengthen-routes-on-the-survivor-not-the-score.md)).
    **Landed.**
 3. [`carve-feature`](skills/carve-feature/SKILL.md) — existing ungoverned code →
-   `SPEC.md` + `CONTEXT.md` derived from observed behaviour → lint → ratify pause →
-   existing tests tagged, unclaimed criteria tested, behaviour unchanged
+   `SPEC.md` + `CONTEXT.md` derived from observed behaviour → lint → criteria and
+   findings announced → existing tests tagged, unclaimed criteria tested, behaviour
+   unchanged → spec summary
    ([ADR-0017](https://github.com/matthewalton/speccle/blob/main/docs/adr/0017-carve-feature-specs-observed-behaviour-and-changes-no-code.md)).
    **Landed.**
 

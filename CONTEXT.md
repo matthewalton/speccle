@@ -53,12 +53,14 @@ ids, unclaimed criteria given new tests — with the code's behaviour unchanged
 throughout ([ADR-0017](docs/adr/0017-carve-feature-specs-observed-behaviour-and-changes-no-code.md)).
 _Avoid_: retrofit, migration, backfill.
 
-**Ratify pause**:
-The mandatory stop between drafting criteria and writing any test or code: the human
-owns the criteria, and this pause is where that ownership lives. Every skill that
-drafts a criterion stops here — `implement-feature` before its slice, `strengthen`
-before a human-path test, `carve-feature` before claiming a derived spec.
-_Avoid_: review step, confirmation, approval gate.
+**Spec summary**:
+The report every skill ends with when it drafted, amended, or retired a criterion:
+each change listed by id and statement, plus, for a carve, every finding and how it
+was defaulted. Human ownership of the criteria lives here — exercised by amending or
+overruling after the fact, never by a blocking pre-approval. Skills announce criteria
+the moment they lint clean and keep going
+([ADR-0018](docs/adr/0018-skills-announce-criteria-and-end-with-a-spec-summary.md)).
+_Avoid_: ratify pause, approval gate, confirmation, sign-off.
 
 **Oracle strength**:
 The fraction of the mutants a criterion's tests execute that the suite kills
@@ -89,8 +91,9 @@ _Avoid_: using "coverage" alone to mean strength.
 The exits `strengthen` routes a surviving mutant down — never a criterion, and never a
 score. **Machine path**: the criterion's statement already promises the behaviour the
 mutant breaks, so it is a test gap — write the killing test and re-run. **Human path**:
-no criterion promises it, so it is a _spec_ problem — draft a sharper criterion and a
-human ratifies it. A third exit, the **equivalent mutant**, is a mutant no test could
+no criterion promises it, so it is a _spec_ problem — draft a sharper criterion,
+announce it, and test the survivor under the new id; the human overrules it in the
+spec summary if it does not belong. A third exit, the **equivalent mutant**, is a mutant no test could
 ever detect; it is annotated in the source, and it is rare
 ([ADR-0012](docs/adr/0012-strengthen-routes-on-the-survivor-not-the-score.md)).
 _Avoid_: auto-fix / manual, fast path / slow path.

@@ -1,6 +1,7 @@
 # 0017 — carve-feature specs observed behaviour and changes no code
 
-- Status: accepted
+- Status: accepted; the ratify pause and its findings ruling are amended by
+  [ADR-0018](0018-skills-announce-criteria-and-end-with-a-spec-summary.md)
 - Date: 2026-07-11
 
 ## Context

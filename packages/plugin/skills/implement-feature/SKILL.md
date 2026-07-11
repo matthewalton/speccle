@@ -1,6 +1,6 @@
 ---
 name: implement-feature
-description: Build a feature as a vertical slice — draft its SPEC.md and CONTEXT.md from any input, lint them clean, pause for the human to ratify the criteria, then write token-tagged tests and the code that makes them green. Use when the user wants to build, implement, or spec a new feature, hands over a ticket or prose description to turn into a slice, or says "speccle this", "implement this feature", "make a slice for this".
+description: Build a feature as a vertical slice — draft its SPEC.md and CONTEXT.md from any input, lint them clean, announce the criteria, then write token-tagged tests and the code that makes them green, ending with a spec summary for the human to review. Use when the user wants to build, implement, or spec a new feature, hands over a ticket or prose description to turn into a slice, or says "speccle this", "implement this feature", "make a slice for this".
 ---
 
 # implement-feature
@@ -14,7 +14,7 @@ this skill only restates the parts drafts get wrong.
 
 Speccle's words are fixed too, and they are mandatory: "criterion id", not "tag";
 "statement", not "title"; "body", not "notes"; "lint violation", not "error" or
-"warning"; "ratify pause", not "approval gate". The canonical glossary is
+"warning"; "spec summary", not "approval gate". The canonical glossary is
 [CONTEXT.md](https://github.com/matthewalton/speccle/blob/main/CONTEXT.md).
 
 **This skill does not measure oracle strength.** A slice can finish here well-specified
@@ -95,16 +95,19 @@ test, not that it dislikes your wording.
 The rules are fixed and unconfigurable, and there is one severity: a spec lints clean or
 it does not ([ADR-0007](https://github.com/matthewalton/speccle/blob/main/docs/adr/0007-lint-rules-are-fixed-heuristics.md)).
 
-## 4. The ratify pause — stop here
+## 4. Announce the criteria — and keep going
 
-**A hard stop. Write no test and no code until the human answers.**
+Show the criteria — ids and statements — and proceed straight into phase 5. Do not ask
+for approval and do not wait: the human owns the criteria, but that ownership is
+exercised in the spec summary at the end (or by interrupting now), not at a blocking
+pre-approval
+([ADR-0018](https://github.com/matthewalton/speccle/blob/main/docs/adr/0018-skills-announce-criteria-and-end-with-a-spec-summary.md)).
 
-Show the criteria — ids and statements — and ask for approval. This pause is where human
-ownership of the criteria lives; it is the reason the skill exists in this order. Treat
-"looks good, and also…" as a change request: amend the spec, re-lint, ask again.
+If the human does interject — now or at any point — treat "looks good, and also…" as a
+change request: amend the spec, re-lint, announce again.
 
-Skip the pause only when the input was already a conventioned `SPEC.md` that you adopted
-unchanged. Drafting anything means pausing.
+When the input was already a conventioned `SPEC.md` adopted unchanged, there is nothing
+new to announce; say you adopted it and move on.
 
 ## 5. Implement the slice, one criterion at a time
 
@@ -125,8 +128,8 @@ prove. `[CHECKOUT-1] Tax rounds half-up per line item` traces the path;
 reaching it.
 
 Make it green. Then say so: name the criterion, and name the layers its test now runs
-through. Do not stop for approval — the green test _is_ the feedback. The ratify pause is
-this skill's only hard stop.
+through. Do not stop for approval — the green test _is_ the feedback, and this skill has
+no stops.
 
 When a feature has one layer — a pure function, a formatter — there is no path to trace.
 The first criterion is the tracer, nothing special happens, and you should not dress it up
@@ -174,6 +177,10 @@ For (3), run the suite with a JSON reporter (`vitest run --reporter=json`) and c
 id from the spec against the concatenated test names. An id nobody claims is an
 unimplemented criterion — go back to phase 5. Do not report done on a spec with an
 unclaimed criterion.
+
+Hand back with the **spec summary**: every criterion this run drafted or amended, ids
+and statements. This is where the human rules on the criteria — an overruled one is
+reverted along with its tests.
 
 There is no oracle-strength check here, deliberately. Say so when you hand back: the
 slice is green, and how well it is _defended_ is a question `strengthen` answers.

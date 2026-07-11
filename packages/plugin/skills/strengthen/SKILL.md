@@ -117,11 +117,12 @@ Re-run, confirm the survivor is gone. No pause; this is why it is the machine pa
 **Human path — no, and the behaviour matters.** No criterion entails it, so the spec is
 silent or too vague to test. Draft a sharper statement, or the new criterion the spec
 owes, taking the next never-used number under the key. Draft it in the target's `SPEC.md`
-itself — the spec edit _is_ the draft, and lint reads the real file. Lint it clean, then
-**stop at the ratify pause**: show the id and statement, ask for approval, and write no
-test until the human answers; a declined draft is reverted from the spec. This is
-`implement-feature`'s pause exactly — the draft sits on disk, ratification gates the test.
-Once ratified, the survivor takes the machine path under the new id.
+itself — the spec edit _is_ the draft, and lint reads the real file. Lint it clean,
+**announce it** — id and statement — and keep going: the survivor takes the machine path
+under the new id
+([ADR-0018](https://github.com/matthewalton/speccle/blob/main/docs/adr/0018-skills-announce-criteria-and-end-with-a-spec-summary.md)).
+The human rules on every criterion this run added at the spec summary in §5; an overruled
+one is reverted from the spec along with its test, returning its survivor to the report.
 
 **Equivalent mutant — no, and no test ever could.** The mutated code means the same thing.
 Annotate it where it lives and move on:
@@ -146,7 +147,7 @@ reword the message gets a failure that teaches them nothing. That is test-fittin
 mutant, and it is how mutation testing rots into a score chase.
 
 These survivors are the human path. The spec owes a criterion about what the rejection
-tells the caller. Draft it, get it ratified, test it — and watch `[CHECKOUT-3]` reach 100%
+tells the caller. Draft it, announce it, test it — and watch `[CHECKOUT-3]` reach 100%
 untouched, because a kill counts for every criterion covering the mutant
 ([ADR-0011](https://github.com/matthewalton/speccle/blob/main/docs/adr/0011-oracle-strength-credits-a-kill-to-every-covering-criterion.md)).
 
@@ -161,8 +162,11 @@ change is not evidence. Then report, verified rather than assumed:
 1. The test suite is green.
 2. Every survivor you took the machine path on is gone from the report.
 3. Oracle strength, before and after, headline and per criterion.
-4. What is left, and why: each remaining survivor is awaiting ratification, annotated as
-   equivalent, or a criterion the human declined to add.
+4. The **spec summary**: every criterion this run added to the spec, id and statement.
+   The human rules here — an overruled criterion is reverted along with its killing
+   test, returning its survivor to the report.
+5. What is left, and why: each remaining survivor is annotated as equivalent, with its
+   argument, or named as a gap awaiting the human's ruling.
 
 A survivor you cannot explain is not a finished job. Say it is still there rather than
 letting a nicer headline number imply otherwise.
