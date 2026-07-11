@@ -1,7 +1,7 @@
 import { readdir } from "node:fs/promises";
 import { join } from "node:path";
 
-const SKIP_DIRS = new Set(["node_modules", "dist"]);
+const SKIP_DIRS = new Set(["node_modules", "dist", "fixtures", "__fixtures__"]);
 
 export async function discoverSpecs(root: string): Promise<string[]> {
   const found: string[] = [];

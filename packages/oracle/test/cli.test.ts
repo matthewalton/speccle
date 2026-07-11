@@ -57,6 +57,18 @@ describe("speccle-oracle lint (e2e)", () => {
     expect(stdout).toContain("4 spec files, 12 violations");
   });
 
+  it("never enters fixtures directories when discovering specs", () => {
+    const { status, stdout } = run(
+      "lint",
+      resolve(import.meta.dirname, "fixtures/skips"),
+      "--json",
+    );
+    expect(status).toBe(0);
+    const report = JSON.parse(stdout) as LintReport;
+    expect(report.clean).toBe(true);
+    expect(report.files).toEqual(["features/epsilon/SPEC.md"]);
+  });
+
   it("lints a single spec file when given a file path", () => {
     const { status, stdout } = run("lint", resolve(DIRTY, "features/gamma/SPEC.md"), "--json");
     expect(status).toBe(1);

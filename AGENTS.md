@@ -62,8 +62,9 @@ Node ≥ 24 runs TypeScript directly — no build step needed to run the CLI fro
 - `packages/oracle/src/rules/` is the one **governed slice** of Speccle's own source
   ([ADR-0015](docs/adr/0015-dogfooding-starts-with-one-pilot-slice.md)): its `SPEC.md`
   (key `LINT`) must lint clean and every criterion stays claimed at 100% oracle
-  strength. Run the oracle against `packages/oracle/src` — never the package root, which
-  would sweep the dirty fixtures:
+  strength. Run the oracle against `packages/oracle/src` (spec discovery skips
+  `fixtures/` directories — [ADR-0016](docs/adr/0016-spec-discovery-skips-fixture-directories.md) —
+  so the package root also works, but `src` keeps the report paths below correct):
 
   ```sh
   node packages/oracle/src/cli.ts lint packages/oracle/src

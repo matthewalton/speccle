@@ -73,6 +73,15 @@ concatenated name** — enclosing `describe` titles included. One
 `describe('[CHECKOUT-1] tax rounding', …)` claims every test inside it. Mutation and
 coverage reports already carry full names, so the join is mechanical.
 
+## Spec discovery
+
+Tools find every `SPEC.md` under the target root. Directories named `node_modules`,
+`dist`, `fixtures`, or `__fixtures__` — and dot-directories — are never entered. The
+skip list is fixed, not configuration
+([ADR-0016](https://github.com/matthewalton/speccle/blob/main/docs/adr/0016-spec-discovery-skips-fixture-directories.md)): a project that
+fixtures deliberately dirty specs for its own tests still lints clean at its root,
+and a feature directory may not take one of the skipped names.
+
 ## Lint
 
 `oracle lint` enforces this contract deterministically. Fixed rules, one severity, no
