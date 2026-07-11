@@ -30,7 +30,11 @@ Beside the pipeline: [`carve-feature`](skills/carve-feature/SKILL.md) — existi
 ungoverned code → markdown contract derived from observed behaviour → lint → criteria
 and findings announced → existing tests tagged, unclaimed criteria tested, behaviour
 unchanged → spec summary
-([ADR-0017](https://github.com/matthewalton/speccle/blob/main/docs/adr/0017-carve-feature-specs-observed-behaviour-and-changes-no-code.md)).
+([ADR-0017](https://github.com/matthewalton/speccle/blob/main/docs/adr/0017-carve-feature-specs-observed-behaviour-and-changes-no-code.md));
+and [`conform`](skills/conform/SKILL.md) — after the convention changes, every
+governed slice → drift diagnosed against the current convention → form-only fixes,
+behaviour and criterion meaning unchanged → spec summary
+([ADR-0024](https://github.com/matthewalton/speccle/blob/main/docs/adr/0024-conform-updates-governed-slices-to-the-current-convention.md)).
 
 A skill that is _ordered to read_ a doc gets that doc bundled beside it, under the
 skill's `references/` — an installed plugin obeys its own instructions offline. Those

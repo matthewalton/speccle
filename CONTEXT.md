@@ -79,6 +79,14 @@ ids, unclaimed criteria given new tests — with the code's behaviour unchanged
 throughout ([ADR-0017](docs/adr/0017-carve-feature-specs-observed-behaviour-and-changes-no-code.md)).
 _Avoid_: retrofit, migration, backfill.
 
+**Conform**:
+Bringing an already-governed feature folder up to the convention as it stands today,
+after the convention changes: form only — folder shape, contract files, statement
+wording where a lint rule demands it — while behaviour, criterion ids, and criterion
+meaning never change
+([ADR-0024](docs/adr/0024-conform-updates-governed-slices-to-the-current-convention.md)).
+_Avoid_: migrate, upgrade, modernise (for this operation).
+
 **Spec summary**:
 The report every skill ends with when it drafted, amended, or retired a criterion:
 each change listed by id and statement, plus, for a carve, every finding and how it
