@@ -46,9 +46,18 @@ synonyms) and decisions that span criteria. If it's about a word or a cross-cutt
 choice, it lives here; if it's about one behaviour, it lives in that criterion's body.
 _Avoid_: docs, notes, wiki page.
 
+**Carve**:
+Bringing an existing, ungoverned region of code under the convention: `SPEC.md` and
+`CONTEXT.md` derived from its observed behaviour, existing tests tagged with criterion
+ids, unclaimed criteria given new tests — with the code's behaviour unchanged
+throughout ([ADR-0017](docs/adr/0017-carve-feature-specs-observed-behaviour-and-changes-no-code.md)).
+_Avoid_: retrofit, migration, backfill.
+
 **Ratify pause**:
-The mandatory stop in `implement-feature` between drafting the criteria and writing any
-test or code: the human owns the criteria, and this pause is where that ownership lives.
+The mandatory stop between drafting criteria and writing any test or code: the human
+owns the criteria, and this pause is where that ownership lives. Every skill that
+drafts a criterion stops here — `implement-feature` before its slice, `strengthen`
+before a human-path test, `carve-feature` before claiming a derived spec.
 _Avoid_: review step, confirmation, approval gate.
 
 **Oracle strength**:

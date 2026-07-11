@@ -14,6 +14,10 @@ const REFERENCES = [
     source: "docs/convention.md",
     dest: "packages/plugin/skills/implement-feature/references/convention.md",
   },
+  {
+    source: "docs/convention.md",
+    dest: "packages/plugin/skills/carve-feature/references/convention.md",
+  },
 ];
 
 const MARKDOWN_LINK = /\]\(([^)]+)\)/g;

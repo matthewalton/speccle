@@ -45,6 +45,7 @@ The full format is a written contract: [`docs/convention.md`](docs/convention.md
 | ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `implement-feature` | Takes a spec in any form — prose, a ticket, a file — drafts the conventioned `SPEC.md` + `CONTEXT.md`, lints them, then **pauses for you to ratify the criteria** before writing a single test or line of code. Done = spec lints clean, every criterion has at least one tagged test, all tests green.                                                                                                                                             |
 | `strengthen`        | Runs mutation testing + coverage and renders the per-criterion heatmap — `oracle strength = killed mutants ÷ covered mutants`. Coverage says the code ran; oracle strength says the tests would _notice_. Then every **surviving mutant** is routed: **machine path** (the criterion promises it — write the killing test) or **human path** (no criterion promises it — propose a sharper one for you to ratify). Never a test fitted to a mutant. |
+| `carve-feature`     | Brings existing, ungoverned code under the convention **without changing it**: derives `SPEC.md` + `CONTEXT.md` from what the code observably does, pauses for you to ratify the derived criteria — anything that looks like a bug is a finding for you to rule on, never a silent fix — then tags the tests that already defend each criterion and writes tests for what nothing claims.                                                           |
 
 ## Install
 
@@ -91,10 +92,10 @@ with a redesigned convention. Build order:
 3. ~~`implement-feature` skill~~
 4. ~~Oracle-strength heatmap~~
 5. ~~`strengthen` skill~~
+6. ~~`carve-feature` skill~~
 
-Deferred beyond v1: `carve-feature` (retrofit existing code into a slice) and `gate`
-(judge a diff before merge). v1 targets TypeScript projects using vitest, StrykerJS
-(perTest coverage analysis), and Istanbul `json-summary` coverage.
+Deferred: `gate` (judge a diff before merge). v1 targets TypeScript projects using
+vitest, StrykerJS (perTest coverage analysis), and Istanbul `json-summary` coverage.
 
 ## Development
 

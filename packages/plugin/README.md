@@ -18,6 +18,11 @@ Skills, in build order
    equivalent mutant), never the score
    ([ADR-0012](https://github.com/matthewalton/speccle/blob/main/docs/adr/0012-strengthen-routes-on-the-survivor-not-the-score.md)).
    **Landed.**
+3. [`carve-feature`](skills/carve-feature/SKILL.md) — existing ungoverned code →
+   `SPEC.md` + `CONTEXT.md` derived from observed behaviour → lint → ratify pause →
+   existing tests tagged, unclaimed criteria tested, behaviour unchanged
+   ([ADR-0017](https://github.com/matthewalton/speccle/blob/main/docs/adr/0017-carve-feature-specs-observed-behaviour-and-changes-no-code.md)).
+   **Landed.**
 
 A skill that is _ordered to read_ a doc gets that doc bundled beside it, under the
 skill's `references/` — an installed plugin obeys its own instructions offline. Those
