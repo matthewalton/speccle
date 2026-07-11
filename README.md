@@ -150,8 +150,8 @@ code change no test noticed.
 
 ## Install
 
-Speccle is used from a clone, not a registry — the skills shell out to the
-`speccle-oracle` binary, so it needs to be on your `PATH` first. Requires Node ≥ 24;
+The plugin installs from GitHub, but the skills shell out to the `speccle-oracle`
+binary, so you still need a clone to build it and put it on your `PATH` first. Requires Node ≥ 24;
 targets TypeScript projects using vitest, StrykerJS (`perTest` coverage analysis), and
 Istanbul `json-summary` coverage.
 
@@ -169,10 +169,10 @@ Check it:
 speccle-oracle lint targets/checkout    # → "2 spec files, clean"
 ```
 
-Then add the plugin to Claude Code from your clone:
+Then add the plugin to Claude Code:
 
 ```
-/plugin marketplace add /path/to/speccle
+/plugin marketplace add matthewalton/speccle
 /plugin install speccle@speccle-marketplace
 ```
 
