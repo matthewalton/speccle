@@ -62,6 +62,16 @@ feature's `decisions/` folder — same form as the repo's own `docs/adr/`
 ([ADR-0021](docs/adr/0021-feature-decisions-are-adrs-context-md-is-glossary-only.md)).
 _Avoid_: mini-ADR, design note, decision bullet.
 
+**Key decision**:
+A choice a feature request leaves open, with more than one viable answer, that
+materially shapes the slice across criteria — a policy, a data shape, an external
+contract. `plan-feature` puts each one to the human before announcing the plan — the
+one blocking stop in the pipeline — and `spec-feature` records the settled choice by
+the routing rule. In an unattended run the recommendation is taken and the decision is
+flagged as **defaulted**, never silent
+([ADR-0027](docs/adr/0027-plan-feature-settles-key-decisions-with-the-human.md)).
+_Avoid_: open question (unqualified), assumption, TBD.
+
 **Amend**:
 The route for behaviour that belongs to an existing governed slice: the contract
 changes in place — new criteria take the next never-used numbers (extending the

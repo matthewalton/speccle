@@ -12,7 +12,7 @@
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 ![Node ≥ 24](https://img.shields.io/badge/node-%E2%89%A5%2024-brightgreen)
-![Plugin 0.5.0](https://img.shields.io/badge/plugin-0.5.0-8250df)
+![Plugin 0.7.0](https://img.shields.io/badge/plugin-0.7.0-8250df)
 ![Oracle: deterministic, no LLM](https://img.shields.io/badge/oracle-deterministic%20%C2%B7%20no%20LLM-24292f)
 
 </div>
@@ -44,7 +44,8 @@ mechanically attested.
 
 ## The loop
 
-Every skill drives the same loop, and it never blocks on you — **you own the
+Every skill drives the same loop, and it blocks on you exactly once — at plan time,
+to agree any **key decision** your input leaves open. Past that, **you own the
 criteria**, but ownership is exercised by review, not pre-approval: criteria are
 announced the moment they lint clean, and every run ends with a **spec summary** you
 can amend or overrule:
@@ -84,14 +85,14 @@ format is a written contract: [`docs/convention.md`](docs/convention.md).
 
 ## The skills
 
-| Skill               | One line                                                                                      |
-| ------------------- | --------------------------------------------------------------------------------------------- |
-| `feature`           | The pipeline: plan → spec → implement → strengthen, ending in one **spec summary**.           |
-| `plan-feature`      | Any input → the route (**new** slice, **amend** its owning slice, or a carve) + folder + key. |
-| `spec-feature`      | Draft or amend the markdown contract → lint clean → criteria announced.                       |
-| `implement-feature` | A linted spec → tagged tests → green code, one criterion at a time.                           |
-| `strengthen`        | Mutation + coverage → per-criterion heatmap → every surviving mutant routed.                  |
-| `carve-feature`     | Existing code brought under the convention — **without changing it**.                         |
+| Skill               | One line                                                                                                                                   |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `feature`           | The pipeline: plan → spec → implement → strengthen, ending in one **spec summary**.                                                        |
+| `plan-feature`      | Any input → the route (**new** slice, **amend** its owning slice, or a carve) + folder + key, with open **key decisions** agreed together. |
+| `spec-feature`      | Draft or amend the markdown contract → lint clean → criteria announced.                                                                    |
+| `implement-feature` | A linted spec → tagged tests → green code, one criterion at a time.                                                                        |
+| `strengthen`        | Mutation + coverage → per-criterion heatmap → every surviving mutant routed.                                                               |
+| `carve-feature`     | Existing code brought under the convention — **without changing it**.                                                                      |
 
 <details>
 <summary><strong><code>feature</code></strong> — build or change a slice, end to end</summary>
@@ -102,9 +103,10 @@ prose, a ticket, a file — and runs the child skills in order: `plan-feature` r
 the work (a **new** slice, or an **amendment** to the slice that already owns the
 behaviour — extending it with new criteria or changing existing ones), `spec-feature`
 drafts or amends the contract, `implement-feature` makes it green, and `strengthen`
-measures how well the result is defended. No blocking approval step anywhere; the run
-ends with one **spec summary** of every criterion drafted, amended, or retired, for
-you to amend or overrule.
+measures how well the result is defended. The one blocking stop is at plan time —
+key decisions your input leaves open are agreed with you, not guessed; there is no
+approval step anywhere else, and the run ends with one **spec summary** of every
+criterion drafted, amended, or retired, for you to amend or overrule.
 
 Each child is also a skill in its own right: hand a hand-written `SPEC.md` straight
 to `implement-feature`, or ask `spec-feature` for a contract with no code yet.

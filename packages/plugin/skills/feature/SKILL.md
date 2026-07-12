@@ -7,8 +7,10 @@ allowed-tools: Read(/${CLAUDE_PLUGIN_ROOT}/skills/*/references/**)
 # feature
 
 The pipeline: **plan → spec → implement → strengthen**. Each stage is a child skill of
-this plugin, invoked with the Skill tool, in order, with no stops between them
-([ADR-0022](https://github.com/matthewalton/speccle/blob/main/docs/adr/0022-feature-orchestrates-plan-spec-implement-strengthen.md)).
+this plugin, invoked with the Skill tool, in order, with one permitted stop: key
+decisions the input leaves open are settled with the user at the plan stage
+([ADR-0022](https://github.com/matthewalton/speccle/blob/main/docs/adr/0022-feature-orchestrates-plan-spec-implement-strengthen.md),
+[ADR-0027](https://github.com/matthewalton/speccle/blob/main/docs/adr/0027-plan-feature-settles-key-decisions-with-the-human.md)).
 This skill owns the sequencing and the state carried between stages — the judgement
 lives in the children, and each child is also invocable on its own.
 
@@ -18,9 +20,12 @@ Speccle's words are fixed and mandatory: "criterion id", not "tag"; "amend", not
 
 ## The pipeline
 
-1. **`speccle:plan-feature`** — takes the input as it comes, explores the repo, and
-   announces the plan: the **route** (new / amend / carve), the feature folder, and
-   the key
+1. **`speccle:plan-feature`** — takes the input as it comes, explores the repo,
+   settles any key decisions the input leaves open with the user — the pipeline's one
+   blocking stop
+   ([ADR-0027](https://github.com/matthewalton/speccle/blob/main/docs/adr/0027-plan-feature-settles-key-decisions-with-the-human.md)) —
+   and announces the plan: the **route** (new / amend / carve), the feature folder,
+   the key, and each key decision with how it was settled
    ([ADR-0023](https://github.com/matthewalton/speccle/blob/main/docs/adr/0023-plan-feature-routes-new-amend-or-carve.md)).
    If the route is **carve**, stop here: hand the user to `carve-feature` — the
    behaviour already runs, and governing it is a different job. A mixed request is a
@@ -38,19 +43,22 @@ Speccle's words are fixed and mandatory: "criterion id", not "tag"; "amend", not
 ## Carrying state between stages
 
 Each child is told, when invoked, what the earlier stages decided: the route, the
-feature folder, and the key. Do not make a child re-derive them — and do not override
+feature folder, the key, and the key decisions settled at the plan stage — each marked
+agreed or defaulted. Do not make a child re-derive them — and do not override
 a child's own judgement with them either; if `spec-feature` finds the plan's shape
 wrong while drafting, the plan was wrong, and saying so beats obeying it.
 
-## No stops, one summary
+## One stop, one summary
 
 Children announce as they go — the plan, then the criteria the moment they lint clean
 ([ADR-0018](https://github.com/matthewalton/speccle/blob/main/docs/adr/0018-skills-announce-criteria-and-end-with-a-spec-summary.md)).
-The human interrupts at any point; the pipeline never waits. Treat "looks good, and
-also…" at any stage as a change request: re-enter the stage it names and re-run the
-stages after it.
+The human interrupts at any point; past the plan stage's key decisions, the pipeline
+never waits. Treat "looks good, and also…" at any stage as a change request: re-enter
+the stage it names and re-run the stages after it.
 
 The run ends with the **one spec summary for the whole pipeline**: every criterion
 drafted, amended, or retired — by `spec-feature` and by `strengthen`'s human path
-alike — plus the strengthen outcome (headline oracle strength, and each remaining
-survivor's exit). An overruled criterion is reverted along with its tests.
+alike — every key decision that was defaulted rather than agreed — plus the strengthen
+outcome (headline oracle strength, and each remaining survivor's exit). An overruled
+criterion is reverted along with its tests; an overruled decision re-enters the spec
+stage.

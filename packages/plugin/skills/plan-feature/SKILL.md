@@ -1,6 +1,6 @@
 ---
 name: plan-feature
-description: Shape a feature request into a plan — take prose, a ticket, or a conversation as it comes, explore the repo, and route the work — a new slice, an amendment to the slice that already owns the behaviour, or a carve — announcing the route, feature folder, and key. Use when the user wants to plan or scope a feature before building it, asks where a behaviour should live, or asks whether something is a new feature or a change to an existing one.
+description: Shape a feature request into a plan — take prose, a ticket, or a conversation as it comes, explore the repo, route the work — a new slice, an amendment to the slice that already owns the behaviour, or a carve — and settle any key decisions the input leaves open with the user before announcing the route, feature folder, and key. Use when the user wants to plan or scope a feature before building it, asks where a behaviour should live, wants to agree open decisions about a feature, or asks whether something is a new feature or a change to an existing one.
 allowed-tools: Read(/${CLAUDE_PLUGIN_ROOT}/skills/*/references/**)
 ---
 
@@ -67,13 +67,42 @@ and a wrongly-amended slice is cheap to split later.
   two each — what is in, and what is deliberately out. These are raw material for
   `spec-feature`, not criteria: leave the statements to the drafting.
 
-## 4. Announce the plan — and keep going
+## 4. Settle key decisions — together
 
-Show the route, the feature folder, the key, and the scope, then proceed — as part of
-the `feature` pipeline that means invoking `spec-feature`; standalone it means handing
-the plan back. Do not wait for approval
+Planning is where open choices get agreed, not guessed. A **key decision** is a choice
+the input leaves open, with more than one viable answer, that materially shapes the
+slice across criteria — a policy (rounding, retention, who may retry), a data shape,
+an external contract
+([ADR-0027](https://github.com/matthewalton/speccle/blob/main/docs/adr/0027-plan-feature-settles-key-decisions-with-the-human.md)).
+
+- **Check the input first.** A choice the PRD, ticket, or conversation already settles
+  is not open — adopt it. Routing is never a key decision: it is decided by where the
+  behaviour lives and announced
+  ([ADR-0023](https://github.com/matthewalton/speccle/blob/main/docs/adr/0023-plan-feature-routes-new-amend-or-carve.md)).
+  Naming, statement wording, and single-behaviour details belong to `spec-feature` and
+  the criterion body.
+- **Put each open key decision to the user** before announcing the plan: the options,
+  a recommendation, and why — as one round of questions, not a drip
+  (AskUserQuestion where available). This is the one place the pipeline blocks: a
+  wrong guess here is baked into spec, tests, and code before the summary would
+  surface it.
+- **If no one can answer** — an unattended run — take the recommendation and flag the
+  decision as **defaulted**, in the plan announcement and again in the spec summary.
+  A defaulted decision is never silent.
+- **Settled decisions travel with the plan.** This skill still writes no files:
+  `spec-feature` records each one — a choice spanning criteria becomes an ADR in the
+  feature's `decisions/`, a choice about one behaviour lands in that criterion's body
+  ([ADR-0021](https://github.com/matthewalton/speccle/blob/main/docs/adr/0021-feature-decisions-are-adrs-context-md-is-glossary-only.md)).
+
+## 5. Announce the plan — and keep going
+
+Show the route, the feature folder, the key, the scope, and each key decision with how
+it was settled — from the input, agreed, or defaulted. Then proceed — as part of the
+`feature` pipeline that means invoking `spec-feature`; standalone it means handing the
+plan back. The plan itself is not pre-approved
 ([ADR-0018](https://github.com/matthewalton/speccle/blob/main/docs/adr/0018-skills-announce-criteria-and-end-with-a-spec-summary.md));
-a misrouted plan is corrected by interrupt, like any other announcement.
+open key decisions were the one thing worth waiting for, and they were settled in
+phase 4 — a misrouted plan is corrected by interrupt, like any other announcement.
 
 This skill drafts no criteria and writes no files — a plan that turns out wrong at
 the spec or implement stage is revised there, not defended here.

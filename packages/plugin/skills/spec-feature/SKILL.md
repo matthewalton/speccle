@@ -23,10 +23,16 @@ not "edit" or "update". The canonical glossary is
 
 ## 1. Start from a plan
 
-In the pipeline, `plan-feature` hands you the route, the feature folder, and the key.
-Standalone, settle those three the way `plan-feature` does — route on where the
-behaviour lives, read every other `SPEC.md`'s frontmatter before picking a key
-([ADR-0023](https://github.com/matthewalton/speccle/blob/main/docs/adr/0023-plan-feature-routes-new-amend-or-carve.md)).
+In the pipeline, `plan-feature` hands you the route, the feature folder, the key, and
+any key decisions it settled with the user — each marked agreed or defaulted.
+Standalone, settle those the way `plan-feature` does — route on where the behaviour
+lives, read every other `SPEC.md`'s frontmatter before picking a key, and put key
+decisions the input leaves open to the user before drafting
+([ADR-0023](https://github.com/matthewalton/speccle/blob/main/docs/adr/0023-plan-feature-routes-new-amend-or-carve.md),
+[ADR-0027](https://github.com/matthewalton/speccle/blob/main/docs/adr/0027-plan-feature-settles-key-decisions-with-the-human.md)).
+Record each settled decision by the routing rule below: spanning criteria → an ADR in
+`decisions/`, about one behaviour → that criterion's body. No key decision lives only
+in the conversation.
 If the input is already a conventioned `SPEC.md`, adopt it as-is. Do not "improve"
 the criteria; the human already owns them.
 
@@ -131,5 +137,6 @@ When the input was already a conventioned `SPEC.md` adopted unchanged, there is
 nothing new to announce; say you adopted it and move on.
 
 Standalone, hand back with the **spec summary**: every criterion drafted, amended, or
-retired, ids and statements — and say what the contract does not yet have: tests and
+retired, ids and statements; every key decision recorded, flagging each one that was
+defaulted rather than agreed — and say what the contract does not yet have: tests and
 code are `implement-feature`'s job, and nothing is claimed until it runs.

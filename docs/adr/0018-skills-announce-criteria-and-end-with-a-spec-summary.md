@@ -1,6 +1,8 @@
 # 0018 — skills announce criteria and end with a spec summary
 
-- Status: accepted
+- Status: accepted; the no-blocking rule is amended by
+  [ADR-0027](0027-plan-feature-settles-key-decisions-with-the-human.md) — `plan-feature`
+  blocks to settle open key decisions
 - Date: 2026-07-11
 - Supersedes the ratify pause in [ADR-0006](0006-implement-feature-pauses-for-ratification.md);
   amends the human path in [ADR-0012](0012-strengthen-routes-on-the-survivor-not-the-score.md)
