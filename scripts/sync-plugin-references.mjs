@@ -1,13 +1,13 @@
 // Copies the docs a skill is ordered to *read* into the plugin, so an installed skill
-// never needs the network to obey its own instructions. Run with --check in pre-commit:
-// a stale copy is a broken skill for everyone who installed the plugin.
+// never needs the network to obey its own instructions. Repo-relative links are
+// unlinked in the copy — an installed plugin has no repo, and shipped skills carry no
+// repo citations (ADR-0028). Run with --check in pre-commit: a stale copy is a broken
+// skill for everyone who installed the plugin.
 
-import { readFile, writeFile, mkdir, stat } from "node:fs/promises";
+import { readFile, writeFile, mkdir } from "node:fs/promises";
 import path from "node:path";
 
 const REPO_ROOT = path.resolve(import.meta.dirname, "..");
-const BLOB_BASE = "https://github.com/matthewalton/speccle/blob/main";
-const TREE_BASE = "https://github.com/matthewalton/speccle/tree/main";
 
 const REFERENCES = [
   {
@@ -32,35 +32,17 @@ const REFERENCES = [
   },
 ];
 
-const MARKDOWN_LINK = /\]\(([^)]+)\)/g;
-
-async function isDirectory(absolutePath) {
-  try {
-    return (await stat(absolutePath)).isDirectory();
-  } catch {
-    return false;
-  }
-}
+const MARKDOWN_LINK = /\[([^\]]*)\]\(([^)]+)\)/g;
 
 // A link target the copy can still resolve: absolute, an anchor, or a mail link.
 function isPortable(target) {
   return /^(?:[a-z][a-z0-9+.-]*:|#|\/\/)/i.test(target);
 }
 
-async function absolutiseLinks(markdown, sourcePath) {
-  const sourceDir = path.posix.dirname(sourcePath);
-  const rewrites = [];
-
-  for (const match of markdown.matchAll(MARKDOWN_LINK)) {
-    const target = match[1];
-    if (isPortable(target)) continue;
-
-    const resolved = path.posix.normalize(path.posix.join(sourceDir, target));
-    const base = (await isDirectory(path.join(REPO_ROOT, resolved))) ? TREE_BASE : BLOB_BASE;
-    rewrites.push([match[0], `](${base}/${resolved})`]);
-  }
-
-  return rewrites.reduce((text, [from, to]) => text.replaceAll(from, to), markdown);
+function unlinkRepoLinks(markdown) {
+  return markdown.replace(MARKDOWN_LINK, (link, text, target) =>
+    isPortable(target) ? link : text,
+  );
 }
 
 function banner(sourcePath) {
@@ -74,7 +56,7 @@ function banner(sourcePath) {
 
 async function render({ source }) {
   const markdown = await readFile(path.join(REPO_ROOT, source), "utf8");
-  return banner(source) + (await absolutiseLinks(markdown, source));
+  return banner(source) + unlinkRepoLinks(markdown);
 }
 
 async function readDest(dest) {

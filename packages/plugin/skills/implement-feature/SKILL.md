@@ -7,8 +7,7 @@ allowed-tools: Read(/${CLAUDE_PLUGIN_ROOT}/skills/*/references/**)
 # implement-feature
 
 Write the tagged tests and the code that satisfy an existing, linted `SPEC.md` — one
-criterion at a time, tests first. Stage 3 of the `feature` pipeline
-([ADR-0022](https://github.com/matthewalton/speccle/blob/main/docs/adr/0022-feature-orchestrates-plan-spec-implement-strengthen.md)),
+criterion at a time, tests first. Stage 3 of the `feature` pipeline,
 and complete on its own when the spec already exists — hand-written to the
 convention, or drafted earlier by `spec-feature`.
 
@@ -25,8 +24,7 @@ The folder shape and test-linking rules are fixed by the convention, bundled bes
 this skill at `${CLAUDE_SKILL_DIR}/references/convention.md`.
 
 Speccle's words are fixed and mandatory: "criterion id", not "tag"; "statement", not
-"title"; "spec summary", not "approval gate". The canonical glossary is
-[CONTEXT.md](https://github.com/matthewalton/speccle/blob/main/CONTEXT.md).
+"title"; "spec summary", not "approval gate".
 
 **This skill does not measure oracle strength.** A slice can finish here
 well-specified and weakly defended; closing that gap is `strengthen`'s job — the
@@ -40,12 +38,10 @@ they defend; the feature root stays pure markdown.
 
 - **New slice** (no code in `src/` yet): every criterion is unimplemented; the tracer
   rule below applies.
-- **Amended slice** (the spec changed over running code —
-  [ADR-0023](https://github.com/matthewalton/speccle/blob/main/docs/adr/0023-plan-feature-routes-new-amend-or-carve.md)):
+- **Amended slice** (the spec changed over running code):
   implement only the criteria no test yet claims, in document order. There is **no
   tracer** — the slice's path already runs, so there is nothing to prove; the same
-  reason a carve has none
-  ([ADR-0013](https://github.com/matthewalton/speccle/blob/main/docs/adr/0013-implement-feature-traces-one-criterion-end-to-end-first.md)).
+  reason a carve has none.
   A retired id takes its tests with it: delete them, and confirm the code they
   defended is either still promised by a live criterion or removed too.
 
@@ -61,8 +57,7 @@ writing any code: a test that has never failed proves nothing. Then make it gree
 then move on. Your instinct will be to build a layer at a time: every criterion's
 parsing, then every criterion's calculation, then every criterion's persistence.
 Resist it. A feature built that way does not execute until the last layer lands, and
-by then the mistake is expensive
-([ADR-0013](https://github.com/matthewalton/speccle/blob/main/docs/adr/0013-implement-feature-traces-one-criterion-end-to-end-first.md)).
+by then the mistake is expensive.
 
 ### Fire the tracer criterion first (new slice only)
 
@@ -131,8 +126,8 @@ Do not report done on a spec with an unclaimed criterion.
 
 Hand back by naming what went green: each criterion implemented this run, id and
 statement. If the spec changed mid-run (a compound criterion found in §2), that is a
-spec change and gets the **spec summary** treatment: list it for the human to rule on
-([ADR-0018](https://github.com/matthewalton/speccle/blob/main/docs/adr/0018-skills-announce-criteria-and-end-with-a-spec-summary.md)).
+spec change and gets the **spec summary** treatment: list it for the human to rule
+on.
 
 There is no oracle-strength check here, deliberately. Say so when you hand back: the
 slice is green, and how well it is _defended_ is a question `strengthen` answers —

@@ -9,8 +9,7 @@ allowed-tools: Read(/${CLAUDE_PLUGIN_ROOT}/skills/*/references/**)
 Bring slices that are **already governed** up to the convention as it stands today.
 The convention moves — a folder shape tightens, a new contract file becomes the floor,
 a lint rule sharpens — and a feature scaffolded correctly last month drifts without a
-line of it changing
-([ADR-0024](https://github.com/matthewalton/speccle/blob/main/docs/adr/0024-conform-updates-governed-slices-to-the-current-convention.md)).
+line of it changing.
 Conform is the remedy: form changes only, behaviour never.
 
 Two neighbours this skill is not. Ungoverned code — no `SPEC.md` — is a **carve**
@@ -23,8 +22,7 @@ checklist below is applied against it, not from memory.
 
 Speccle's words are fixed and mandatory: "conform", not "migrate" or "upgrade";
 "criterion id", not "tag"; "lint violation", not "error"; "spec summary", not
-"approval gate". The canonical glossary is
-[CONTEXT.md](https://github.com/matthewalton/speccle/blob/main/CONTEXT.md).
+"approval gate".
 
 ## 1. Find the governed slices
 
@@ -69,9 +67,8 @@ today, and the bundled copy is the authority:
 ## 3. Announce the drift report — and keep going
 
 Per slice: each drift item found and the fix planned for it; slices with no drift
-listed as clean. Then proceed straight into phase 4 without waiting
-([ADR-0018](https://github.com/matthewalton/speccle/blob/main/docs/adr/0018-skills-announce-criteria-and-end-with-a-spec-summary.md))
-— a misjudged fix is corrected by interrupt, like any other announcement.
+listed as clean. Then proceed straight into phase 4 without waiting — a misjudged fix
+is corrected by interrupt, like any other announcement.
 
 ## 4. Apply the fixes, suite green at every boundary
 

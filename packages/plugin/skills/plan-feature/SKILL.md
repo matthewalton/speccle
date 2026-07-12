@@ -8,17 +8,15 @@ allowed-tools: Read(/${CLAUDE_PLUGIN_ROOT}/skills/*/references/**)
 
 Turn a feature request — in whatever form it arrives — into a plan the rest of the
 pipeline can execute: the **route**, the **feature folder**, and the **feature key**.
-This is stage 1 of the `feature` pipeline
-([ADR-0022](https://github.com/matthewalton/speccle/blob/main/docs/adr/0022-feature-orchestrates-plan-spec-implement-strengthen.md)),
-and it is also useful alone: a plan is a cheap thing to be wrong about out loud.
+This is stage 1 of the `feature` pipeline, and it is also useful alone: a plan is a
+cheap thing to be wrong about out loud.
 
 The folder shape and key rules this skill plans against are fixed by the convention,
 bundled beside this skill. Read `${CLAUDE_SKILL_DIR}/references/convention.md` before
 shaping anything.
 
 Speccle's words are fixed and mandatory: "amend", not "edit" or "update"; "feature
-key", not "prefix"; "criterion id", not "tag". The canonical glossary is
-[CONTEXT.md](https://github.com/matthewalton/speccle/blob/main/CONTEXT.md).
+key", not "prefix"; "criterion id", not "tag".
 
 ## 1. Take the input as it comes
 
@@ -30,8 +28,7 @@ as-is and routes on where that spec should live.
 ## 2. Explore before routing
 
 The route is decided by **where the behaviour lives**, and finding that out means
-looking
-([ADR-0023](https://github.com/matthewalton/speccle/blob/main/docs/adr/0023-plan-feature-routes-new-amend-or-carve.md)):
+looking:
 
 - Find every existing feature folder — every `SPEC.md` — and read each one's key and
   criteria statements. This is also the key-collision check, so it is never wasted.
@@ -72,13 +69,11 @@ and a wrongly-amended slice is cheap to split later.
 Planning is where open choices get agreed, not guessed. A **key decision** is a choice
 the input leaves open, with more than one viable answer, that materially shapes the
 slice across criteria — a policy (rounding, retention, who may retry), a data shape,
-an external contract
-([ADR-0027](https://github.com/matthewalton/speccle/blob/main/docs/adr/0027-plan-feature-settles-key-decisions-with-the-human.md)).
+an external contract.
 
 - **Check the input first.** A choice the PRD, ticket, or conversation already settles
   is not open — adopt it. Routing is never a key decision: it is decided by where the
-  behaviour lives and announced
-  ([ADR-0023](https://github.com/matthewalton/speccle/blob/main/docs/adr/0023-plan-feature-routes-new-amend-or-carve.md)).
+  behaviour lives and announced.
   Naming, statement wording, and single-behaviour details belong to `spec-feature` and
   the criterion body.
 - **Put each open key decision to the user** before announcing the plan: the options,
@@ -91,16 +86,14 @@ an external contract
   A defaulted decision is never silent.
 - **Settled decisions travel with the plan.** This skill still writes no files:
   `spec-feature` records each one — a choice spanning criteria becomes an ADR in the
-  feature's `decisions/`, a choice about one behaviour lands in that criterion's body
-  ([ADR-0021](https://github.com/matthewalton/speccle/blob/main/docs/adr/0021-feature-decisions-are-adrs-context-md-is-glossary-only.md)).
+  feature's `decisions/`, a choice about one behaviour lands in that criterion's body.
 
 ## 5. Announce the plan — and keep going
 
 Show the route, the feature folder, the key, the scope, and each key decision with how
 it was settled — from the input, agreed, or defaulted. Then proceed — as part of the
 `feature` pipeline that means invoking `spec-feature`; standalone it means handing the
-plan back. The plan itself is not pre-approved
-([ADR-0018](https://github.com/matthewalton/speccle/blob/main/docs/adr/0018-skills-announce-criteria-and-end-with-a-spec-summary.md));
+plan back. The plan itself is not pre-approved;
 open key decisions were the one thing worth waiting for, and they were settled in
 phase 4 — a misrouted plan is corrected by interrupt, like any other announcement.
 

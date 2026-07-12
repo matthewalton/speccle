@@ -50,11 +50,14 @@ Node ≥ 24 runs TypeScript directly — no build step needed to run the CLI fro
 - `packages/plugin` — the Claude Code plugin (the skills), one `skills/<name>/SKILL.md`
   each. Skills hold the judgement and shell out to the oracle for the deterministic parts.
   A skill may only _order_ the agent to read a doc that is bundled beside it under
-  `skills/<name>/references/`; anything reachable only over the network is a citation,
-  never an instruction. Those reference files are **generated** — edit the source under
-  `docs/` and run `pnpm sync:plugin-refs`; `pnpm check:plugin-refs` guards them in
-  pre-commit. Links out of `packages/plugin` must be absolute `github.com` URLs: an
-  installed plugin caches only that directory, so `../../` escapes it.
+  `skills/<name>/references/`. Those reference files are **generated** — edit the source
+  under `docs/` and run `pnpm sync:plugin-refs`; `pnpm check:plugin-refs` guards them in
+  pre-commit. Skill bodies carry **no links out of `packages/plugin`** — no ADR or doc
+  citations ([ADR-0028](docs/adr/0028-shipped-skills-carry-no-repo-citations.md)): an
+  installed plugin caches only that directory, and its readers don't have this repo.
+  Which ADRs govern each skill is tracked in
+  [docs/skill-provenance.md](docs/skill-provenance.md) — update it in the same commit as
+  the skill change it explains.
 - `targets/checkout` — toy target proving the tooling: it **must** follow
   [docs/convention.md](docs/convention.md), lint clean, and keep every criterion claimed
   by a tagged test. It is a regression fixture, not example code to freely restyle. Not

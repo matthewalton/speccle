@@ -1,6 +1,7 @@
 # 0014 — A skill bundles the docs it orders you to read
 
-- Status: accepted
+- Status: accepted (citations amended by
+  [ADR-0028](0028-shipped-skills-carry-no-repo-citations.md))
 - Date: 2026-07-09
 
 ## Context

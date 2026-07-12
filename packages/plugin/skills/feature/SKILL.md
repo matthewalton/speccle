@@ -8,25 +8,19 @@ allowed-tools: Read(/${CLAUDE_PLUGIN_ROOT}/skills/*/references/**)
 
 The pipeline: **plan → spec → implement → strengthen**. Each stage is a child skill of
 this plugin, invoked with the Skill tool, in order, with one permitted stop: key
-decisions the input leaves open are settled with the user at the plan stage
-([ADR-0022](https://github.com/matthewalton/speccle/blob/main/docs/adr/0022-feature-orchestrates-plan-spec-implement-strengthen.md),
-[ADR-0027](https://github.com/matthewalton/speccle/blob/main/docs/adr/0027-plan-feature-settles-key-decisions-with-the-human.md)).
+decisions the input leaves open are settled with the user at the plan stage.
 This skill owns the sequencing and the state carried between stages — the judgement
 lives in the children, and each child is also invocable on its own.
 
 Speccle's words are fixed and mandatory: "criterion id", not "tag"; "amend", not
-"edit" or "update"; "spec summary", not "approval gate". The canonical glossary is
-[CONTEXT.md](https://github.com/matthewalton/speccle/blob/main/CONTEXT.md).
+"edit" or "update"; "spec summary", not "approval gate".
 
 ## The pipeline
 
 1. **`speccle:plan-feature`** — takes the input as it comes, explores the repo,
    settles any key decisions the input leaves open with the user — the pipeline's one
-   blocking stop
-   ([ADR-0027](https://github.com/matthewalton/speccle/blob/main/docs/adr/0027-plan-feature-settles-key-decisions-with-the-human.md)) —
-   and announces the plan: the **route** (new / amend / carve), the feature folder,
-   the key, and each key decision with how it was settled
-   ([ADR-0023](https://github.com/matthewalton/speccle/blob/main/docs/adr/0023-plan-feature-routes-new-amend-or-carve.md)).
+   blocking stop — and announces the plan: the **route** (new / amend / carve), the
+   feature folder, the key, and each key decision with how it was settled.
    If the route is **carve**, stop here: hand the user to `carve-feature` — the
    behaviour already runs, and governing it is a different job. A mixed request is a
    carve followed by a `feature` run in amend mode, never one pass.
@@ -50,8 +44,8 @@ wrong while drafting, the plan was wrong, and saying so beats obeying it.
 
 ## One stop, one summary
 
-Children announce as they go — the plan, then the criteria the moment they lint clean
-([ADR-0018](https://github.com/matthewalton/speccle/blob/main/docs/adr/0018-skills-announce-criteria-and-end-with-a-spec-summary.md)).
+Children announce as they go — the plan, then the criteria the moment they lint
+clean.
 The human interrupts at any point; past the plan stage's key decisions, the pipeline
 never waits. Treat "looks good, and also…" at any stage as a change request: re-enter
 the stage it names and re-run the stages after it.

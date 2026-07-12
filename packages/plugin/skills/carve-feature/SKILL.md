@@ -8,22 +8,19 @@ allowed-tools: Read(/${CLAUDE_PLUGIN_ROOT}/skills/*/references/**)
 
 Take a region of code that already works and make it a governed feature folder: the
 markdown contract — `SPEC.md`, `CONTEXT.md`, `AGENTS.md`, `decisions/` — derived from
-its observed behaviour, and every criterion claimed by a tagged test. The code's behaviour does not change — a carve is a change of
-governance, not of code
-([ADR-0017](https://github.com/matthewalton/speccle/blob/main/docs/adr/0017-carve-feature-specs-observed-behaviour-and-changes-no-code.md)).
+its observed behaviour, and every criterion claimed by a tagged test. The code's
+behaviour does not change — a carve is a change of governance, not of code.
 
 If the user is describing behaviour that does not exist yet, that is the `feature`
 pipeline, not a carve. A request that mixes the two ("spec this up and fix the
 rounding while you're in there") is a carve followed by governed work — never one
-pass ([ADR-0023](https://github.com/matthewalton/speccle/blob/main/docs/adr/0023-plan-feature-routes-new-amend-or-carve.md)).
+pass.
 
 The shape of the folder is fixed by the convention, bundled beside this skill. Read
 `${CLAUDE_SKILL_DIR}/references/convention.md` before deriving anything.
 
 Speccle's words are fixed and mandatory: "criterion id", not "tag"; "statement", not
 "title"; "carve", not "retrofit" or "migration"; "spec summary", not "approval gate".
-The canonical glossary is
-[CONTEXT.md](https://github.com/matthewalton/speccle/blob/main/CONTEXT.md).
 
 **This skill does not measure oracle strength.** A carve can finish well-specified and
 weakly defended; a fresh carve is `strengthen`'s natural next target, and saying so is
@@ -39,8 +36,7 @@ and show them exactly what is wrong; do not do it for them.
 
 - **The boundary is named for the feature.** An unnamed catch-all (`src/`, `lib/`) is
   never a feature folder, even when it holds the project's only feature — renaming it
-  is the pre-carve refactor case, not a valid boundary
-  ([ADR-0019](https://github.com/matthewalton/speccle/blob/main/docs/adr/0019-a-feature-folder-is-named-and-has-a-fixed-shape.md)).
+  is the pre-carve refactor case, not a valid boundary.
 - **Source must already sit in the boundary's `src/`.** Source loose at the boundary
   root, or smeared across the tree, is the same case: show the user which files live
   where and what the shape should be.
@@ -86,12 +82,10 @@ to embody.
 The carve-specific part is `CONTEXT.md`: adopt the language the code already uses.
 The terms are the names in the source, and the _Avoid_ lines retire the synonyms the
 codebase mixes — a carve is often the first time anyone writes down which of three
-interchangeable names is canonical
-([ADR-0005](https://github.com/matthewalton/speccle/blob/main/docs/adr/0005-each-feature-carries-its-own-context-md.md)).
+interchangeable names is canonical.
 It is a glossary only: a choice the code embodies that spans criteria (a keying
 strategy, a rounding policy) is an ADR in `decisions/`, recording what the code does
-and whatever "why" survives
-([ADR-0021](https://github.com/matthewalton/speccle/blob/main/docs/adr/0021-feature-decisions-are-adrs-context-md-is-glossary-only.md)).
+and whatever "why" survives.
 In `AGENTS.md`, state how to work the slice — run its tests, find the contract — and
 nothing about behaviour.
 
@@ -119,8 +113,7 @@ input, which usually means going back to the code to look.
 
 ## 5. Announce the derivation — and keep going
 
-Show two things, then proceed straight into phase 6 without waiting
-([ADR-0018](https://github.com/matthewalton/speccle/blob/main/docs/adr/0018-skills-announce-criteria-and-end-with-a-spec-summary.md)):
+Show two things, then proceed straight into phase 6 without waiting:
 
 - **The criteria** — ids and statements, as `implement-feature` does. What the human
   will rule on later is more than wording: whether your reading of the code matches
@@ -143,7 +136,7 @@ files and the markdown contract — `SPEC.md`, `CONTEXT.md`, `AGENTS.md`, `decis
 
 - **Tag the existing tests.** A test claims a criterion when the `[KEY-n]` token
   appears in its full concatenated name — renaming the enclosing `describe` is the
-  idiom ([ADR-0004](https://github.com/matthewalton/speccle/blob/main/docs/adr/0004-tests-claim-criteria-in-the-full-test-name.md)).
+  idiom.
   Tag only tests that assert the criterion's behaviour, not every test that happens to
   execute the code. Tests that map to no criterion stay as they are — untagged is
   honest; do not delete or reword them.
@@ -158,8 +151,7 @@ files and the markdown contract — `SPEC.md`, `CONTEXT.md`, `AGENTS.md`, `decis
   reason to touch the source.
 
 There is no tracer criterion — the tracer proves a path connects, and a carve's path is
-proven by the code already running
-([ADR-0013](https://github.com/matthewalton/speccle/blob/main/docs/adr/0013-implement-feature-traces-one-criterion-end-to-end-first.md)).
+proven by the code already running.
 Claim criteria in document order, suite green at every criterion boundary.
 
 ## 7. Confirm done

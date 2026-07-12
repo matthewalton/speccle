@@ -7,16 +7,14 @@ allowed-tools: Read(/${CLAUDE_PLUGIN_ROOT}/skills/*/references/**)
 # strengthen
 
 A slice can be green and badly defended. `implement-feature` leaves it that way on
-purpose; this skill closes the gap — as the final stage of the `feature` pipeline
-([ADR-0022](https://github.com/matthewalton/speccle/blob/main/docs/adr/0022-feature-orchestrates-plan-spec-implement-strengthen.md)),
-or standalone on its own cadence.
+purpose; this skill closes the gap — as the final stage of the `feature` pipeline, or
+standalone on its own cadence.
 
 Measure oracle strength per criterion, then act on every **surviving mutant** — the exact
 code change no test noticed. The routing call is the whole job; §4 is how to make it.
 
 Speccle's words are mandatory: "oracle strength", not "mutation score"; "surviving
-mutant", not "missed mutation"; "test-fitting", not "gaming the score". The canonical
-glossary is [CONTEXT.md](https://github.com/matthewalton/speccle/blob/main/CONTEXT.md).
+mutant", not "missed mutation"; "test-fitting", not "gaming the score".
 
 ## 1. Resolve the oracle
 
@@ -32,8 +30,7 @@ If neither resolves, point the user at the install steps in Speccle's README and
 ## 2. Require the stack, and never install it silently
 
 Oracle strength needs to know which tests covered each mutant, and that constrains the
-target to TypeScript + vitest + StrykerJS
-([ADR-0008](https://github.com/matthewalton/speccle/blob/main/docs/adr/0008-v1-targets-ts-vitest-stryker-only.md)). Check for
+target to TypeScript + vitest + StrykerJS. Check for
 all four before running anything:
 
 | Requirement                       | Where                                |
@@ -103,8 +100,7 @@ Four fields are not routing work, and are worth saying out loud before you start
 
 Never route a criterion, and never route a percentage — a criterion under 100% always has
 at least one survivor to act on, and one at 100% has none, so the number carries nothing
-the survivor list does not
-([ADR-0012](https://github.com/matthewalton/speccle/blob/main/docs/adr/0012-strengthen-routes-on-the-survivor-not-the-score.md)).
+the survivor list does not.
 Route each survivor, and ask one question of it:
 
 > Can I write an assertion that **follows from the criterion's statement**, and that fails
@@ -112,8 +108,7 @@ Route each survivor, and ask one question of it:
 
 **Machine path — yes.** The statement already promises the behaviour this mutant breaks;
 the suite just never checked it. Write the killing test under that criterion id, exactly
-as `implement-feature` does — the `[KEY-n]` token in the full concatenated name
-([ADR-0004](https://github.com/matthewalton/speccle/blob/main/docs/adr/0004-tests-claim-criteria-in-the-full-test-name.md)).
+as `implement-feature` does — the `[KEY-n]` token in the full concatenated name.
 Re-run, confirm the survivor is gone. No pause; this is why it is the machine path.
 
 **Human path — no, and the behaviour matters.** No criterion entails it, so the spec is
@@ -121,8 +116,7 @@ silent or too vague to test. Draft a sharper statement, or the new criterion the
 owes, taking the next never-used number under the key. Draft it in the target's `SPEC.md`
 itself — the spec edit _is_ the draft, and lint reads the real file. Lint it clean,
 **announce it** — id and statement — and keep going: the survivor takes the machine path
-under the new id
-([ADR-0018](https://github.com/matthewalton/speccle/blob/main/docs/adr/0018-skills-announce-criteria-and-end-with-a-spec-summary.md)).
+under the new id.
 The human rules on every criterion this run added at the spec summary in §5; an overruled
 one is reverted from the spec along with its test, returning its survivor to the report.
 
@@ -150,8 +144,7 @@ mutant, and it is how mutation testing rots into a score chase.
 
 These survivors are the human path. The spec owes a criterion about what the rejection
 tells the caller. Draft it, announce it, test it — and watch `[CHECKOUT-3]` reach 100%
-untouched, because a kill counts for every criterion covering the mutant
-([ADR-0011](https://github.com/matthewalton/speccle/blob/main/docs/adr/0011-oracle-strength-credits-a-kill-to-every-covering-criterion.md)).
+untouched, because a kill counts for every criterion covering the mutant.
 
 Rising oracle strength and a sharpening spec are the same motion. If strength rose and the
 spec did not change, check that you did not fit a test to a mutant.

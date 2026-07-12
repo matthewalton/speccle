@@ -4,8 +4,8 @@
 # The Speccle convention
 
 The written contract every skill and every Speccle tool implements. Terminology is
-defined in [`CONTEXT.md`](https://github.com/matthewalton/speccle/blob/main/CONTEXT.md); decisions behind this shape are in
-[`docs/adr`](https://github.com/matthewalton/speccle/tree/main/docs/adr).
+defined in `CONTEXT.md`; decisions behind this shape are in
+`docs/adr`.
 
 ## The feature folder
 
@@ -81,7 +81,7 @@ The feature's glossary, in the style of this repo's own root `CONTEXT.md`: the d
 language — each term defined once, with an _Avoid_ line naming the synonyms not to use.
 
 A glossary only. Decisions never live here — they are ADRs in `decisions/`
-([ADR-0021](https://github.com/matthewalton/speccle/blob/main/docs/adr/0021-feature-decisions-are-adrs-context-md-is-glossary-only.md)). The
+(ADR-0021). The
 boundary: about a word → `CONTEXT.md`; about one behaviour → that criterion's body in
 `SPEC.md`; a choice spanning criteria → `decisions/`.
 
@@ -117,7 +117,7 @@ coverage reports already carry full names, so the join is mechanical.
 Tools find every `SPEC.md` under the target root. Directories named `node_modules`,
 `dist`, `fixtures`, or `__fixtures__` — and dot-directories — are never entered. The
 skip list is fixed, not configuration
-([ADR-0016](https://github.com/matthewalton/speccle/blob/main/docs/adr/0016-spec-discovery-skips-fixture-directories.md)): a project that
+(ADR-0016): a project that
 fixtures deliberately dirty specs for its own tests still lints clean at its root,
 and a feature directory may not take one of the skipped names.
 
@@ -152,7 +152,7 @@ predicates that name activity without an outcome (`is handled`, `works`, `suppor
 and main clauses that name a property (`The dashboard is beautiful`). Any other verb
 passes, including a domain verb the rule has never seen (`a refund credits the
 customer`). It under-flags by design
-([ADR-0010](https://github.com/matthewalton/speccle/blob/main/docs/adr/0010-unmeasurable-flags-vacuous-shapes-not-unlisted-verbs.md)).
+(ADR-0010).
 
 ## v1 target stack
 

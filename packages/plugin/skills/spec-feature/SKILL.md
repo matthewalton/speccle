@@ -7,8 +7,7 @@ allowed-tools: Read(/${CLAUDE_PLUGIN_ROOT}/skills/*/references/**)
 # spec-feature
 
 Produce the markdown contract — `SPEC.md`, `CONTEXT.md`, `AGENTS.md`, `decisions/` —
-for one feature, and lint it clean. Stage 2 of the `feature` pipeline
-([ADR-0022](https://github.com/matthewalton/speccle/blob/main/docs/adr/0022-feature-orchestrates-plan-spec-implement-strengthen.md)),
+for one feature, and lint it clean. Stage 2 of the `feature` pipeline,
 and complete on its own when the user wants a spec without an implementation. This
 skill writes markdown only — tests and code are `implement-feature`'s job.
 
@@ -18,8 +17,7 @@ contract, and this skill only restates the parts drafts get wrong.
 
 Speccle's words are fixed and mandatory: "criterion id", not "tag"; "statement", not
 "title"; "body", not "notes"; "lint violation", not "error" or "warning"; "amend",
-not "edit" or "update". The canonical glossary is
-[CONTEXT.md](https://github.com/matthewalton/speccle/blob/main/CONTEXT.md).
+not "edit" or "update".
 
 ## 1. Start from a plan
 
@@ -27,9 +25,7 @@ In the pipeline, `plan-feature` hands you the route, the feature folder, the key
 any key decisions it settled with the user — each marked agreed or defaulted.
 Standalone, settle those the way `plan-feature` does — route on where the behaviour
 lives, read every other `SPEC.md`'s frontmatter before picking a key, and put key
-decisions the input leaves open to the user before drafting
-([ADR-0023](https://github.com/matthewalton/speccle/blob/main/docs/adr/0023-plan-feature-routes-new-amend-or-carve.md),
-[ADR-0027](https://github.com/matthewalton/speccle/blob/main/docs/adr/0027-plan-feature-settles-key-decisions-with-the-human.md)).
+decisions the input leaves open to the user before drafting.
 Record each settled decision by the routing rule below: spanning criteria → an ADR in
 `decisions/`, about one behaviour → that criterion's body. No key decision lives only
 in the conversation.
@@ -53,11 +49,9 @@ lands. The parts worth restating because they are where drafts go wrong:
   total would give £1.19" beats "3 × £1.99 → £1.20", which silently depends on
   whether that is one line item or three.
 - **The routing rule.** About a word → `CONTEXT.md`, a glossary only — every term
-  gets an _Avoid_ line naming the synonyms the feature will not use
-  ([ADR-0005](https://github.com/matthewalton/speccle/blob/main/docs/adr/0005-each-feature-carries-its-own-context-md.md)).
+  gets an _Avoid_ line naming the synonyms the feature will not use.
   About one behaviour → that criterion's body. A choice spanning criteria → an ADR in
-  `decisions/`
-  ([ADR-0021](https://github.com/matthewalton/speccle/blob/main/docs/adr/0021-feature-decisions-are-adrs-context-md-is-glossary-only.md)).
+  `decisions/`.
 - **`AGENTS.md` states how to work the slice**, not what it does: how to run its
   tests, and where the contract lives. Behaviour stays in `SPEC.md` — duplicating it
   here is drift waiting to happen.
@@ -118,8 +112,7 @@ beautiful**"). Say what is observably true instead; the rule is telling you the
 criterion has no outcome to test, not that it dislikes your wording.
 
 The rules are fixed and unconfigurable, and there is one severity: a spec lints clean
-or it does not
-([ADR-0007](https://github.com/matthewalton/speccle/blob/main/docs/adr/0007-lint-rules-are-fixed-heuristics.md)).
+or it does not.
 
 ## 4. Announce the criteria — and keep going
 
@@ -127,8 +120,7 @@ Show the criteria — ids and statements; on the amend route, also each id retir
 why. Then proceed: in the pipeline, into `implement-feature`; standalone, to the
 hand-back. Do not ask for approval and do not wait — the human owns the criteria, but
 that ownership is exercised in the spec summary (or by interrupting now), not at a
-blocking pre-approval
-([ADR-0018](https://github.com/matthewalton/speccle/blob/main/docs/adr/0018-skills-announce-criteria-and-end-with-a-spec-summary.md)).
+blocking pre-approval.
 
 If the human does interject — now or at any point — treat "looks good, and also…" as
 a change request: amend the spec, re-lint, announce again.
