@@ -1,7 +1,7 @@
 ---
 name: conform
 description: Bring already-governed feature folders up to the current convention after it changes — sweep every SPEC.md, diagnose each slice's drift against the convention (folder shape, missing contract files, decisions content in CONTEXT.md, lint violations), announce the drift report, then apply form-only fixes with the suite green throughout, ending with a spec summary. Use when the user upgrades Speccle or its convention and wants existing features updated, asks to bring features up to convention or check for drift, or says "conform this", "conform the features", "the convention changed".
-allowed-tools: Read(/${CLAUDE_SKILL_DIR}/references/**)
+allowed-tools: Read(/${CLAUDE_PLUGIN_ROOT}/skills/*/references/**)
 ---
 
 # conform

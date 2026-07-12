@@ -1,7 +1,7 @@
 ---
 name: plan-feature
 description: Shape a feature request into a plan — take prose, a ticket, or a conversation as it comes, explore the repo, and route the work — a new slice, an amendment to the slice that already owns the behaviour, or a carve — announcing the route, feature folder, and key. Use when the user wants to plan or scope a feature before building it, asks where a behaviour should live, or asks whether something is a new feature or a change to an existing one.
-allowed-tools: Read(/${CLAUDE_SKILL_DIR}/references/**)
+allowed-tools: Read(/${CLAUDE_PLUGIN_ROOT}/skills/*/references/**)
 ---
 
 # plan-feature

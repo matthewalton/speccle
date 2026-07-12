@@ -1,7 +1,7 @@
 ---
 name: spec-feature
 description: Draft or amend a feature's markdown contract — SPEC.md, CONTEXT.md, AGENTS.md, decisions/ — from a plan or any raw input, lint it clean with the oracle, and announce the criteria, without writing any tests or code. Use when the user wants a spec drafted or amended but not yet implemented, wants acceptance criteria written for a behaviour, or says "spec this", "draft the criteria", "add a criterion to this slice".
-allowed-tools: Read(/${CLAUDE_SKILL_DIR}/references/**)
+allowed-tools: Read(/${CLAUDE_PLUGIN_ROOT}/skills/*/references/**)
 ---
 
 # spec-feature

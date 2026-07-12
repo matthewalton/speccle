@@ -1,7 +1,7 @@
 ---
 name: carve-feature
 description: Bring existing, ungoverned code under the convention without changing it — derive SPEC.md and CONTEXT.md from what the code observably does, lint them clean, announce the derived criteria and findings, then claim every criterion by tagging the tests that already defend it and writing tests for what nothing claims, ending with a spec summary the human rules on. Use when the user wants to retrofit a spec onto working code, govern an existing module, bring legacy code into a slice, or says "carve this", "carve it into a slice", "spec what this already does".
-allowed-tools: Read(/${CLAUDE_SKILL_DIR}/references/**)
+allowed-tools: Read(/${CLAUDE_PLUGIN_ROOT}/skills/*/references/**)
 ---
 
 # carve-feature

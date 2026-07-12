@@ -1,6 +1,8 @@
 # 0025 — Skill frontmatter grants read access to bundled references
 
-- Status: accepted
+- Status: accepted; the grant's spelling and placement are superseded by
+  [0026](0026-every-skill-carries-the-plugin-wide-references-grant.md) — the per-skill
+  grant never fires for Skill-tool children
 - Date: 2026-07-12
 
 ## Context

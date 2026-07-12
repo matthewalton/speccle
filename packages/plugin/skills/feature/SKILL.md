@@ -1,6 +1,7 @@
 ---
 name: feature
 description: Build or change a feature end to end — plan the slice and route it (new folder, or amend the slice that already owns the behaviour), draft or amend its markdown contract, lint clean, implement with tagged tests, then measure oracle strength as the built-in review gate. Use when the user wants to build, implement, or spec a feature, extend or amend an existing one, hands over a ticket or prose description to turn into a slice, or says "speccle this", "implement this feature", "add this to the checkout feature".
+allowed-tools: Read(/${CLAUDE_PLUGIN_ROOT}/skills/*/references/**)
 ---
 
 # feature

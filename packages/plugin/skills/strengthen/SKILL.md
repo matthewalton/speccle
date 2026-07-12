@@ -1,6 +1,7 @@
 ---
 name: strengthen
 description: Measure how well a feature's tests defend its code — run mutation and coverage, read the per-criterion oracle-strength heatmap, and route every surviving mutant to a killing test or a sharper criterion. Use when the user wants to strengthen tests, check oracle strength, asks whether tests would catch a bug, wants to kill surviving mutants, or says "strengthen this", "how well is this defended", "run the heatmap".
+allowed-tools: Read(/${CLAUDE_PLUGIN_ROOT}/skills/*/references/**)
 ---
 
 # strengthen

@@ -1,7 +1,7 @@
 ---
 name: implement-feature
 description: Implement an already-specced slice — write token-tagged tests first and the code that makes them green, one criterion at a time, tracer criterion first on a new slice. Use when a linted SPEC.md exists and the user wants it implemented, wants tests and code for drafted criteria, or says "make the slice green", "implement the spec". For a feature that has no spec yet, the whole job — plan, spec, implement, strengthen — is the feature skill.
-allowed-tools: Read(/${CLAUDE_SKILL_DIR}/references/**)
+allowed-tools: Read(/${CLAUDE_PLUGIN_ROOT}/skills/*/references/**)
 ---
 
 # implement-feature
