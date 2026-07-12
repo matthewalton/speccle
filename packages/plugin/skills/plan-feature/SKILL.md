@@ -1,6 +1,7 @@
 ---
 name: plan-feature
 description: Shape a feature request into a plan — take prose, a ticket, or a conversation as it comes, explore the repo, and route the work — a new slice, an amendment to the slice that already owns the behaviour, or a carve — announcing the route, feature folder, and key. Use when the user wants to plan or scope a feature before building it, asks where a behaviour should live, or asks whether something is a new feature or a change to an existing one.
+allowed-tools: Read(/${CLAUDE_SKILL_DIR}/references/**)
 ---
 
 # plan-feature
@@ -12,8 +13,8 @@ This is stage 1 of the `feature` pipeline
 and it is also useful alone: a plan is a cheap thing to be wrong about out loud.
 
 The folder shape and key rules this skill plans against are fixed by the convention,
-bundled beside this skill at `references/convention.md`. Read it before shaping
-anything.
+bundled beside this skill. Read `${CLAUDE_SKILL_DIR}/references/convention.md` before
+shaping anything.
 
 Speccle's words are fixed and mandatory: "amend", not "edit" or "update"; "feature
 key", not "prefix"; "criterion id", not "tag". The canonical glossary is

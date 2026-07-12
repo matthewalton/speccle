@@ -1,6 +1,7 @@
 ---
 name: carve-feature
 description: Bring existing, ungoverned code under the convention without changing it — derive SPEC.md and CONTEXT.md from what the code observably does, lint them clean, announce the derived criteria and findings, then claim every criterion by tagging the tests that already defend it and writing tests for what nothing claims, ending with a spec summary the human rules on. Use when the user wants to retrofit a spec onto working code, govern an existing module, bring legacy code into a slice, or says "carve this", "carve it into a slice", "spec what this already does".
+allowed-tools: Read(/${CLAUDE_SKILL_DIR}/references/**)
 ---
 
 # carve-feature
@@ -16,8 +17,8 @@ pipeline, not a carve. A request that mixes the two ("spec this up and fix the
 rounding while you're in there") is a carve followed by governed work — never one
 pass ([ADR-0023](https://github.com/matthewalton/speccle/blob/main/docs/adr/0023-plan-feature-routes-new-amend-or-carve.md)).
 
-The shape of the folder is fixed by the convention, bundled beside this skill at
-`references/convention.md`. Read it before deriving anything.
+The shape of the folder is fixed by the convention, bundled beside this skill. Read
+`${CLAUDE_SKILL_DIR}/references/convention.md` before deriving anything.
 
 Speccle's words are fixed and mandatory: "criterion id", not "tag"; "statement", not
 "title"; "carve", not "retrofit" or "migration"; "spec summary", not "approval gate".

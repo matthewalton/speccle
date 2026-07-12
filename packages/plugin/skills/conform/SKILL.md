@@ -1,6 +1,7 @@
 ---
 name: conform
 description: Bring already-governed feature folders up to the current convention after it changes — sweep every SPEC.md, diagnose each slice's drift against the convention (folder shape, missing contract files, decisions content in CONTEXT.md, lint violations), announce the drift report, then apply form-only fixes with the suite green throughout, ending with a spec summary. Use when the user upgrades Speccle or its convention and wants existing features updated, asks to bring features up to convention or check for drift, or says "conform this", "conform the features", "the convention changed".
+allowed-tools: Read(/${CLAUDE_SKILL_DIR}/references/**)
 ---
 
 # conform
@@ -16,9 +17,9 @@ Two neighbours this skill is not. Ungoverned code — no `SPEC.md` — is a **ca
 (`carve-feature`); changing what a criterion _means_ is an **amend** (`spec-feature`).
 A request that mixes conforming with either is two passes, never one.
 
-The shape being conformed _to_ is fixed by the convention, bundled beside this skill
-at `references/convention.md`. Read it before diagnosing anything — the checklist
-below is applied against it, not from memory.
+The shape being conformed _to_ is fixed by the convention, bundled beside this skill.
+Read `${CLAUDE_SKILL_DIR}/references/convention.md` before diagnosing anything — the
+checklist below is applied against it, not from memory.
 
 Speccle's words are fixed and mandatory: "conform", not "migrate" or "upgrade";
 "criterion id", not "tag"; "lint violation", not "error"; "spec summary", not

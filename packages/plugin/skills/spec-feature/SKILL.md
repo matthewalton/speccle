@@ -1,6 +1,7 @@
 ---
 name: spec-feature
 description: Draft or amend a feature's markdown contract — SPEC.md, CONTEXT.md, AGENTS.md, decisions/ — from a plan or any raw input, lint it clean with the oracle, and announce the criteria, without writing any tests or code. Use when the user wants a spec drafted or amended but not yet implemented, wants acceptance criteria written for a behaviour, or says "spec this", "draft the criteria", "add a criterion to this slice".
+allowed-tools: Read(/${CLAUDE_SKILL_DIR}/references/**)
 ---
 
 # spec-feature
@@ -11,9 +12,9 @@ for one feature, and lint it clean. Stage 2 of the `feature` pipeline
 and complete on its own when the user wants a spec without an implementation. This
 skill writes markdown only — tests and code are `implement-feature`'s job.
 
-The shape of the contract is fixed by the convention, bundled beside this skill at
-`references/convention.md`. Read it before drafting — it is the written contract, and
-this skill only restates the parts drafts get wrong.
+The shape of the contract is fixed by the convention, bundled beside this skill. Read
+`${CLAUDE_SKILL_DIR}/references/convention.md` before drafting — it is the written
+contract, and this skill only restates the parts drafts get wrong.
 
 Speccle's words are fixed and mandatory: "criterion id", not "tag"; "statement", not
 "title"; "body", not "notes"; "lint violation", not "error" or "warning"; "amend",
