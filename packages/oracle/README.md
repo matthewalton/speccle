@@ -8,7 +8,7 @@ speccle-oracle strength        # oracle-strength heatmap: per-criterion killed �
 speccle-oracle strength init   # provision the strength stack into a target
 ```
 
-- `lint` — enforce the [convention](../../docs/convention.md) over a repo's specs.
+- `lint` — enforce the [convention](https://github.com/matthewalton/speccle/blob/main/docs/convention.md) over a repo's specs.
 - `strength` — join specs + Stryker mutation report + coverage into per-criterion
   `killed ÷ covered`.
 - `strength init` — the setup `strength` measures against: install the stack's
@@ -19,7 +19,7 @@ invocation is a usage error, exit code 2). `strength` names the measurement — 
 strength — not the heatmap rendering of it.
 
 Everything here is a **Speccle tool**: deterministic, independently runnable, emits
-typed JSON, never calls an LLM (see [CONTEXT.md](../../CONTEXT.md)).
+typed JSON, never calls an LLM (see [CONTEXT.md](https://github.com/matthewalton/speccle/blob/main/CONTEXT.md)).
 
 ## lint
 
@@ -29,7 +29,7 @@ speccle-oracle lint [path] [--json]
 
 Lints every `SPEC.md` under `path` (default: current directory; a file path lints just
 that file) against the nine fixed rules in
-[docs/convention.md](../../docs/convention.md) — six structural, three quality
+[docs/convention.md](https://github.com/matthewalton/speccle/blob/main/docs/convention.md) — six structural, three quality
 heuristics judging the heading statement only (ADR-0007). One severity, no
 configuration.
 
@@ -46,7 +46,7 @@ speccle-oracle strength [path] [--json] [--mutation <file>] [--coverage <file>]
 Joins three inputs into one number per **acceptance criterion**: the `SPEC.md` files under
 `path`, a StrykerJS mutation report, and an Istanbul `json-summary`. A test claims a
 criterion by carrying its `[KEY-n]` token anywhere in its full concatenated name, describe
-titles included ([ADR-0004](../../docs/adr/0004-tests-claim-criteria-in-the-full-test-name.md)).
+titles included ([ADR-0004](https://github.com/matthewalton/speccle/blob/main/docs/adr/0004-tests-claim-criteria-in-the-full-test-name.md)).
 
 ```
 features/checkout/SPEC.md
@@ -64,7 +64,7 @@ oracle strength 95.7% (44/46)   line coverage 100.0%
 **Oracle strength** is `killed ÷ covered` — of the mutants a criterion's tests execute, the
 fraction the suite kills. A kill counts for every criterion covering that mutant, not only
 the one whose test detected it
-([ADR-0011](../../docs/adr/0011-oracle-strength-credits-a-kill-to-every-covering-criterion.md)),
+([ADR-0011](https://github.com/matthewalton/speccle/blob/main/docs/adr/0011-oracle-strength-credits-a-kill-to-every-covering-criterion.md)),
 so **a criterion below 100% always has at least one surviving mutant listed beneath it** —
 the exact code change no test noticed, which is what `strengthen` routes on. Line coverage
 sits alongside as the naïve baseline, precisely so the gap between them is visible.
@@ -90,7 +90,7 @@ speccle-oracle strength init [path] [--json] [--skip-install] [--mutate <glob>].
 ```
 
 Provisions the stack `strength` measures against
-([ADR-0029](../../docs/adr/0029-strength-init-provisions-the-stack-on-explicit-command.md))
+([ADR-0029](https://github.com/matthewalton/speccle/blob/main/docs/adr/0029-strength-init-provisions-the-stack-on-explicit-command.md))
 — the explicit command the `strengthen` skill offers when a target is missing pieces,
 instead of a hand-assembled config recipe. In one run it:
 
@@ -136,6 +136,6 @@ pnpm build                                 # tsc → dist/ (what the bin points 
 ```
 
 Spec parsing lives in [`src/spec.ts`](src/spec.ts), written once and shared by lint
-and the heatmap (ADR-0002). The [toy target project](../../targets/checkout) is the clean
+and the heatmap (ADR-0002). The [toy target project](https://github.com/matthewalton/speccle/blob/main/targets/checkout) is the clean
 proving ground; the dirty regression fixtures live in
 [`test/fixtures`](test/fixtures).

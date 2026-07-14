@@ -1,15 +1,36 @@
 {
   "name": "speccle-oracle",
-  "version": "0.0.0",
-  "private": true,
+  "version": "0.7.1",
   "description": "Speccle's deterministic tooling: spec lint and the oracle-strength heatmap. Never calls an LLM.",
   "license": "MIT",
+  "author": {
+    "name": "Matt Alton",
+    "email": "mattalton97@gmail.com"
+  },
+  "homepage": "https://github.com/matthewalton/speccle/tree/main/packages/oracle",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/matthewalton/speccle.git",
+    "directory": "packages/oracle"
+  },
+  "bugs": "https://github.com/matthewalton/speccle/issues",
+  "keywords": [
+    "spec",
+    "testing",
+    "mutation-testing",
+    "vertical-slices",
+    "oracle-strength"
+  ],
   "type": "module",
   "bin": {
     "speccle-oracle": "./dist/cli.js"
   },
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
+    "prepublishOnly": "pnpm build && pnpm test",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "coverage": "vitest run --coverage",
