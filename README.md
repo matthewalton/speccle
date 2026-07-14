@@ -191,7 +191,7 @@ the preset configs (see the
 
 Then get the skills into Claude Code, one of two ways:
 
-**Project-level** (ADR-0031) — vendor the skills into the repo so the whole team gets
+**Project-level** — vendor the skills into the repo so the whole team gets
 the pipeline by cloning; commit what lands:
 
 ```sh
