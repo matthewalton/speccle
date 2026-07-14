@@ -83,6 +83,48 @@ no spec declares are reported too.
 command exits `0` whenever it produced a report — judging a diff against a threshold is a
 separate concern.
 
+## strength init
+
+```sh
+speccle-oracle strength init [path] [--json] [--skip-install] [--mutate <glob>]...
+```
+
+Provisions the stack `strength` measures against
+([ADR-0029](../../docs/adr/0029-strength-init-provisions-the-stack-on-explicit-command.md))
+— the explicit command the `strengthen` skill offers when a target is missing pieces,
+instead of a hand-assembled config recipe. In one run it:
+
+- installs the missing devDependencies, pinned to the majors the join is proven on
+  (`vitest@^4`, `@vitest/coverage-istanbul@^4`, `@stryker-mutator/core@^9`,
+  `@stryker-mutator/vitest-runner@^9`), using the package manager the target's lockfile
+  names (pnpm / npm / yarn / bun);
+- writes `stryker.config.json` with the load-bearing preset fields —
+  `coverageAnalysis: "perTest"` and the `json` reporter at
+  `reports/mutation/mutation.json` (the paths `strength` reads by default) — and mutate
+  globs derived from the `SPEC.md` folders under `path` (no specs yet →
+  `features/**/*.ts`; override with `--mutate`, repeatable);
+- writes a `vitest.config.ts` with the istanbul provider and `json-summary` reporter.
+
+An existing Stryker or vitest/vite config is **kept, never overwritten** — init reports
+it and names the fields it must carry itself. The command is idempotent: re-running
+changes nothing that is already in place. `--skip-install` reports the install command
+instead of running it; `--json` emits the typed `InitReport` (see
+[`src/init.ts`](src/init.ts)). Running init at a target's root **is** the consent to
+write there — there is no postinstall hook or implicit trigger. Exit codes: `0` done,
+`2` usage error (including a `path` with no `package.json`).
+
+After init, the loop is the standard one:
+
+```sh
+npx vitest run --coverage    # → coverage/coverage-summary.json
+npx stryker run              # → reports/mutation/mutation.json
+speccle-oracle strength .
+```
+
+Repo-specific blind spots stay the target's decision: edit the written config's `mutate`
+globs to exclude what mutation can't reach (e.g. entry files only exercised through
+child processes).
+
 ## Development
 
 TypeScript ESM, zero runtime dependencies. Node ≥ 24 runs the sources directly:

@@ -184,6 +184,11 @@ Check it:
 speccle-oracle lint targets/checkout    # → "2 spec files, clean"
 ```
 
+A target repo that doesn't have the vitest + StrykerJS stack yet gets it in one
+command — `speccle-oracle strength init <path>` installs the devDependencies and writes
+the preset configs (see the
+[oracle README](packages/oracle/README.md#strength-init)).
+
 Then add the plugin to Claude Code:
 
 ```
