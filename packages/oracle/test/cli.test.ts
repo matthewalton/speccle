@@ -1,6 +1,9 @@
 import { spawnSync } from "node:child_process";
-import { resolve } from "node:path";
-import { describe, expect, it } from "vitest";
+import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join, resolve } from "node:path";
+import { afterEach, describe, expect, it } from "vitest";
+import type { InitReport } from "../src/init.ts";
 import type { LintReport } from "../src/lint.ts";
 import type { StrengthReport } from "../src/strength.ts";
 
@@ -164,5 +167,57 @@ describe("speccle-oracle strength (e2e)", () => {
 
   it("exits 2 on an unknown option", () => {
     expect(run("strength", STRENGTH, "--nope").status).toBe(2);
+  });
+});
+
+describe("speccle-oracle strength init (e2e)", () => {
+  const roots: string[] = [];
+
+  async function scaffold(): Promise<string> {
+    const root = await mkdtemp(join(tmpdir(), "speccle-init-e2e-"));
+    roots.push(root);
+    await writeFile(join(root, "package.json"), "{}");
+    return root;
+  }
+
+  afterEach(async () => {
+    await Promise.all(roots.splice(0).map((root) => rm(root, { recursive: true, force: true })));
+  });
+
+  it("emits the typed JSON report and writes both configs", async () => {
+    const root = await scaffold();
+    const { status, stdout } = run("strength", "init", root, "--skip-install", "--json");
+    expect(status).toBe(0);
+    const report = JSON.parse(stdout) as InitReport;
+    expect(report.files).toEqual([
+      { file: "stryker.config.json", action: "written" },
+      { file: "vitest.config.ts", action: "written" },
+    ]);
+    expect(report.installRan).toBe(false);
+    expect(report.installCommand).toContain("@stryker-mutator/vitest-runner@^9");
+  });
+
+  it("tells the human what was written and what to run", async () => {
+    const root = await scaffold();
+    const { status, stdout } = run("strength", "init", root, "--skip-install");
+    expect(status).toBe(0);
+    expect(stdout).toContain("wrote stryker.config.json");
+    expect(stdout).toContain("wrote vitest.config.ts");
+    expect(stdout).toContain("missing devDependencies — run:");
+  });
+
+  it("exits 2 when the target has no package.json", async () => {
+    const root = await mkdtemp(join(tmpdir(), "speccle-init-e2e-"));
+    roots.push(root);
+    const { status, stderr } = run("strength", "init", root, "--skip-install");
+    expect(status).toBe(2);
+    expect(stderr).toContain("no package.json");
+  });
+
+  it("exits 2 when --mutate is missing its glob", async () => {
+    const root = await scaffold();
+    const { status, stderr } = run("strength", "init", root, "--skip-install", "--mutate");
+    expect(status).toBe(2);
+    expect(stderr).toContain("--mutate needs a glob");
   });
 });

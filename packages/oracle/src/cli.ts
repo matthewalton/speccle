@@ -1,23 +1,31 @@
 #!/usr/bin/env node
+import { init } from "./init.ts";
 import { lint } from "./lint.ts";
-import { renderHuman, renderStrength } from "./render.ts";
+import { renderHuman, renderInit, renderStrength } from "./render.ts";
 import { DEFAULT_COVERAGE_SUMMARY, DEFAULT_MUTATION_REPORT, strength } from "./strength.ts";
 
 const USAGE = `Usage: speccle-oracle <command> [options]
 
 Commands:
-  lint [path] [--json]       Lint every SPEC.md under path (default: current directory)
-  strength [path] [--json]   Oracle-strength heatmap: per-criterion killed ÷ covered
+  lint [path] [--json]           Lint every SPEC.md under path (default: current directory)
+  strength [path] [--json]       Oracle-strength heatmap: per-criterion killed ÷ covered
+  strength init [path] [--json]  Provision the strength stack: devDependencies + configs
 
 strength options:
   --mutation <file>   Stryker JSON report   (default: ${DEFAULT_MUTATION_REPORT})
   --coverage <file>   Istanbul json-summary (default: ${DEFAULT_COVERAGE_SUMMARY})
+
+strength init options:
+  --mutate <glob>     Mutate glob for the Stryker config, repeatable
+                      (default: derived from the SPEC.md folders under path)
+  --skip-install      Report the install command instead of running it
 
 Exit codes: 0 clean, 1 violations, 2 usage error`;
 
 async function main(argv: string[]): Promise<number> {
   const [command, ...rest] = argv;
   if (command === "lint") return runLint(rest);
+  if (command === "strength" && rest[0] === "init") return runInit(rest.slice(1));
   if (command === "strength") return runStrength(rest);
   console.error(USAGE);
   return 2;
@@ -89,6 +97,44 @@ async function runStrength(args: string[]): Promise<number> {
 
   const color = process.stdout.isTTY && process.env.NO_COLOR === undefined;
   console.log(json ? JSON.stringify(report, null, 2) : renderStrength(report, color));
+  return 0;
+}
+
+async function runInit(args: string[]): Promise<number> {
+  let json = false;
+  let skipInstall = false;
+  const mutate: string[] = [];
+  const positional: string[] = [];
+
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i]!;
+    if (arg === "--json") json = true;
+    else if (arg === "--skip-install") skipInstall = true;
+    else if (arg === "--mutate") {
+      const value = args[++i];
+      if (value === undefined) {
+        console.error(`--mutate needs a glob\n\n${USAGE}`);
+        return 2;
+      }
+      mutate.push(value);
+    } else if (arg.startsWith("-")) {
+      console.error(`Unknown option: ${arg}\n\n${USAGE}`);
+      return 2;
+    } else positional.push(arg);
+  }
+  if (positional.length > 1) {
+    console.error(`strength init takes at most one path\n\n${USAGE}`);
+    return 2;
+  }
+
+  let report;
+  try {
+    report = await init(positional[0] ?? ".", { mutate, skipInstall });
+  } catch (err) {
+    console.error(message(err));
+    return 2;
+  }
+  console.log(json ? JSON.stringify(report, null, 2) : renderInit(report));
   return 0;
 }
 

@@ -1,5 +1,29 @@
+import type { InitReport } from "./init.ts";
 import type { LintReport } from "./lint.ts";
 import type { CriterionStrength, MutantSite, StrengthReport } from "./strength.ts";
+
+export function renderInit(report: InitReport): string {
+  const lines: string[] = [];
+  for (const { file, action } of report.files) {
+    lines.push(
+      action === "written" ? `wrote ${file}` : `kept ${file} — already present, left untouched`,
+    );
+  }
+  if (report.missingDeps.length === 0) {
+    lines.push("devDependencies already present");
+  } else if (report.installRan) {
+    lines.push(`installed ${report.missingDeps.join(", ")}`);
+  } else {
+    lines.push(`missing devDependencies — run: ${report.installCommand}`);
+  }
+  if (report.files.some((f) => f.action === "kept")) {
+    lines.push("");
+    lines.push("kept files must carry the strength stack themselves:");
+    lines.push('  stryker config: coverageAnalysis "perTest", the json reporter');
+    lines.push("  vitest config:  istanbul provider, json-summary reporter");
+  }
+  return lines.join("\n");
+}
 
 export function renderHuman(report: LintReport): string {
   if (report.files.length === 0) return "No SPEC.md files found.";

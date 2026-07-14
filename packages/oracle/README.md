@@ -3,13 +3,16 @@
 The deterministic tooling the skills invoke: one bin, two commands —
 
 ```
-speccle-oracle lint       # enforce the convention over a repo's specs
-speccle-oracle strength   # oracle-strength heatmap: per-criterion killed ÷ covered
+speccle-oracle lint            # enforce the convention over a repo's specs
+speccle-oracle strength        # oracle-strength heatmap: per-criterion killed ÷ covered
+speccle-oracle strength init   # provision the strength stack into a target
 ```
 
 - `lint` — enforce the [convention](../../docs/convention.md) over a repo's specs.
 - `strength` — join specs + Stryker mutation report + coverage into per-criterion
   `killed ÷ covered`.
+- `strength init` — the setup `strength` measures against: install the stack's
+  devDependencies and write the preset configs.
 
 The bin is named after the package; both commands are explicit subcommands (a bare
 invocation is a usage error, exit code 2). `strength` names the measurement — oracle

@@ -43,10 +43,12 @@ all four before running anything:
 `perTest` is the hard one: without it Stryker never records `coveredBy`, the join has
 nothing to walk back to criterion ids, and `oracle strength` exits `2` saying so.
 
-**If something is missing, stop and offer.** Show what is absent and the exact config or
-install command that fixes it, then wait. Never write to the target's `package.json`,
-lockfile, or test config without the user agreeing first — this skill measures someone
-else's project; it does not quietly re-tool it.
+**If something is missing, stop and offer.** Show what is absent, then offer the one
+command that provisions all of it — `speccle-oracle strength init <path>` installs the
+missing devDependencies and writes the preset configs, keeping any that already exist —
+and wait for the user's go-ahead before running it. Never write to the target's
+`package.json`, lockfile, or test config without the user agreeing first — this skill
+measures someone else's project; it does not quietly re-tool it.
 
 ## 3. Produce the reports, then read the heatmap
 
