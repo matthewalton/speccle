@@ -1,5 +1,6 @@
 import { spawnSync } from "node:child_process";
 import { access, readFile, writeFile } from "node:fs/promises";
+import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import { discoverSpecs } from "./discover.ts";
 
@@ -26,6 +27,7 @@ export interface InitReport {
   installRan: boolean;
   mutate: string[];
   files: InitFileResult[];
+  doubleLoad: boolean;
 }
 
 export interface InitOptions {
@@ -109,7 +111,8 @@ export async function init(root: string, options: InitOptions = {}): Promise<Ini
     ...Object.keys(packageJson.devDependencies ?? {}),
     ...Object.keys(packageJson.dependencies ?? {}),
   ]);
-  const missingDeps = STRENGTH_DEPS.filter((spec) => !declared.has(withoutVersion(spec)));
+  const wantedDeps = [`speccle-oracle@^${await ownVersion()}`, ...STRENGTH_DEPS];
+  const missingDeps = wantedDeps.filter((spec) => !declared.has(withoutVersion(spec)));
   const installCommand =
     missingDeps.length > 0 ? installCommandFor(packageManager, missingDeps) : null;
 
@@ -129,7 +132,47 @@ export async function init(root: string, options: InitOptions = {}): Promise<Ini
     installRan = true;
   }
 
-  return { root, packageManager, missingDeps, installCommand, installRan, mutate, files };
+  const doubleLoad = await detectDoubleLoad(root);
+
+  return {
+    root,
+    packageManager,
+    missingDeps,
+    installCommand,
+    installRan,
+    mutate,
+    files,
+    doubleLoad,
+  };
+}
+
+// The materialized copies must be the one source of truth: a target that vendors the
+// skills project-level should not also load the user-level plugin. Best-effort — the
+// settings shape is Claude Code's, not ours; absence of the file means no warning.
+export async function detectDoubleLoad(
+  root: string,
+  settingsFile = join(homedir(), ".claude", "settings.json"),
+): Promise<boolean> {
+  if (!(await exists(join(root, ".claude", "skills", "feature", "SKILL.md")))) return false;
+  let raw: string;
+  try {
+    raw = await readFile(settingsFile, "utf8");
+  } catch {
+    return false;
+  }
+  try {
+    const settings = JSON.parse(raw) as { enabledPlugins?: Record<string, boolean> };
+    return Object.entries(settings.enabledPlugins ?? {}).some(
+      ([plugin, enabled]) => enabled && plugin.startsWith("speccle@"),
+    );
+  } catch {
+    return false;
+  }
+}
+
+async function ownVersion(): Promise<string> {
+  const raw = await readFile(new URL("../package.json", import.meta.url), "utf8");
+  return (JSON.parse(raw) as { version: string }).version;
 }
 
 interface PackageJson {

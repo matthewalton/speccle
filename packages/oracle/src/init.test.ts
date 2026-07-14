@@ -1,8 +1,8 @@
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { init, mutateGlobs, strykerConfig, vitestConfig } from "./init.ts";
+import { detectDoubleLoad, init, mutateGlobs, strykerConfig, vitestConfig } from "./init.ts";
 
 const roots: string[] = [];
 
@@ -70,16 +70,15 @@ describe("init", () => {
       { file: "stryker.config.json", action: "written" },
       { file: "vitest.config.ts", action: "written" },
     ]);
-    expect(report.missingDeps).toEqual([
+    expect(report.missingDeps[0]).toMatch(/^speccle-oracle@\^\d+\.\d+\.\d+$/);
+    expect(report.missingDeps.slice(1)).toEqual([
       "vitest@^4",
       "@vitest/coverage-istanbul@^4",
       "@stryker-mutator/core@^9",
       "@stryker-mutator/vitest-runner@^9",
     ]);
     expect(report.installRan).toBe(false);
-    expect(report.installCommand).toBe(
-      "npm install -D vitest@^4 @vitest/coverage-istanbul@^4 @stryker-mutator/core@^9 @stryker-mutator/vitest-runner@^9",
-    );
+    expect(report.installCommand).toBe(`npm install -D ${report.missingDeps.join(" ")}`);
 
     const written = JSON.parse(await readFile(join(root, "stryker.config.json"), "utf8")) as {
       coverageAnalysis: string;
@@ -119,6 +118,7 @@ describe("init", () => {
     const root = await scaffold({
       "package.json": JSON.stringify({
         devDependencies: {
+          "speccle-oracle": "^0.7.1",
           vitest: "^4.1.10",
           "@vitest/coverage-istanbul": "^4.1.10",
           "@stryker-mutator/core": "^9.6.1",
@@ -129,6 +129,15 @@ describe("init", () => {
     const report = await init(root, { skipInstall: true });
     expect(report.missingDeps).toEqual([]);
     expect(report.installCommand).toBeNull();
+  });
+
+  it("pins the speccle-oracle devDependency to the running oracle's own version", async () => {
+    const root = await scaffold({ "package.json": "{}" });
+    const report = await init(root, { skipInstall: true });
+    const own = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8")) as {
+      version: string;
+    };
+    expect(report.missingDeps[0]).toBe(`speccle-oracle@^${own.version}`);
   });
 
   it("prefers explicit mutate globs over derivation", async () => {
@@ -147,5 +156,56 @@ describe("init", () => {
   it("refuses a root without a package.json", async () => {
     const root = await scaffold({});
     await expect(init(root, { skipInstall: true })).rejects.toThrow(/no package\.json/);
+  });
+});
+
+describe("detectDoubleLoad", () => {
+  async function vendorSkills(root: string): Promise<void> {
+    await mkdir(join(root, ".claude/skills/feature"), { recursive: true });
+    await writeFile(join(root, ".claude/skills/feature/SKILL.md"), "---\nname: feature\n---\n");
+  }
+
+  async function settingsFile(root: string, content: string): Promise<string> {
+    const file = join(root, "home/.claude/settings.json");
+    await mkdir(dirname(file), { recursive: true });
+    await writeFile(file, content);
+    return file;
+  }
+
+  it("warns when vendored skills and an enabled user-level speccle plugin coexist", async () => {
+    const root = await scaffold({});
+    await vendorSkills(root);
+    const settings = await settingsFile(
+      root,
+      JSON.stringify({ enabledPlugins: { "speccle@speccle-marketplace": true } }),
+    );
+    expect(await detectDoubleLoad(root, settings)).toBe(true);
+  });
+
+  it("stays quiet when the target has no vendored skills", async () => {
+    const root = await scaffold({});
+    const settings = await settingsFile(
+      root,
+      JSON.stringify({ enabledPlugins: { "speccle@speccle-marketplace": true } }),
+    );
+    expect(await detectDoubleLoad(root, settings)).toBe(false);
+  });
+
+  it("stays quiet when the user-level plugin is absent or disabled", async () => {
+    const root = await scaffold({});
+    await vendorSkills(root);
+    const disabled = await settingsFile(
+      root,
+      JSON.stringify({ enabledPlugins: { "speccle@speccle-marketplace": false } }),
+    );
+    expect(await detectDoubleLoad(root, disabled)).toBe(false);
+    expect(await detectDoubleLoad(root, join(root, "home/nowhere.json"))).toBe(false);
+  });
+
+  it("treats unreadable settings as no warning, never an error", async () => {
+    const root = await scaffold({});
+    await vendorSkills(root);
+    const mangled = await settingsFile(root, "{not json");
+    expect(await detectDoubleLoad(root, mangled)).toBe(false);
   });
 });

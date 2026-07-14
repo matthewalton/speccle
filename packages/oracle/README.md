@@ -94,16 +94,22 @@ Provisions the stack `strength` measures against
 — the explicit command the `strengthen` skill offers when a target is missing pieces,
 instead of a hand-assembled config recipe. In one run it:
 
-- installs the missing devDependencies, pinned to the majors the join is proven on
-  (`vitest@^4`, `@vitest/coverage-istanbul@^4`, `@stryker-mutator/core@^9`,
-  `@stryker-mutator/vitest-runner@^9`), using the package manager the target's lockfile
-  names (pnpm / npm / yarn / bun);
+- installs the missing devDependencies — `speccle-oracle` itself, caret-pinned to the
+  running oracle's own version, plus the stack pinned to the majors the join is proven
+  on (`vitest@^4`, `@vitest/coverage-istanbul@^4`, `@stryker-mutator/core@^9`,
+  `@stryker-mutator/vitest-runner@^9`) — using the package manager the target's
+  lockfile names (pnpm / npm / yarn / bun);
 - writes `stryker.config.json` with the load-bearing preset fields —
   `coverageAnalysis: "perTest"` and the `json` reporter at
   `reports/mutation/mutation.json` (the paths `strength` reads by default) — and mutate
   globs derived from the `SPEC.md` folders under `path` (no specs yet →
   `features/**/*.ts`; override with `--mutate`, repeatable);
 - writes a `vitest.config.ts` with the istanbul provider and `json-summary` reporter.
+
+Init also warns (best-effort, via `~/.claude/settings.json`) when the target vendors
+the speccle skills project-level in `.claude/skills/` while a user-level speccle plugin
+is still enabled — two copies of every skill would load
+([ADR-0031](https://github.com/matthewalton/speccle/blob/main/docs/adr/0031-project-level-install-rides-the-skills-cli.md)).
 
 An existing Stryker or vitest/vite config is **kept, never overwritten** — init reports
 it and names the fields it must carry itself. The command is idempotent: re-running

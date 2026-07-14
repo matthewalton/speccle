@@ -22,6 +22,12 @@ export function renderInit(report: InitReport): string {
     lines.push('  stryker config: coverageAnalysis "perTest", the json reporter');
     lines.push("  vitest config:  istanbul provider, json-summary reporter");
   }
+  if (report.doubleLoad) {
+    lines.push("");
+    lines.push("warning: this repo vendors the speccle skills project-level AND the");
+    lines.push("speccle plugin is enabled user-level — two copies of every skill will");
+    lines.push("load. Disable one: /plugin (user-level) or remove .claude/skills/ here.");
+  }
   return lines.join("\n");
 }
 

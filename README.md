@@ -189,7 +189,21 @@ command — `speccle-oracle strength init <path>` installs the devDependencies a
 the preset configs (see the
 [oracle README](packages/oracle/README.md#strength-init)).
 
-Then add the plugin to Claude Code:
+Then get the skills into Claude Code, one of two ways:
+
+**Project-level** (ADR-0031) — vendor the skills into the repo so the whole team gets
+the pipeline by cloning; commit what lands:
+
+```sh
+npx skills add matthewalton/speccle -a claude-code   # skills → .claude/skills/ + skills-lock.json
+npx speccle-oracle strength init                     # oracle devDep + strength stack + configs
+```
+
+Re-run `npx skills update` to refresh the vendored copies. Don't also install the
+user-level plugin — two copies of every skill would load; `strength init` warns if it
+sees both.
+
+**User-level** — the plugin, for just you, across all your projects:
 
 ```
 /plugin marketplace add matthewalton/speccle

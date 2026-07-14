@@ -6,9 +6,11 @@ allowed-tools: Read(/${CLAUDE_PLUGIN_ROOT}/skills/*/references/**)
 
 # feature
 
-The pipeline: **plan → spec → implement → strengthen**. Each stage is a child skill of
-this plugin, invoked with the Skill tool, in order, with one permitted stop: key
-decisions the input leaves open are settled with the user at the plan stage.
+The pipeline: **plan → spec → implement → strengthen**. Each stage is a sibling skill
+of this one, invoked with the Skill tool, in order, with one permitted stop: key
+decisions the input leaves open are settled with the user at the plan stage. Invoke
+each child under whatever namespace this skill itself runs in — `speccle:plan-feature`
+when installed as the plugin, bare `plan-feature` when the skills live project-level.
 This skill owns the sequencing and the state carried between stages — the judgement
 lives in the children, and each child is also invocable on its own.
 
@@ -17,19 +19,19 @@ Speccle's words are fixed and mandatory: "criterion id", not "tag"; "amend", not
 
 ## The pipeline
 
-1. **`speccle:plan-feature`** — takes the input as it comes, explores the repo,
+1. **`plan-feature`** — takes the input as it comes, explores the repo,
    settles any key decisions the input leaves open with the user — the pipeline's one
    blocking stop — and announces the plan: the **route** (new / amend / carve), the
    feature folder, the key, and each key decision with how it was settled.
    If the route is **carve**, stop here: hand the user to `carve-feature` — the
    behaviour already runs, and governing it is a different job. A mixed request is a
    carve followed by a `feature` run in amend mode, never one pass.
-2. **`speccle:spec-feature`** — drafts (new) or amends (amend) the markdown contract,
+2. **`spec-feature`** — drafts (new) or amends (amend) the markdown contract,
    lints until clean, announces the criteria, and keeps going.
-3. **`speccle:implement-feature`** — tagged tests first, then the code that makes
+3. **`implement-feature`** — tagged tests first, then the code that makes
    them green, one criterion at a time. Tracer criterion first on the **new** route;
    no tracer on **amend** — the slice's path already runs.
-4. **`speccle:strengthen`** — the built-in review gate: measure oracle strength on
+4. **`strengthen`** — the built-in review gate: measure oracle strength on
    the slice just built and route every surviving mutant. If the target lacks the
    required stack, report the slice green-but-unmeasured and stop — never re-tool
    the target silently.
