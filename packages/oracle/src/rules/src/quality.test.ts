@@ -219,6 +219,10 @@ describe("[LINT-13] code-voice", () => {
     expect(rules("Clearing invokes reset() on the basket")).toEqual(["code-voice"]);
   });
 
+  it("flags call parentheses around arguments", () => {
+    expect(rules("Clearing invokes reset(hard) on the basket")).toEqual(["code-voice"]);
+  });
+
   it("reports one violation naming the first signal only", () => {
     const violations = lintStatement("The `claims()` output lists basket.ts identifiers").filter(
       (v) => v.rule === "code-voice",

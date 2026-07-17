@@ -107,4 +107,14 @@ describe("[LINT-12] every violation message quotes its evidence", () => {
     const identifier = only(lint(statement("Adding calls addItem every time")), "code-voice");
     expect(identifier).toContain('identifier "addItem"');
   });
+
+  it("code-voice quotes an identifier fragment whole, nothing more", () => {
+    const snake = only(
+      lint(statement("The report writes coverage_summary on every run")),
+      "code-voice",
+    );
+    expect(snake).toContain('identifier "coverage_summary"');
+    const call = only(lint(statement("Clearing invokes reset() on the basket")), "code-voice");
+    expect(call).toContain('identifier "reset()"');
+  });
 });
