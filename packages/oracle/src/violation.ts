@@ -9,6 +9,7 @@ export const RULE_IDS = [
   "weasel-wording",
   "compound-criterion",
   "unmeasurable",
+  "code-voice",
 ] as const;
 
 export type RuleId = (typeof RULE_IDS)[number];

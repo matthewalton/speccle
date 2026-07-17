@@ -1,5 +1,5 @@
 import { readFile, stat } from "node:fs/promises";
-import { join, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { discoverSpecs, discoverTests } from "./discover.ts";
 import { CLAIM_TOKEN, compareCriterionIds, parseSpec } from "./spec.ts";
 
@@ -67,7 +67,17 @@ export async function claims(target: string): Promise<ClaimsReport> {
     }
   }
 
-  const testFiles = await discoverTests(root);
+  // A slice's tests live in its own folder: only test files under a spec's folder
+  // count, so unrelated tooling tests can never claim (or phantom-claim) a criterion.
+  const folders = [...new Set(specFiles.map((file) => dirname(file)))];
+  const found = new Set<string>();
+  for (const folder of folders) {
+    const abs = folder === "." ? root : join(root, folder);
+    for (const file of await discoverTests(abs)) {
+      found.add(folder === "." ? file : `${folder}/${file}`);
+    }
+  }
+  const testFiles = [...found].sort();
   const claimsById = new Map<string, TestClaim[]>();
   for (const file of testFiles) {
     for (const name of extractTestNames(await readFile(join(root, file), "utf8"))) {

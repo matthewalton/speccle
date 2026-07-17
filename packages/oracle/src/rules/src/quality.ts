@@ -9,7 +9,12 @@ export function qualityRules(specs: ParsedSpec[]): Violation[] {
       if (!c.wellFormed) continue;
       // Stryker disable next-line all: an empty statement yields no quality violation; the skip only saves work
       if (c.statement === "") continue;
-      out.push(...weaselWording(spec, c), ...compoundCriterion(spec, c), ...unmeasurable(spec, c));
+      out.push(
+        ...weaselWording(spec, c),
+        ...compoundCriterion(spec, c),
+        ...unmeasurable(spec, c),
+        ...codeVoice(spec, c),
+      );
     }
   }
   return out;
@@ -225,6 +230,53 @@ function namesOnlyAProperty(target: string): boolean {
   const mainClause = target.split(SUBORDINATOR)[0] ?? target;
   const match = COPULA_PROPERTY.exec(mainClause);
   return match !== null && !match[1]!.endsWith("ed");
+}
+
+const CODE_SPAN = /`[^`]*`/;
+
+/** Contract, not config: extending this list means changing docs/convention.md. */
+export const FILE_EXTENSIONS: readonly string[] = [
+  "cjs",
+  "css",
+  "html",
+  "js",
+  "json",
+  "jsx",
+  "md",
+  "mjs",
+  "sh",
+  "toml",
+  "ts",
+  "tsx",
+  "txt",
+  "yaml",
+  "yml",
+];
+
+const FILE_PATH = new RegExp(`\\b[\\w./-]*\\.(?:${FILE_EXTENSIONS.join("|")})\\b`);
+
+/**
+ * camelCase (two or more leading lowercase letters, so brand names like iPhone pass),
+ * snake_case, or call parentheses. Plain acronyms (JSON, HTTP) pass — under-flagging
+ * by design, like `unmeasurable`.
+ */
+const IDENTIFIER = /\b(?:[a-z][a-z0-9]+[A-Z][A-Za-z0-9]*|\w+_\w+|[A-Za-z_$][\w$]*\([^()]*\))/;
+
+/** Judges the raw statement: here a code span is the strongest signal, not a literal. */
+function codeVoice(spec: ParsedSpec, c: WellFormedCriterion): Violation[] {
+  const signal = codeVoiceSignal(c.statement);
+  if (signal === null) return [];
+  return [{ rule: "code-voice", file: spec.file, line: c.line, message: `code voice: ${signal}` }];
+}
+
+function codeVoiceSignal(statement: string): string | null {
+  const span = CODE_SPAN.exec(statement);
+  if (span) return `code span ${span[0]} belongs in the criterion body`;
+  const path = FILE_PATH.exec(statement);
+  if (path) return `file path "${path[0]}" belongs in the criterion body`;
+  const identifier = IDENTIFIER.exec(statement);
+  if (identifier) return `identifier "${identifier[0]}" belongs in the criterion body`;
+  return null;
 }
 
 function stripCodeSpans(text: string): string {

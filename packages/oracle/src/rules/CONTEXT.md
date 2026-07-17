@@ -9,8 +9,13 @@ _Avoid_: syntax rule, format rule.
 
 **Quality rule**:
 A rule judging one well-formed criterion's statement — never its body
-(`weasel-wording`, `compound-criterion`, `unmeasurable`).
+(`weasel-wording`, `compound-criterion`, `unmeasurable`, `code-voice`).
 _Avoid_: style rule, prose rule.
+
+**Code voice**:
+Statement language reading as implementation rather than product — a code span, a
+file path, or an identifier — flagged by the fixed `code-voice` signals ([LINT-13]).
+_Avoid_: technical language, jargon.
 
 **Weasel term**:
 A hedging word or phrase on the fixed `weasel-wording` list (`should`, `as expected`).

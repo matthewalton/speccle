@@ -1,6 +1,6 @@
 # lint rules
 
-The nine fixed rules `oracle lint` runs against a spec — structural rules judging the
+The ten fixed rules `oracle lint` runs against a spec — structural rules judging the
 contract's shape, quality rules judging criterion statements. This is Speccle's one
 governed slice
 ([ADR-0015](../../../../docs/adr/0015-dogfooding-starts-with-one-pilot-slice.md)): it

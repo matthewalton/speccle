@@ -67,12 +67,18 @@ Rules:
    `[A-Z][A-Z0-9]{1,9}`. Keys are unique across the repo.
 2. **Each criterion is an H2**: `## [KEY-n] <statement>`. The statement is one testable
    clause — single behaviour, no weasel words, measurable.
-3. **The body is free.** Rationale, edge cases, examples — anything about that one
+3. **Statements speak product, defaulting to a When/Then shape**
+   (ADR-0032):
+   "When X, Y" — the trigger, then the outcome, readable without seeing code. A simple
+   invariant may stay plain declarative (`An empty basket totals zero`). Code-level
+   precision that is contractual — exact messages, ordering, regexes — lives in the
+   body, never the statement.
+4. **The body is free.** Rationale, edge cases, examples — anything about that one
    behaviour. A body may be empty.
-4. **Ids are names, not order.** Document position carries order. A new criterion takes
+5. **Ids are names, not order.** Document position carries order. A new criterion takes
    the next never-used number under its key. An id is never renumbered or reused —
    deleting `[CHECKOUT-2]` retires the number forever.
-5. **H2s in a spec are criteria.** Non-criterion structure belongs in intro prose,
+6. **H2s in a spec are criteria.** Non-criterion structure belongs in intro prose,
    criterion bodies, or `CONTEXT.md`.
 
 ## CONTEXT.md (per feature)
@@ -137,9 +143,10 @@ configuration. The rule set:
 | `weasel-wording`     | Statement hedges (`should`, `appropriately`, `as expected`, …) |
 | `compound-criterion` | Statement contains more than one testable clause               |
 | `unmeasurable`       | Statement asserts nothing observable                           |
+| `code-voice`         | Statement reads as code rather than product language           |
 
-Quality rules (`weasel-wording`, `compound-criterion`, `unmeasurable`) judge the heading
-statement only — the body is never linted.
+Quality rules (`weasel-wording`, `compound-criterion`, `unmeasurable`, `code-voice`)
+judge the heading statement only — the body is never linted.
 
 `compound-criterion` exempts one bare `and`/`or` — a compound noun phrase names one
 thing (`restores stock and credit`). A second bare conjunction in the main clause flags:
@@ -153,6 +160,15 @@ and main clauses that name a property (`The dashboard is beautiful`). Any other 
 passes, including a domain verb the rule has never seen (`a refund credits the
 customer`). It under-flags by design
 (ADR-0010).
+
+`code-voice` judges the raw statement — here a code span is the strongest signal, not a
+stripped literal. Signals, first match wins: a code span; a file path, recognised by a
+closed extension list (`cjs`, `css`, `html`, `js`, `json`, `jsx`, `md`, `mjs`, `sh`,
+`toml`, `ts`, `tsx`, `txt`, `yaml`, `yml`); an identifier — camelCase with at least two
+leading lowercase letters (brand names like iPhone pass), snake_case, or call
+parentheses. Plain acronyms (JSON, HTTP) and unlisted extensions pass — the rule
+under-flags by design
+(ADR-0032).
 
 ## v1 target stack
 

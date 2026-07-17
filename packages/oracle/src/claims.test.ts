@@ -130,6 +130,18 @@ key: BASKET
     expect(report.unclaimed).toEqual(["BASKET-2"]);
   });
 
+  it("only test files under a spec's folder count", async () => {
+    const root = await scaffold({
+      "features/basket/SPEC.md": SPEC,
+      "features/basket/src/basket.test.ts": `it("[BASKET-1] adds", () => {});`,
+      "tools/scanner.test.ts": `it("[BASKET-2] phantom from tooling", () => {});`,
+    });
+    const report = await claims(root);
+    expect(report.testFiles).toEqual(["features/basket/src/basket.test.ts"]);
+    expect(report.unclaimed).toEqual(["BASKET-2"]);
+    expect(report.unknownClaims).toEqual([]);
+  });
+
   it("throws on a missing path", async () => {
     await expect(claims("/no/such/dir")).rejects.toThrow("path not found");
   });

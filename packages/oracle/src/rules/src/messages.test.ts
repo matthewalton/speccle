@@ -98,4 +98,13 @@ describe("[LINT-12] every violation message quotes its evidence", () => {
       "names a property",
     );
   });
+
+  it("code-voice names the signal and quotes the fragment", () => {
+    const span = only(lint(statement("The linter rejects the `--json` flag")), "code-voice");
+    expect(span).toContain("code span `--json`");
+    const path = only(lint(statement("Discovery finds every SPEC.md file")), "code-voice");
+    expect(path).toContain('file path "SPEC.md"');
+    const identifier = only(lint(statement("Adding calls addItem every time")), "code-voice");
+    expect(identifier).toContain('identifier "addItem"');
+  });
 });
