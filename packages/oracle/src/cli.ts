@@ -1,8 +1,9 @@
 #!/usr/bin/env node
+import { check } from "./check.ts";
 import { claims } from "./claims.ts";
 import { init } from "./init.ts";
 import { lint } from "./lint.ts";
-import { renderClaims, renderHuman, renderInit, renderStrength } from "./render.ts";
+import { renderCheck, renderClaims, renderHuman, renderInit, renderStrength } from "./render.ts";
 import { DEFAULT_COVERAGE_SUMMARY, DEFAULT_MUTATION_REPORT, strength } from "./strength.ts";
 
 const USAGE = `Usage: speccle-oracle <command> [options]
@@ -14,6 +15,7 @@ Commands:
   strength init [path] [--json]  Provision the strength stack: devDependencies + configs
 
 strength options:
+  --check             Report whether the reports are fresh, stale, or missing — never runs them
   --mutation <file>   Stryker JSON report   (default: ${DEFAULT_MUTATION_REPORT})
   --coverage <file>   Istanbul json-summary (default: ${DEFAULT_COVERAGE_SUMMARY})
 
@@ -88,6 +90,7 @@ async function runLint(args: string[]): Promise<number> {
 
 async function runStrength(args: string[]): Promise<number> {
   let json = false;
+  let checkOnly = false;
   let mutationReport: string | undefined;
   let coverageSummary: string | undefined;
   const positional: string[] = [];
@@ -95,6 +98,7 @@ async function runStrength(args: string[]): Promise<number> {
   for (let i = 0; i < args.length; i++) {
     const arg = args[i]!;
     if (arg === "--json") json = true;
+    else if (arg === "--check") checkOnly = true;
     else if (arg === "--mutation" || arg === "--coverage") {
       const value = args[++i];
       if (value === undefined) {
@@ -113,12 +117,28 @@ async function runStrength(args: string[]): Promise<number> {
     return 2;
   }
 
+  const options = {
+    ...(mutationReport !== undefined && { mutationReport }),
+    ...(coverageSummary !== undefined && { coverageSummary }),
+  };
+
+  if (checkOnly) {
+    let checkReport;
+    try {
+      checkReport = await check(positional[0] ?? ".", options);
+    } catch (err) {
+      console.error(message(err));
+      return 2;
+    }
+    console.log(json ? JSON.stringify(checkReport, null, 2) : renderCheck(checkReport));
+    return checkReport.mutation.status === "fresh" && checkReport.coverage.status === "fresh"
+      ? 0
+      : 1;
+  }
+
   let report;
   try {
-    report = await strength(positional[0] ?? ".", {
-      ...(mutationReport !== undefined && { mutationReport }),
-      ...(coverageSummary !== undefined && { coverageSummary }),
-    });
+    report = await strength(positional[0] ?? ".", options);
   } catch (err) {
     console.error(message(err));
     return 2;

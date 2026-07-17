@@ -1,5 +1,28 @@
+import type { CheckReport, ReportCheck } from "./check.ts";
 import type { ClaimsReport } from "./claims.ts";
 import type { InitReport } from "./init.ts";
+
+export function renderCheck(report: CheckReport): string {
+  const lines = [
+    `mutation  ${describeReport(report.mutation)}`,
+    `coverage  ${describeReport(report.coverage)}`,
+  ];
+  const ready = report.mutation.status === "fresh" && report.coverage.status === "fresh";
+  if (!ready) {
+    lines.push("reports must be regenerated before the heatmap is worth reading");
+  } else if (report.evaluated) {
+    lines.push("already evaluated — nothing new to read");
+  } else {
+    lines.push(`fresh and unread — touch ${report.marker} after evaluating the heatmap`);
+  }
+  return lines.join("\n");
+}
+
+function describeReport(check: ReportCheck): string {
+  if (check.status === "missing") return `${check.path} — missing`;
+  if (check.status === "stale") return `${check.path} — stale (${check.staleAgainst} is newer)`;
+  return `${check.path} — fresh`;
+}
 import type { LintReport } from "./lint.ts";
 import type { CriterionStrength, MutantSite, StrengthReport } from "./strength.ts";
 

@@ -1,8 +1,9 @@
 import { spawnSync } from "node:child_process";
-import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, rm, utimes, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
+import type { CheckReport } from "../src/check.ts";
 import type { ClaimsReport } from "../src/claims.ts";
 import type { InitReport } from "../src/init.ts";
 import type { LintReport } from "../src/lint.ts";
@@ -201,6 +202,64 @@ describe("speccle-oracle strength (e2e)", () => {
 
   it("exits 2 on an unknown option", () => {
     expect(run("strength", STRENGTH, "--nope").status).toBe(2);
+  });
+});
+
+describe("speccle-oracle strength --check (e2e)", () => {
+  const roots: string[] = [];
+
+  afterEach(async () => {
+    await Promise.all(roots.splice(0).map((root) => rm(root, { recursive: true, force: true })));
+  });
+
+  /** Files get mtimes spaced an hour apart, in entry order. */
+  async function scaffold(files: string[]): Promise<string> {
+    const root = await mkdtemp(join(tmpdir(), "speccle-check-e2e-"));
+    roots.push(root);
+    const base = Date.now() - files.length * 3600 * 1000;
+    for (const [index, file] of files.entries()) {
+      await mkdir(dirname(join(root, file)), { recursive: true });
+      await writeFile(join(root, file), file.endsWith("SPEC.md") ? "---\nkey: A\n---\n" : "{}");
+      const time = new Date(base + index * 3600 * 1000);
+      await utimes(join(root, file), time, time);
+    }
+    return root;
+  }
+
+  it("exits 0 and reports fresh-and-unread when reports post-date the slice", async () => {
+    const root = await scaffold([
+      "features/a/SPEC.md",
+      "reports/mutation/mutation.json",
+      "coverage/coverage-summary.json",
+    ]);
+    const { status, stdout } = run("strength", root, "--check");
+    expect(status).toBe(0);
+    expect(stdout).toContain("mutation  reports/mutation/mutation.json — fresh");
+    expect(stdout).toContain(
+      "fresh and unread — touch reports/mutation/.speccle-evaluated after evaluating the heatmap",
+    );
+  });
+
+  it("exits 1 and names the newer file when a slice edit post-dates the reports", async () => {
+    const root = await scaffold([
+      "reports/mutation/mutation.json",
+      "coverage/coverage-summary.json",
+      "features/a/SPEC.md",
+    ]);
+    const { status, stdout } = run("strength", root, "--check", "--json");
+    expect(status).toBe(1);
+    const report = JSON.parse(stdout) as CheckReport;
+    expect(report.mutation.status).toBe("stale");
+    expect(report.mutation.staleAgainst).toBe("features/a/SPEC.md");
+    expect(report.evaluated).toBe(false);
+  });
+
+  it("exits 1 when the reports are missing", async () => {
+    const root = await scaffold(["features/a/SPEC.md"]);
+    const { status, stdout } = run("strength", root, "--check");
+    expect(status).toBe(1);
+    expect(stdout).toContain("mutation  reports/mutation/mutation.json — missing");
+    expect(stdout).toContain("reports must be regenerated before the heatmap is worth reading");
   });
 });
 

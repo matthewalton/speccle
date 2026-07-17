@@ -13,7 +13,10 @@ export function discoverTests(root: string): Promise<string[]> {
   return discoverFiles(root, (name) => TEST_FILE.test(name));
 }
 
-async function discoverFiles(root: string, keep: (name: string) => boolean): Promise<string[]> {
+export async function discoverFiles(
+  root: string,
+  keep: (name: string) => boolean,
+): Promise<string[]> {
   const found: string[] = [];
 
   async function walk(abs: string, rel: string): Promise<void> {
