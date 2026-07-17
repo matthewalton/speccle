@@ -46,7 +46,7 @@ key: CHECKOUT
 
 Optional intro prose about the feature.
 
-## [CHECKOUT-1] Tax rounds half-up per line item
+## [CHECKOUT-1] When a line item is taxed, tax rounds half-up
 
 Tax is computed per line item and rounded half-up to 2dp before summing.
 
@@ -55,7 +55,7 @@ Edge cases:
 - three line items of £1.99 at 20% → £1.20 tax; taxing the £5.97 basket total would give
   £1.19
 
-## [CHECKOUT-2] Empty basket totals zero
+## [CHECKOUT-2] An empty basket totals zero
 ```
 
 Rules:

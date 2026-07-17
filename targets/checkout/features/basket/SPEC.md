@@ -6,8 +6,8 @@ key: BASKET
 
 Adding and removing line items before checkout.
 
-## [BASKET-1] Adding an item increments its quantity by exactly 1
+## [BASKET-1] When an item is added, its line quantity increments by exactly 1
 
 An item is identified by SKU; adding an existing SKU never creates a second line.
 
-## [BASKET-2] Removing the last item leaves the basket empty
+## [BASKET-2] When the last item is removed, the basket is empty
