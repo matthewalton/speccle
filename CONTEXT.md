@@ -65,11 +65,12 @@ _Avoid_: mini-ADR, design note, decision bullet.
 **Key decision**:
 A choice a feature request leaves open, with more than one viable answer, that
 materially shapes the slice across criteria — a policy, a data shape, an external
-contract. `plan-feature` puts each one to the human before announcing the plan — the
-one blocking stop in the pipeline — and `spec-feature` records the settled choice by
-the routing rule. In an unattended run the recommendation is taken and the decision is
-flagged as **defaulted**, never silent
-([ADR-0027](docs/adr/0027-plan-feature-settles-key-decisions-with-the-human.md)).
+contract. `plan-feature` puts each one to the human one question at a time, each with
+a recommendation, and captures the settled choice into the slice's docs the moment it
+lands ([ADR-0027](docs/adr/0027-plan-feature-settles-key-decisions-with-the-human.md),
+[ADR-0036](docs/adr/0036-planning-grills-conditionally-and-gates-once-via-plan-mode.md)).
+In an unattended run the recommendation is taken and the decision is flagged as
+**defaulted**, never silent.
 _Avoid_: open question (unqualified), assumption, TBD.
 
 **Amend**:
@@ -105,6 +106,39 @@ overruling after the fact, never by a blocking pre-approval. Skills announce cri
 the moment they lint clean and keep going
 ([ADR-0018](docs/adr/0018-skills-announce-criteria-and-end-with-a-spec-summary.md)).
 _Avoid_: ratify pause, approval gate, confirmation, sign-off.
+
+**Checks-gate**:
+The deterministic close of the `feature` pipeline: `oracle lint`, `oracle claims`,
+and the project's test suite, run by the orchestrator with no subagent and no
+judgement. A failure returns the run to the implement stage, never to the human; on
+green the one-screen summary renders and the commit happens without asking
+([ADR-0035](docs/adr/0035-a-deterministic-checks-gate-and-auto-commit-close-the-pipeline.md)).
+_Avoid_: review step, review gate, quality gate.
+
+**Claim**:
+The link between a test and a criterion: a test claims a criterion when the `[KEY-n]`
+token appears in its full concatenated name
+([ADR-0004](docs/adr/0004-tests-claim-criteria-in-the-full-test-name.md)).
+`oracle claims` reads the join statically from test-file titles — no reports —
+which is what makes the checks-gate seconds cheap.
+_Avoid_: link, mapping, coverage (for this relationship).
+
+**Code voice**:
+Statement language that reads as implementation rather than product — a code span, a
+file path, an identifier. Statements speak product, When/Then by default; code-level
+precision lives in the criterion body, and the `code-voice` lint rule polices the
+boundary
+([ADR-0032](docs/adr/0032-criterion-statements-are-product-voiced-when-then.md)).
+_Avoid_: technical language, jargon (for this lint concept).
+
+**Report freshness**:
+`strength --check`'s verdict on the mutation and coverage reports: **fresh** when a
+report post-dates every file in the spec folders, **stale** when a slice edit
+post-dates it, **missing** when absent — plus **evaluated**, meaning the current
+heatmap was already read (the marker beside the mutation report). The human runs the
+commands that refresh reports; skills only evaluate
+([ADR-0033](docs/adr/0033-strengthen-leaves-the-feature-loop-and-evaluates-human-run-reports.md)).
+_Avoid_: outdated, expired, up-to-date (for these verdicts).
 
 **Oracle strength**:
 The fraction of the mutants a criterion's tests execute that the suite kills

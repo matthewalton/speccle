@@ -1,15 +1,19 @@
 ---
 name: implement-feature
-description: Implement an already-specced slice — write token-tagged tests first and the code that makes them green, one criterion at a time, tracer criterion first on a new slice. Use when a linted SPEC.md exists and the user wants it implemented, wants tests and code for drafted criteria, or says "make the slice green", "implement the spec". For a feature that has no spec yet, the whole job — plan, spec, implement, strengthen — is the feature skill.
+description: Implement an already-specced slice — write token-tagged tests first and the code that makes them green, one criterion at a time, tracer criterion first on a new slice. Use when a linted SPEC.md exists and the user wants it implemented, wants tests and code for drafted criteria, or says "make the slice green", "implement the spec". For a feature that has no spec yet, the whole job — plan, spec, implement — is the feature skill.
 allowed-tools: Read(/${CLAUDE_PLUGIN_ROOT}/skills/*/references/**)
 ---
 
 # implement-feature
 
 Write the tagged tests and the code that satisfy an existing, linted `SPEC.md` — one
-criterion at a time, tests first. Stage 3 of the `feature` pipeline,
-and complete on its own when the spec already exists — hand-written to the
-convention, or drafted earlier by `spec-feature`.
+criterion at a time, tests first. Stage 3 of the `feature` pipeline, and complete on
+its own when the spec already exists — hand-written to the convention, or drafted
+earlier by `spec-feature`.
+
+In the pipeline this skill runs in its own subagent session: the linted spec and the
+slice's docs are the whole brief — read them; there is no earlier conversation to
+consult. The final message is the hand-back in §3.
 
 **This skill starts from a spec.** Handed a feature with no conventioned `SPEC.md`,
 say so and point at the `feature` pipeline (or `spec-feature` for the contract alone)
@@ -27,9 +31,9 @@ Speccle's words are fixed and mandatory: "criterion id", not "tag"; "statement",
 "title"; "spec summary", not "approval gate".
 
 **This skill does not measure oracle strength.** A slice can finish here
-well-specified and weakly defended; closing that gap is `strengthen`'s job — the
-`feature` pipeline runs it as the next stage, and standalone runs schedule it on
-their own cadence.
+well-specified and weakly defended; closing that gap is `strengthen`'s job, on its
+own cadence — the pipeline's checks-gate verifies lint, claims, and green tests, not
+how hard the tests bite.
 
 ## 1. Scope the work
 
@@ -45,9 +49,13 @@ they defend; the feature root stays pure markdown.
   A retired id takes its tests with it: delete them, and confirm the code they
   defended is either still promised by a live criterion or removed too.
 
-Find the unclaimed criteria mechanically, not by eye: run the suite with a JSON
-reporter (`vitest run --reporter=json`) and check each id in the spec against the
-concatenated test names.
+Find the unclaimed criteria mechanically, not by eye:
+`<oracle> claims <feature-folder>` joins every criterion to the test names that
+carry its token — `unclaimed` lists the ids still owed a test, `unknownClaims` the
+tokens pointing at no criterion (a retired id someone's test still claims). One
+caveat, because the scan is static: only string-literal `describe`/`it`/`test`
+titles count, so write the `[KEY-n]` token as literal text, never built up at
+runtime.
 
 ## 2. Red-green, one criterion at a time
 
@@ -65,9 +73,9 @@ Pick the criterion whose passing test exercises the thinnest complete path throu
 every layer the feature touches — entry to exit, nothing stubbed. Choose it for
 **path length, not importance**: the plainest success case, the one carrying the
 least logic. An edge case or a rejection is never the tracer; it short-circuits the
-very layers it was meant to prove. `[CHECKOUT-1] Tax rounds half-up per line item`
-traces the path; `[CHECKOUT-3] Checkout rejects a basket of more than 100 line items`
-throws before reaching it.
+very layers it was meant to prove. "When a line item is taxed, tax rounds half-up"
+traces the path; "When a basket exceeds 100 line items, checkout rejects it" throws
+before reaching it.
 
 Make it green. Then say so: name the criterion, and name the layers its test now runs
 through. Do not stop for approval — the green test _is_ the feedback, and this skill
@@ -115,10 +123,9 @@ Done means all four, verified rather than assumed:
 1. The feature folder is named for the feature and has the convention's shape:
    `SPEC.md`, `CONTEXT.md`, `AGENTS.md` at the root, code and tests in `src/`.
 2. `<oracle> lint <feature-folder>` exits `0`.
-3. Every criterion id in `SPEC.md` appears in at least one full test name — re-run
-   the JSON-reporter check from §1; an id nobody claims is an unimplemented
-   criterion, so go back to §2. On an amended slice, also confirm no test still
-   claims a retired id.
+3. `<oracle> claims <feature-folder>` exits `0` — every criterion claimed, and no
+   test still claiming a retired id. An id nobody claims is an unimplemented
+   criterion, so go back to §2.
 4. The **whole project's** test suite is green, not just the slice's — on an amended
    slice, the pre-existing tests are exactly the ones a change breaks.
 
@@ -130,5 +137,5 @@ spec change and gets the **spec summary** treatment: list it for the human to ru
 on.
 
 There is no oracle-strength check here, deliberately. Say so when you hand back: the
-slice is green, and how well it is _defended_ is a question `strengthen` answers —
-next stage in the pipeline, or a standalone run.
+slice is green, and how well it is _defended_ is a question `strengthen` answers, on
+its own cadence.
