@@ -2,6 +2,21 @@ export const KEY_PATTERN = /^[A-Z][A-Z0-9]{1,9}$/;
 
 const ID_TOKEN = /^\[([A-Z][A-Z0-9]{1,9})-([1-9][0-9]*)\]$/;
 
+/** A `[KEY-n]` token anywhere in a test's full concatenated name (ADR-0004). */
+export const CLAIM_TOKEN = /\[([A-Z][A-Z0-9]{1,9}-[1-9][0-9]*)\]/g;
+
+/** Sorts `KEY-n` ids by key, then numerically by n. */
+export function compareCriterionIds(a: string, b: string): number {
+  const [aKey, aN] = splitId(a);
+  const [bKey, bN] = splitId(b);
+  return aKey === bKey ? aN - bN : aKey.localeCompare(bKey);
+}
+
+function splitId(id: string): [string, number] {
+  const dash = id.lastIndexOf("-");
+  return [id.slice(0, dash), Number(id.slice(dash + 1))];
+}
+
 export interface SpecKey {
   raw: string;
   line: number;

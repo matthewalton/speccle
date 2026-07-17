@@ -1,6 +1,45 @@
+import type { ClaimsReport } from "./claims.ts";
 import type { InitReport } from "./init.ts";
 import type { LintReport } from "./lint.ts";
 import type { CriterionStrength, MutantSite, StrengthReport } from "./strength.ts";
+
+export function renderClaims(report: ClaimsReport): string {
+  if (report.features.length === 0) return "No SPEC.md files found.";
+
+  const idWidth = Math.max(...report.features.flatMap((f) => f.criteria.map((c) => c.id.length)));
+  const lines: string[] = [];
+  for (const feature of report.features) {
+    lines.push(feature.spec);
+    for (const c of feature.criteria) {
+      const status = c.claimed ? plural(c.tests.length, "test name") : "unclaimed";
+      lines.push(`  ${c.id.padEnd(idWidth)}  ${status.padEnd(13)}  ${c.statement}`);
+    }
+    lines.push("");
+  }
+
+  if (report.unclaimed.length > 0) {
+    lines.push("unclaimed — no test name carries these tokens");
+    for (const id of report.unclaimed) lines.push(`  ${id}`);
+    lines.push("");
+  }
+  if (report.unknownClaims.length > 0) {
+    lines.push("unknown claims — test names claim criteria that no spec declares");
+    for (const claim of report.unknownClaims) {
+      lines.push(`  ${claim.id}  ${[...new Set(claim.tests.map((t) => t.file))].join(", ")}`);
+    }
+    lines.push("");
+  }
+
+  const total = report.features.reduce((n, f) => n + f.criteria.length, 0);
+  const claimed = report.features.reduce(
+    (n, f) => n + f.criteria.filter((c) => c.claimed).length,
+    0,
+  );
+  const criteria = `${total} ${total === 1 ? "criterion" : "criteria"}`;
+  const counts = `${plural(report.features.length, "spec file")}, ${criteria}, ${claimed} claimed`;
+  lines.push(report.clean ? `${counts}, clean` : counts);
+  return lines.join("\n");
+}
 
 export function renderInit(report: InitReport): string {
   const lines: string[] = [];

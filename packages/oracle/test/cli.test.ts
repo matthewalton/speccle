@@ -3,6 +3,7 @@ import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
+import type { ClaimsReport } from "../src/claims.ts";
 import type { InitReport } from "../src/init.ts";
 import type { LintReport } from "../src/lint.ts";
 import type { StrengthReport } from "../src/strength.ts";
@@ -92,6 +93,39 @@ describe("speccle-oracle lint (e2e)", () => {
     const { status, stderr } = run();
     expect(status).toBe(2);
     expect(stderr).toContain("Usage: speccle-oracle");
+  });
+});
+
+describe("speccle-oracle claims (e2e)", () => {
+  it("reports the toy project fully claimed with exit code 0", () => {
+    const { status, stdout } = run("claims", TOY);
+    expect(status).toBe(0);
+    expect(stdout).toContain("2 spec files, 5 criteria, 5 claimed, clean");
+  });
+
+  it("emits the typed JSON report for the toy project", () => {
+    const { status, stdout } = run("claims", TOY, "--json");
+    expect(status).toBe(0);
+    const report = JSON.parse(stdout) as ClaimsReport;
+    expect(report.clean).toBe(true);
+    expect(report.features.map((f) => f.spec)).toEqual([
+      "features/basket/SPEC.md",
+      "features/checkout/SPEC.md",
+    ]);
+    expect(report.features.flatMap((f) => f.criteria.every((c) => c.claimed))).toEqual([
+      true,
+      true,
+    ]);
+  });
+
+  it("exits 1 when a criterion is unclaimed", () => {
+    const { status, stdout } = run("claims", STRENGTH);
+    expect(status).toBe(1);
+    expect(stdout).toContain("unclaimed — no test name carries these tokens");
+  });
+
+  it("exits 2 on a missing path", () => {
+    expect(run("claims", resolve(DIRTY, "no-such-dir")).status).toBe(2);
   });
 });
 

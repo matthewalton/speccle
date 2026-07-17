@@ -3,13 +3,10 @@ import { dirname, join, resolve } from "node:path";
 import { coverageUnder, parseCoverageSummary, type CoverageSummary } from "./coverage.ts";
 import { discoverSpecs } from "./discover.ts";
 import { isKill, isScored, parseMutationReport, type Mutant } from "./mutation.ts";
-import { parseSpec, type WellFormedCriterion } from "./spec.ts";
+import { CLAIM_TOKEN, compareCriterionIds, parseSpec, type WellFormedCriterion } from "./spec.ts";
 
 export const DEFAULT_MUTATION_REPORT = "reports/mutation/mutation.json";
 export const DEFAULT_COVERAGE_SUMMARY = "coverage/coverage-summary.json";
-
-/** A `[KEY-n]` token anywhere in a test's full concatenated name (ADR-0004). */
-const CLAIM_TOKEN = /\[([A-Z][A-Z0-9]{1,9}-[1-9][0-9]*)\]/g;
 
 /** The exact edit one mutant made — where it lives and what it changed. */
 export interface MutantSite {
@@ -223,14 +220,7 @@ function bySourcePosition(a: MutantSite, b: MutantSite): number {
 }
 
 function byCriterionId(a: { id: string }, b: { id: string }): number {
-  const [aKey, aN] = splitId(a.id);
-  const [bKey, bN] = splitId(b.id);
-  return aKey === bKey ? aN - bN : aKey.localeCompare(bKey);
-}
-
-function splitId(id: string): [string, number] {
-  const dash = id.lastIndexOf("-");
-  return [id.slice(0, dash), Number(id.slice(dash + 1))];
+  return compareCriterionIds(a.id, b.id);
 }
 
 function ratio(numerator: number, denominator: number): number | null {
