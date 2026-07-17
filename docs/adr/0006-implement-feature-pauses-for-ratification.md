@@ -1,7 +1,10 @@
 # 0006 — implement-feature accepts any input and pauses for ratification
 
 - Status: accepted; the ratify pause is superseded by
-  [ADR-0018](0018-skills-announce-criteria-and-end-with-a-spec-summary.md)
+  [ADR-0018](0018-skills-announce-criteria-and-end-with-a-spec-summary.md), then
+  removed entirely by
+  [ADR-0034](0034-feature-runs-spec-and-implement-in-subagents-with-the-slice-as-hand-off.md) —
+  the oracle guards spec quality, not a human pause
 - Date: 2026-07-09
 
 ## Context

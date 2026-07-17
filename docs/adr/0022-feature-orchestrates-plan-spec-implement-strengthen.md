@@ -1,6 +1,10 @@
 # 0022 — `feature` orchestrates plan → spec → implement → strengthen
 
-- Status: accepted
+- Status: accepted; the strengthen gate is superseded by
+  [ADR-0033](0033-strengthen-leaves-the-feature-loop-and-evaluates-human-run-reports.md),
+  and the in-session pipeline by
+  [ADR-0034](0034-feature-runs-spec-and-implement-in-subagents-with-the-slice-as-hand-off.md) —
+  the four-skill decomposition itself stands
 - Date: 2026-07-11
 - Amends [ADR-0013](0013-implement-feature-traces-one-criterion-end-to-end-first.md):
   the tracer rule now lives in the narrowed `implement-feature` and applies to the
