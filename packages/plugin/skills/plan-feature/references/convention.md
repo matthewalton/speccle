@@ -29,11 +29,20 @@ scanner/
 ```
 
 The root holds the markdown contract and nothing else. All code and tests sit in
-`src/`, tests beside the code they defend. The subfolder is always named `src` —
-uniformity is the point: every feature folder in every project has an identical shape,
-so nothing about a particular slice needs explaining. `decisions/` appears with the
-feature's first decision; the other four entries are the floor, even for a tiny
-feature.
+`src/`, tests beside the code they defend, and the code subfolder is always named
+`src` — every feature folder in every project opens the same way. `decisions/` appears
+with the feature's first decision; the other four entries are the floor, even for a
+tiny feature.
+
+Inside `src/`, subfolders are allowed but not the default
+(ADR-0037). Keep
+`src/` flat while it holds **ten files or fewer** directly — count the code and test
+files sitting in it, subfolders excluded. The file that would make it eleven triggers
+grouping: gather the code into shallow (prefer one level), purpose-named subfolders,
+and the same ten-file limit applies within each subfolder. A `src/` that has grown into
+a pile is often a signal to split the slice into siblings instead; nest when it is
+genuinely one cohesive feature that simply carries many files. Tests stay beside the
+code they defend at whatever depth it sits.
 
 Everything about the feature lives inside the subtree. An agent landing in the folder
 needs nothing else to understand it — and `AGENTS.md` is where it starts reading.

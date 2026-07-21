@@ -1,6 +1,6 @@
 ---
 name: conform
-description: Bring already-governed feature folders up to the current convention after it changes — sweep every SPEC.md, diagnose each slice's drift against the convention (folder shape, missing contract files, decisions content in CONTEXT.md, lint violations), announce the drift report, then apply form-only fixes with the suite green throughout, ending with a spec summary. Use when the user upgrades Speccle or its convention and wants existing features updated, asks to bring features up to convention or check for drift, or says "conform this", "conform the features", "the convention changed".
+description: Bring already-governed feature folders up to the current convention after it changes — sweep every SPEC.md, diagnose each slice's drift against the convention (folder shape, an over-full flat src/, missing contract files, decisions content in CONTEXT.md, lint violations), announce the drift report, then apply form-only fixes with the suite green throughout, ending with a spec summary. Use when the user upgrades Speccle or its convention and wants existing features updated, asks to bring features up to convention or check for drift, or says "conform this", "conform the features", "the convention changed".
 allowed-tools: Read(/${CLAUDE_PLUGIN_ROOT}/skills/*/references/**)
 ---
 
@@ -52,8 +52,11 @@ today, and the bundled copy is the authority:
   flags, even for a project's only feature.
 - **The markdown contract is complete at the root**: `SPEC.md`, `CONTEXT.md`,
   `AGENTS.md`; `decisions/` whenever the feature has a decision to hold.
-- **All code and tests sit one level down in `src/`**, tests beside the code they
-  defend, and the root holds the markdown contract and nothing else.
+- **All code and tests sit under `src/`**, tests beside the code they defend, and the
+  root holds the markdown contract and nothing else. `src/` may nest into subfolders —
+  legal nesting is not drift. What flags is an **over-full flat directory**: `src/`
+  itself, or any subfolder under it, holding **more than ten files directly**. Count
+  the entries; subfolders don't count toward their parent's total.
 - **`CONTEXT.md` is a glossary only.** Decisions content — a Decisions section,
   mini-ADR bullets, any recorded choice spanning criteria — belongs in `decisions/`
   as numbered ADR files.
@@ -83,6 +86,14 @@ Per slice, in this order:
   and the runner and tsconfig include patterns — a pattern that no longer matches
   loses tests silently, so re-run the suite and check the test count, not just the
   colour.
+- **Regroup an over-full directory.** A `src/` or subfolder over the ten-file limit
+  gets its files gathered by concern into shallow, purpose-named subfolders — a pure
+  relocation, imports and config fixed, test count held, exactly like the moves above.
+  **Never split the slice into siblings**: a new feature folder redraws boundaries and
+  is a re-slice, not a form fix. When the pile reads as two behaviours rather than one
+  crowded feature, regroup it anyway — the subfolders you draw are the natural split
+  lines — and carry "consider splitting into siblings via a `feature` amend" into the
+  spec summary as a finding. That better fix is the human's to make, not conform's.
 - **Generate a missing `AGENTS.md`** from what the folder shows: what the slice does
   in a sentence or two, how to run its tests, where the contract lives. Facts about
   working the slice, never about its behaviour.

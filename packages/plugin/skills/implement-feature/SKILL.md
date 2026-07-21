@@ -40,6 +40,16 @@ how hard the tests bite.
 Everything this skill writes lands in the feature's `src/` — tests beside the code
 they defend; the feature root stays pure markdown.
 
+Keep `src/` flat while it holds **ten files or fewer** directly (code and tests
+together — count the entries, don't judge the crowding). The file that would make it
+eleven triggers grouping: gather the code into shallow, purpose-named subfolders — one
+level, tests still beside the code they defend at that depth — and the same
+ten-file limit then applies inside each subfolder. Before nesting, ask whether the
+pile is really one slice: a `src/` that has grown two clearly separate concerns is
+usually two slices, and splitting into a sibling folder beats burying the seam under
+subfolders. Nest when it is genuinely one cohesive feature that just carries many
+files.
+
 - **New slice** (no code in `src/` yet): every criterion is unimplemented; the tracer
   rule below applies.
 - **Amended slice** (the spec changed over running code):

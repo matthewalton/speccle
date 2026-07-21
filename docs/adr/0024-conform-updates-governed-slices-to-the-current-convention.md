@@ -1,6 +1,7 @@
 # 0024 — `conform` updates governed slices to the current convention
 
-- Status: accepted
+- Status: accepted; the drift set is extended by
+  [ADR-0037](0037-a-slice-src-may-nest-into-purpose-named-subfolders.md)
 - Date: 2026-07-11
 
 ## Context
