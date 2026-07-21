@@ -6,11 +6,10 @@ allowed-tools: Read(/${CLAUDE_PLUGIN_ROOT}/skills/*/references/**)
 
 # strengthen
 
-A slice can be green and badly defended. `implement-feature` leaves it that way on
-purpose, and the `feature` pipeline's checks-gate never measures it; this skill is
-the periodic audit that closes the gap, on its own cadence — and the deferred
-backstop for what no deterministic check sees: behaviour no criterion covers, tests
-that execute without biting.
+A slice can be green and badly defended: `implement-feature` leaves it that way on
+purpose, and the `feature` pipeline's checks-gate never measures it. This skill is the
+periodic audit that closes the gap — catching what no deterministic check sees:
+behaviour no criterion covers, and tests that run without asserting.
 
 The division of labour is fixed: **the human runs the expensive commands; this skill
 evaluates what they produce.** Coverage and mutation are minutes of compute — never
@@ -148,8 +147,8 @@ These survivors are the human path. The spec owes a criterion about what the rej
 tells the caller. Draft it, announce it, test it — and watch `[CHECKOUT-3]` reach 100%
 untouched, because a kill counts for every criterion covering the mutant.
 
-Rising oracle strength and a sharpening spec are the same motion. If strength rose and the
-spec did not change, check that you did not fit a test to a mutant.
+If oracle strength rose but the spec did not change, check that you did not fit a test to
+a mutant.
 
 ## 6. Confirm, mark evaluated, hand back
 
@@ -176,5 +175,5 @@ Then report, verified rather than assumed:
 5. What is left, and why: each remaining survivor is annotated as equivalent, with its
    argument, or named as a gap awaiting the human's ruling.
 
-A survivor you cannot explain is not a finished job. Say it is still there rather than
-letting a nicer headline number imply otherwise.
+A survivor you cannot explain is not finished — say so plainly rather than letting a
+nicer headline imply otherwise.
