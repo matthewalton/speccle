@@ -7,7 +7,9 @@ update its row in the same commit.
 
 Every skill's vocabulary is fixed by [CONTEXT.md](../CONTEXT.md), and the five skills
 that bundle `references/convention.md` inherit that file's provenance
-([docs/convention.md](convention.md) cites its own ADRs inline).
+([docs/convention.md](convention.md) cites its own ADRs inline). `strengthen` bundles its
+own reference docs — [strength-stack.md](strength-stack.md) and
+[strength-heatmap.md](strength-heatmap.md) — under the ADRs already in its row.
 
 | Skill               | Governing ADRs                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |

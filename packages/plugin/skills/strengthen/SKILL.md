@@ -70,24 +70,14 @@ Route on what it says:
 
 Oracle strength needs to know which tests covered each mutant, and that constrains the
 target to TypeScript + vitest + StrykerJS. When `--check` says missing and the stack
-itself is absent, check for all four before asking anyone to run anything:
-
-| Requirement                       | Where                                |
-| --------------------------------- | ------------------------------------ |
-| `@stryker-mutator/core` + runner  | `package.json` devDependencies       |
-| `coverageAnalysis: "perTest"`     | `stryker.config.json`                |
-| the `json` reporter, and its path | `stryker.config.json` `jsonReporter` |
-| istanbul provider, `json-summary` | `vitest.config.ts` `test.coverage`   |
-
-`perTest` is the hard one: without it Stryker never records `coveredBy`, the join has
-nothing to walk back to criterion ids, and `oracle strength` exits `2` saying so.
+itself is absent, check the four requirements in
+`${CLAUDE_SKILL_DIR}/references/stack.md` before asking anyone to run anything.
 
 **If something is missing, stop and offer.** Show what is absent, then offer the one
-command that provisions all of it — `speccle-oracle strength init <path>` installs the
-missing devDependencies and writes the preset configs, keeping any that already exist —
-and wait for the user's go-ahead before running it. Never write to the target's
-`package.json`, lockfile, or test config without the user agreeing first — this skill
-measures someone else's project; it does not quietly re-tool it.
+command that provisions all of it — `speccle-oracle strength init <path>` — and wait for
+the user's go-ahead before running it. Never write to the target's `package.json`,
+lockfile, or test config without the user agreeing first — this skill measures someone
+else's project; it does not quietly re-tool it.
 
 ## 4. Read the heatmap
 
@@ -95,39 +85,17 @@ measures someone else's project; it does not quietly re-tool it.
 <oracle> strength <path>
 ```
 
-The reports are already on disk — §2 proved it. Show the human heatmap to the user.
-It prints a bar and `killed/covered` per criterion, with each criterion's survivors
-listed beneath it:
+The reports are already on disk — §2 proved it. Show the human heatmap to the user: a
+bar and `killed/covered` per criterion, each criterion's survivors listed beneath it. Use
+`--json` for the routing work and never scrape the human output — the output shape and
+the full `--json` schema are in `${CLAUDE_SKILL_DIR}/references/heatmap.md`. `strength`
+is a report, not a gate: it exits `0` with survivors present, `2` on a bad or missing
+report.
 
-```
-features/checkout/SPEC.md
-  CHECKOUT-1  ████████████████████  100.0%    14/14  When a line item is taxed, tax rounds half-up to 2dp
-  CHECKOUT-3  ██████████████████░░   88.2%    15/17  When a basket exceeds 100 line items, checkout rejects it
-      features/checkout/checkout.ts:13:11  StringLiteral → ``
-      features/checkout/checkout.ts:14:17  StringLiteral → ""
-```
-
-Use `--json` for the routing work: `{ root, strength, lineCoverage, features[], unclaimed,
-unknownClaims, unclaimedMutants, staticMutants }`, each criterion carrying `survivors[]`
-with `file`, `line`, `column`, `mutator`, `replacement`. `strength` is a report, not a
-gate: it exits `0` with survivors present, `2` on a bad or missing report. Never scrape
-the human output.
-
-Four fields are not routing work, and are worth saying out loud before you start:
-
-- **`unclaimed`** — a criterion no test's name carries. It scores nothing rather than
-  zero. It needs a test written against it before it can be weak; that is
-  `implement-feature`'s job, not a survivor to route.
-- **`unknownClaims`** — a test claims an id no spec declares. Someone renamed or deleted a
-  criterion. Fix the test name or restore the criterion.
-- **`unclaimedMutants`** — code the criteria do not reach at all, each entry naming its
-  `file`, `line`, `column`, `mutator`, `replacement`. Not weak criteria; a map of the
-  regions the spec is silent about. Do not route these as survivors — name the region to
-  the human and let them decide whether a feature owes a spec there.
-- **`staticMutants`** — mutants that run at module load (word lists, regex literals), so
-  per-test coverage can attribute them to no criterion: `{ killed, survivors[] }`. The
-  killed ones are fine — some test noticed. A survivor is a real gap, but it can never be
-  claimed by a criterion id; name it to the human alongside the unclaimed mutants.
+Four of the `--json` fields — `unclaimed`, `unknownClaims`, `unclaimedMutants`,
+`staticMutants` — are **not** routing work: none is a survivor to route. Say them out
+loud before you start; `references/heatmap.md` gives each one's shape and what it asks of
+you instead.
 
 ## 5. Route every surviving mutant
 

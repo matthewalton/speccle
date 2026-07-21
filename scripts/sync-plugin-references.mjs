@@ -30,6 +30,14 @@ const REFERENCES = [
     source: "docs/convention.md",
     dest: "packages/plugin/skills/conform/references/convention.md",
   },
+  {
+    source: "docs/strength-stack.md",
+    dest: "packages/plugin/skills/strengthen/references/stack.md",
+  },
+  {
+    source: "docs/strength-heatmap.md",
+    dest: "packages/plugin/skills/strengthen/references/heatmap.md",
+  },
 ];
 
 const MARKDOWN_LINK = /\[([^\]]*)\]\(([^)]+)\)/g;
