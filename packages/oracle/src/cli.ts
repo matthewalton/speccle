@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { check } from "./check.ts";
 import { claims } from "./claims.ts";
+import { DEFAULT_DIALECT, DIALECT_NAMES } from "./dialects.ts";
 import { init } from "./init.ts";
 import { lint } from "./lint.ts";
 import { renderCheck, renderClaims, renderHuman, renderInit, renderStrength } from "./render.ts";
@@ -13,6 +14,9 @@ Commands:
   claims [path] [--json]         Join criteria to the test names that claim them — no reports needed
   strength [path] [--json]       Oracle-strength heatmap: per-criterion killed ÷ covered
   strength init [path] [--json]  Provision the strength stack: devDependencies + configs
+
+claims options:
+  --dialect <name>    Test dialect: ${DIALECT_NAMES.join(", ")} (default: ${DEFAULT_DIALECT})
 
 strength options:
   --check             Report whether the reports are fresh, stale, or missing — never runs them
@@ -38,10 +42,19 @@ async function main(argv: string[]): Promise<number> {
 
 async function runClaims(args: string[]): Promise<number> {
   let json = false;
+  let dialect: string | undefined;
   const positional: string[] = [];
-  for (const arg of args) {
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i]!;
     if (arg === "--json") json = true;
-    else if (arg.startsWith("-")) {
+    else if (arg === "--dialect") {
+      const value = args[++i];
+      if (value === undefined) {
+        console.error(`--dialect needs a dialect name\n\n${USAGE}`);
+        return 2;
+      }
+      dialect = value;
+    } else if (arg.startsWith("-")) {
       console.error(`Unknown option: ${arg}\n\n${USAGE}`);
       return 2;
     } else positional.push(arg);
@@ -53,7 +66,7 @@ async function runClaims(args: string[]): Promise<number> {
 
   let report;
   try {
-    report = await claims(positional[0] ?? ".");
+    report = await claims(positional[0] ?? ".", { ...(dialect !== undefined && { dialect }) });
   } catch (err) {
     console.error(message(err));
     return 2;

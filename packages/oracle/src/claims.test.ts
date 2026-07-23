@@ -2,35 +2,7 @@ import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { claims, extractTestNames } from "./claims.ts";
-
-describe("extractTestNames", () => {
-  it("captures describe, it, and test titles in any quote style", () => {
-    const source = `
-      describe("[A-1] outer", () => {
-        it('inner case', () => {});
-        test(\`another [A-2] case\`, () => {});
-      });
-    `;
-    expect(extractTestNames(source)).toEqual(["[A-1] outer", "inner case", "another [A-2] case"]);
-  });
-
-  it("captures titles behind modifiers like .skip and .only", () => {
-    const source = `describe.only("[A-1] focused", () => { it.skip("later", () => {}); });`;
-    expect(extractTestNames(source)).toEqual(["[A-1] focused", "later"]);
-  });
-
-  it("keeps escaped quotes inside a title", () => {
-    expect(extractTestNames(`it("quotes \\"[A-1]\\" evidence", () => {})`)).toEqual([
-      'quotes \\"[A-1]\\" evidence',
-    ]);
-  });
-
-  it("ignores strings that are not describe/it/test titles", () => {
-    const source = `expect(render("[A-9] not a claim")).toBe("[A-8] also not");`;
-    expect(extractTestNames(source)).toEqual([]);
-  });
-});
+import { claims } from "./claims.ts";
 
 describe("claims", () => {
   const roots: string[] = [];
@@ -144,5 +116,74 @@ key: BASKET
 
   it("throws on a missing path", async () => {
     await expect(claims("/no/such/dir")).rejects.toThrow("path not found");
+  });
+
+  it("runs the ts-vitest dialect unless told otherwise, and records which ran", async () => {
+    const root = await scaffold({ "features/basket/SPEC.md": SPEC });
+    expect((await claims(root)).dialect).toBe("ts-vitest");
+    expect((await claims(root, { dialect: "swift" })).dialect).toBe("swift");
+  });
+
+  it("rejects an unsupported dialect before reading anything", async () => {
+    await expect(claims(".", { dialect: "kotlin" })).rejects.toThrow(
+      "unknown test dialect: kotlin",
+    );
+  });
+
+  it("joins a Swift slice through both of the dialect's spellings", async () => {
+    const root = await scaffold({
+      "features/basket/SPEC.md": SPEC,
+      "features/basket/src/BasketTests.swift": `
+        final class BasketTests: XCTestCase {
+          func test_BASKET_1_addingIncrementsQuantity() {}
+        }
+      `,
+      "features/basket/src/BasketSuiteTests.swift": `
+        @Suite struct BasketSuite {
+          @Test("[BASKET-2] removing the last item empties the basket")
+          func removesLast() {}
+        }
+      `,
+    });
+    const report = await claims(root, { dialect: "swift" });
+    expect(report.testFiles).toEqual([
+      "features/basket/src/BasketSuiteTests.swift",
+      "features/basket/src/BasketTests.swift",
+    ]);
+    expect(report.features[0]!.criteria[0]!.tests).toEqual([
+      {
+        file: "features/basket/src/BasketTests.swift",
+        name: "test_BASKET_1_addingIncrementsQuantity",
+      },
+    ]);
+    expect(report.clean).toBe(true);
+  });
+
+  // The identifier spelling is the swift dialect's, not everyone's: a TS title naming a
+  // constant must never phantom-claim (ADR-0038 — a clean run means one thing).
+  it("never reads the identifier spelling under ts-vitest", async () => {
+    const root = await scaffold({
+      "features/basket/SPEC.md": SPEC,
+      "features/basket/src/basket.test.ts": `
+        it("[BASKET-1] adds", () => {});
+        it("[BASKET-2] rejects the BASKET_9 quantity code", () => {});
+      `,
+    });
+    const report = await claims(root);
+    expect(report.unknownClaims).toEqual([]);
+    expect(report.clean).toBe(true);
+  });
+
+  it("finds no test files when the declared dialect is the wrong one", async () => {
+    const root = await scaffold({
+      "features/basket/SPEC.md": SPEC,
+      "features/basket/src/basket.test.ts": `
+        it("[BASKET-1] adds", () => {});
+        it("[BASKET-2] empties", () => {});
+      `,
+    });
+    const report = await claims(root, { dialect: "swift" });
+    expect(report.testFiles).toEqual([]);
+    expect(report.unclaimed).toEqual(["BASKET-1", "BASKET-2"]);
   });
 });

@@ -128,7 +128,33 @@ describe("speccle-oracle claims (e2e)", () => {
   it("exits 2 on a missing path", () => {
     expect(run("claims", resolve(DIRTY, "no-such-dir")).status).toBe(2);
   });
+
+  it("joins a Swift slice under --dialect swift", () => {
+    const { status, stdout } = run("claims", SWIFT, "--dialect", "swift");
+    expect(status).toBe(0);
+    expect(stdout).toContain("swift — 1 spec file, 2 criteria, 2 claimed, clean");
+  });
+
+  it("says which dialect found no test files when the wrong one is declared", () => {
+    const { status, stdout } = run("claims", SWIFT);
+    expect(status).toBe(1);
+    expect(stdout).toContain("no test files matched the ts-vitest dialect");
+  });
+
+  it("exits 2 on an unsupported dialect", () => {
+    const { status, stderr } = run("claims", SWIFT, "--dialect", "kotlin");
+    expect(status).toBe(2);
+    expect(stderr).toContain("unknown test dialect: kotlin");
+  });
+
+  it("exits 2 when --dialect has no value", () => {
+    const { status, stderr } = run("claims", SWIFT, "--dialect");
+    expect(status).toBe(2);
+    expect(stderr).toContain("--dialect needs a dialect name");
+  });
 });
+
+const SWIFT = resolve(import.meta.dirname, "fixtures/swift");
 
 const STRENGTH = resolve(import.meta.dirname, "fixtures/strength");
 const REPORTS = ["--mutation", "mutation.json", "--coverage", "coverage-summary.json"];

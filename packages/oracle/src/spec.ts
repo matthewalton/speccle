@@ -5,6 +5,26 @@ const ID_TOKEN = /^\[([A-Z][A-Z0-9]{1,9})-([1-9][0-9]*)\]$/;
 /** A `[KEY-n]` token anywhere in a test's full concatenated name (ADR-0004). */
 export const CLAIM_TOKEN = /\[([A-Z][A-Z0-9]{1,9}-[1-9][0-9]*)\]/g;
 
+/**
+ * How a criterion id may be spelled inside a test name: bracketed `[KEY-n]` wherever a
+ * framework gives a test a string name, identifier-safe `KEY_n` where the name _is_ an
+ * identifier (ADR-0039). The two spellings are one id — headings and reports use the
+ * bracketed form.
+ */
+export type IdSpelling = "bracketed" | "identifier";
+
+/**
+ * `KEY_n`, bounded by underscores or non-alphanumerics: `test_CHECKOUT_1_taxRounds`
+ * claims CHECKOUT-1, while `testCHECKOUT_1` and `CHECKOUT_1Fixture` do not.
+ */
+const IDENTIFIER_CLAIM_TOKEN = /(?<![A-Za-z0-9])([A-Z][A-Z0-9]{1,9})_([1-9][0-9]*)(?![A-Za-z0-9])/g;
+
+/** Every criterion id a test name claims, always in the bracketed `KEY-n` form. */
+export function readClaimedIds(name: string, spelling: IdSpelling): string[] {
+  if (spelling === "bracketed") return [...name.matchAll(CLAIM_TOKEN)].map((m) => m[1]!);
+  return [...name.matchAll(IDENTIFIER_CLAIM_TOKEN)].map((m) => `${m[1]!}-${m[2]!}`);
+}
+
 /** Sorts `KEY-n` ids by key, then numerically by n. */
 export function compareCriterionIds(a: string, b: string): number {
   const [aKey, aN] = splitId(a);

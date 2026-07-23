@@ -40,6 +40,11 @@ export function renderClaims(report: ClaimsReport): string {
     lines.push("");
   }
 
+  if (report.testFiles.length === 0) {
+    lines.push(`no test files matched the ${report.dialect} dialect`);
+    lines.push("");
+  }
+
   if (report.unclaimed.length > 0) {
     lines.push("unclaimed — no test name carries these tokens");
     for (const id of report.unclaimed) lines.push(`  ${id}`);
@@ -59,7 +64,8 @@ export function renderClaims(report: ClaimsReport): string {
     0,
   );
   const criteria = `${total} ${total === 1 ? "criterion" : "criteria"}`;
-  const counts = `${plural(report.features.length, "spec file")}, ${criteria}, ${claimed} claimed`;
+  const specs = plural(report.features.length, "spec file");
+  const counts = `${report.dialect} — ${specs}, ${criteria}, ${claimed} claimed`;
   lines.push(report.clean ? `${counts}, clean` : counts);
   return lines.join("\n");
 }

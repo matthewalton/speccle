@@ -1,13 +1,14 @@
 import { readFile, stat } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
+import { DEFAULT_DIALECT, resolveDialect } from "./dialects.ts";
 import { discoverSpecs, discoverTests } from "./discover.ts";
-import { CLAIM_TOKEN, compareCriterionIds, parseSpec } from "./spec.ts";
+import { compareCriterionIds, parseSpec, readClaimedIds } from "./spec.ts";
 
 /** One test-name occurrence of a criterion's token. */
 export interface TestClaim {
   /** Root-relative posix path of the test file. */
   file: string;
-  /** The describe/it/test title carrying the token. */
+  /** The test's full name, as its dialect reads it. */
   name: string;
 }
 
@@ -28,6 +29,8 @@ export interface FeatureClaims {
 /** The JSON contract of `speccle-oracle claims --json`. */
 export interface ClaimsReport {
   root: string;
+  /** The test dialect the join ran under. */
+  dialect: string;
   testFiles: string[];
   features: FeatureClaims[];
   /** Well-formed criteria no test name claims. */
@@ -38,18 +41,13 @@ export interface ClaimsReport {
   clean: boolean;
 }
 
-/**
- * Titles are read statically, so only string-literal describe/it/test names count.
- * A dynamically built title the scan misses shows up as unclaimed — the failure mode
- * is a false alarm, never a silent pass.
- */
-const TEST_TITLE = /\b(?:describe|it|test)(?:\.[\w.]+)*\s*\(\s*(["'`])((?:\\.|(?!\1).)*)\1/g;
-
-export function extractTestNames(source: string): string[] {
-  return [...source.matchAll(TEST_TITLE)].map((m) => m[2]!);
+export interface ClaimsOptions {
+  /** Test dialect name (default: `ts-vitest`). */
+  dialect?: string;
 }
 
-export async function claims(target: string): Promise<ClaimsReport> {
+export async function claims(target: string, options: ClaimsOptions = {}): Promise<ClaimsReport> {
+  const dialect = resolveDialect(options.dialect ?? DEFAULT_DIALECT);
   const root = resolve(target);
   if (!(await isDirectory(root))) throw new Error(`path not found: ${target}`);
 
@@ -73,16 +71,16 @@ export async function claims(target: string): Promise<ClaimsReport> {
   const found = new Set<string>();
   for (const folder of folders) {
     const abs = folder === "." ? root : join(root, folder);
-    for (const file of await discoverTests(abs)) {
+    for (const file of await discoverTests(abs, dialect)) {
       found.add(folder === "." ? file : `${folder}/${file}`);
     }
   }
   const testFiles = [...found].sort();
   const claimsById = new Map<string, TestClaim[]>();
   for (const file of testFiles) {
-    for (const name of extractTestNames(await readFile(join(root, file), "utf8"))) {
-      for (const match of name.matchAll(CLAIM_TOKEN)) {
-        const id = match[1]!;
+    const source = await readFile(join(root, file), "utf8");
+    for (const { name, spelling } of dialect.readTestNames(source)) {
+      for (const id of readClaimedIds(name, spelling)) {
         const entry = claimsById.get(id) ?? [];
         entry.push({ file, name });
         claimsById.set(id, entry);
@@ -114,6 +112,7 @@ export async function claims(target: string): Promise<ClaimsReport> {
 
   return {
     root,
+    dialect: dialect.name,
     testFiles,
     features,
     unclaimed,

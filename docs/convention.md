@@ -119,10 +119,18 @@ about one behaviour is not a decision record — it is that criterion's body.
 
 ## Test linking
 
-A test defends a criterion when the `[KEY-n]` token appears anywhere in its **full
-concatenated name** — enclosing `describe` titles included. One
+A test defends a criterion when the criterion id appears anywhere in its **full
+concatenated name** — enclosing group titles included. One
 `describe('[CHECKOUT-1] tax rounding', …)` claims every test inside it. Mutation and
 coverage reports already carry full names, so the join is mechanical.
+
+What counts as a test file, and what counts as its name, is the **test dialect**'s
+business ([ADR-0038](adr/0038-test-dialects-make-speccle-multi-language-not-agnostic.md)).
+Where a framework gives a test a string name, the id is claimed bracketed —
+`[CHECKOUT-1]`. Where the name _is_ an identifier, the id takes its identifier-safe
+spelling: `func test_CHECKOUT_1_taxRounds()` claims `CHECKOUT-1`. The two spellings are
+one id, not two — `SPEC.md` headings and every report use the bracketed form
+([ADR-0039](adr/0039-a-criterion-id-has-an-identifier-safe-spelling.md)).
 
 ## Spec discovery
 
@@ -176,7 +184,25 @@ parentheses. Plain acronyms (JSON, HTTP) and unlisted extensions pass — the ru
 under-flags by design
 ([ADR-0032](adr/0032-criterion-statements-are-product-voiced-when-then.md)).
 
-## v1 target stack
+## Supported stacks
 
-The convention is language-agnostic, but v1 tooling targets: TypeScript, vitest,
-StrykerJS with `perTest` coverage analysis, Istanbul `json-summary` coverage.
+Speccle is **multi-language across a supported set, not language-agnostic**. A repo
+declares which test dialect it is on; it never declares how that dialect works, so a
+clean `claims` run means the same thing in every repo
+([ADR-0038](adr/0038-test-dialects-make-speccle-multi-language-not-agnostic.md)). An
+unsupported stack is unsupported, and says so.
+
+Two frontiers, and they are not the same:
+
+- **The contract, the lint, and the claim join** reach every supported dialect.
+  `ts-vitest` reads `describe`/`it`/`test` titles out of `*.test.*` and `*.spec.*`
+  files. `swift` reads Swift Testing `@Test("…")` and `@Suite("…")` display names, and
+  XCTest `func test…()` identifiers, out of `*Tests.swift` files and anything under a
+  `Tests` directory.
+- **The oracle-strength heatmap** reaches TypeScript. It needs a mutation tool that
+  attributes coverage per test: StrykerJS with `perTest` coverage analysis, plus
+  Istanbul `json-summary` coverage. Elsewhere the reports are simply missing, and the
+  heatmap degrades on its own.
+
+Adding a language is a Speccle change with tests behind it, never a regex a repo
+supplies.

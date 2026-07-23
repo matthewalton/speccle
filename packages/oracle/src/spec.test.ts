@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseSpec, type WellFormedCriterion } from "./spec.ts";
+import { parseSpec, readClaimedIds, type WellFormedCriterion } from "./spec.ts";
 
 const FILE = "features/checkout/SPEC.md";
 
@@ -87,5 +87,30 @@ describe("parseSpec criteria", () => {
     );
     expect(spec.key?.valid).toBe(true);
     expect(spec.criteria).toHaveLength(1);
+  });
+});
+
+describe("readClaimedIds", () => {
+  it("reads every bracketed token in a name", () => {
+    expect(readClaimedIds("[CHECKOUT-1] and [CHECKOUT-12] together", "bracketed")).toEqual([
+      "CHECKOUT-1",
+      "CHECKOUT-12",
+    ]);
+  });
+
+  it("returns the identifier spelling as the one bracketed id", () => {
+    expect(readClaimedIds("test_CHECKOUT_1_taxRounds", "identifier")).toEqual(["CHECKOUT-1"]);
+    expect(readClaimedIds("test_CHECKOUT_12", "identifier")).toEqual(["CHECKOUT-12"]);
+  });
+
+  it("needs an underscore boundary, so a run-on identifier claims nothing", () => {
+    expect(readClaimedIds("testCHECKOUT_1", "identifier")).toEqual([]);
+    expect(readClaimedIds("test_CHECKOUT_1Fixture", "identifier")).toEqual([]);
+    expect(readClaimedIds("test_XCHECKOUT_1_rounds", "identifier")).toEqual(["XCHECKOUT-1"]);
+  });
+
+  it("reads only the spelling the name can carry", () => {
+    expect(readClaimedIds("test_CHECKOUT_1_taxRounds", "bracketed")).toEqual([]);
+    expect(readClaimedIds("[CHECKOUT-1] tax rounds", "identifier")).toEqual([]);
   });
 });

@@ -1,20 +1,23 @@
 # speccle-oracle
 
-The deterministic tooling the skills invoke: one bin, two commands —
+The deterministic tooling the skills invoke: one bin, three commands —
 
 ```
 speccle-oracle lint            # enforce the convention over a repo's specs
+speccle-oracle claims          # join criteria to the test names that claim them
 speccle-oracle strength        # oracle-strength heatmap: per-criterion killed ÷ covered
 speccle-oracle strength init   # provision the strength stack into a target
 ```
 
 - `lint` — enforce the [convention](https://github.com/matthewalton/speccle/blob/main/docs/convention.md) over a repo's specs.
+- `claims` — join every criterion to the test names carrying its id, statically. No
+  reports needed, so it is cheap enough to gate on.
 - `strength` — join specs + Stryker mutation report + coverage into per-criterion
   `killed ÷ covered`.
 - `strength init` — the setup `strength` measures against: install the stack's
   devDependencies and write the preset configs.
 
-The bin is named after the package; both commands are explicit subcommands (a bare
+The bin is named after the package; every command is an explicit subcommand (a bare
 invocation is a usage error, exit code 2). `strength` names the measurement — oracle
 strength — not the heatmap rendering of it.
 
@@ -35,6 +38,38 @@ heuristics judging the heading statement only. One severity, no configuration.
 Output is human terminal text by default; `--json` emits the typed `LintReport`
 (see [`src/lint.ts`](src/lint.ts)) — the contract other tooling consumes. Exit codes:
 `0` clean, `1` violations, `2` usage error.
+
+## claims
+
+```sh
+speccle-oracle claims [path] [--json] [--dialect <name>]
+```
+
+Joins every criterion under `path` to the test names that claim it, read statically from
+the test files — no mutation or coverage reports, so it runs in seconds. A criterion no
+test name claims is **unclaimed**; a token claiming a criterion no spec declares is an
+**unknown claim**. Only test files under a spec's own folder count, so unrelated tooling
+tests can never phantom-claim.
+
+`--dialect` names the **test dialect**: which files are tests, and how a test's full name
+is read.
+
+| dialect               | test files                              | names read                                                             |
+| --------------------- | --------------------------------------- | ---------------------------------------------------------------------- |
+| `ts-vitest` (default) | `*.test.*`, `*.spec.*`                  | `describe` / `it` / `test` titles                                      |
+| `swift`               | `*Tests.swift`, anything under `Tests/` | `@Test("…")` / `@Suite("…")` display names, `func test…()` identifiers |
+
+Dialects are named and owned by speccle-oracle — a repo declares which one it is on,
+never how that dialect works, so a clean run means the same thing in every repo. An
+unsupported stack is a usage error, not a silent empty result. Where a framework gives a
+test no string name, the criterion id takes its identifier-safe spelling:
+`func test_CHECKOUT_1_taxRounds()` claims `CHECKOUT-1`. Reports always render the
+bracketed form.
+
+Names are read statically, so a name built dynamically shows up as unclaimed — the
+failure mode is a false alarm, never a silent pass. `--json` emits the typed
+`ClaimsReport` (see [`src/claims.ts`](src/claims.ts)). Exit codes: `0` every criterion
+claimed and no unknown claims, `1` otherwise, `2` usage error.
 
 ## strength
 
