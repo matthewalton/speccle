@@ -80,8 +80,12 @@ Tax is computed per line item and rounded half-up to 2dp before summing.
 ```
 
 A test defends a criterion when the `[CHECKOUT-1]` token appears anywhere in its full
-name — so one `describe('[CHECKOUT-1] …')` block claims every test inside it. The full
-format is a written contract: [`docs/convention.md`](docs/convention.md).
+name — so one `describe('[CHECKOUT-1] …')` block claims every test inside it. Which
+files count as tests, and what counts as a test's name, is the **test dialect**'s
+business: TypeScript/vitest and Swift ship today. Where a framework gives a test no
+string name, the id takes an identifier-safe spelling instead —
+`func test_CHECKOUT_1_taxRounds()` claims the same criterion. The full format is a
+written contract: [`docs/convention.md`](docs/convention.md).
 
 ## The skills
 
@@ -166,9 +170,10 @@ code change no test noticed.
 ## Install
 
 The plugin installs from GitHub, but the skills shell out to the `speccle-oracle`
-binary, so you still need a clone to build it and put it on your `PATH` first. Requires Node ≥ 24;
-targets TypeScript projects using vitest, StrykerJS (`perTest` coverage analysis), and
-Istanbul `json-summary` coverage.
+binary, so you still need a clone to build it and put it on your `PATH` first. Requires
+Node ≥ 24. The contract, the lint and the claim join reach every supported test dialect
+— TypeScript/vitest and Swift today. The oracle-strength heatmap needs TypeScript with
+vitest, StrykerJS (`perTest` coverage analysis) and Istanbul `json-summary` coverage.
 
 ```sh
 git clone https://github.com/matthewalton/speccle.git
@@ -223,10 +228,10 @@ hasn't been linted hasn't been linted.
 
 ## Packages
 
-| Package                              | Role                                                                                                              |
-| ------------------------------------ | ----------------------------------------------------------------------------------------------------------------- |
-| [`packages/plugin`](packages/plugin) | The Claude Code plugin: the skills. Judgement lives here.                                                         |
-| [`packages/oracle`](packages/oracle) | The deterministic tooling the skills invoke: one bin, `lint` and the oracle-strength heatmap. Never calls an LLM. |
+| Package                              | Role                                                                                                                          |
+| ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------- |
+| [`packages/plugin`](packages/plugin) | The Claude Code plugin: the skills. Judgement lives here.                                                                     |
+| [`packages/oracle`](packages/oracle) | The deterministic tooling the skills invoke: one bin — `lint`, `claims`, and the oracle-strength heatmap. Never calls an LLM. |
 
 ## Development
 
