@@ -20,9 +20,10 @@ say so and point at the `feature` pipeline (or `spec-feature` for the contract a
 rather than drafting one here — drafting has its own skill, and an unlinted spec must
 not reach this one. Verify the precondition rather than assuming it:
 `<oracle> lint <feature-folder>` exits `0` (resolve the oracle as every Speccle skill
-does: `speccle-oracle` on `PATH`, else
-`node <speccle-repo>/packages/oracle/src/cli.ts`; if neither resolves, point at the
-README's install steps and stop).
+does: the repo's own `<repo-root>/node_modules/.bin/speccle-oracle` first — a
+devDependency is never on `PATH`, so test for the file — else `speccle-oracle` on
+`PATH`, else `node <speccle-repo>/packages/oracle/src/cli.ts`; if none resolves, point
+at the README's install steps and stop).
 
 The folder shape and test-linking rules are fixed by the convention, bundled beside
 this skill at `${CLAUDE_SKILL_DIR}/references/convention.md`.

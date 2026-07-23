@@ -178,16 +178,22 @@ TypeScript/vitest and Swift today. The oracle-strength heatmap additionally need
 TypeScript with vitest, StrykerJS (`perTest` coverage analysis) and Istanbul
 `json-summary` coverage.
 
-### 1. The CLI — always global
+### 1. The CLI
 
 ```sh
 npm i -g speccle-oracle
 speccle-oracle lint          # lints every SPEC.md under the current directory
 ```
 
-Global whichever way you install the skills: they look for `speccle-oracle` on your
-`PATH`, and a project devDependency isn't on it. If they can't find the oracle they
+Global is the simplest way to have it everywhere, but the skills resolve the oracle
+three ways and take the first that answers: the repo's own
+`node_modules/.bin/speccle-oracle`, then your `PATH`, then a clone. **A repo that pins
+its own version wins** — that pin is a committed choice, and lint rules change between
+releases, so a team all lints the same way. If they can't find the oracle at all they
 **stop rather than guess** — a spec that hasn't been linted hasn't been linted.
+
+So you can skip this step entirely if every repo you work in provisions its own
+(step 3) — bootstrap the first one with `npx speccle-oracle strength init`.
 
 ### 2. The skills — one of two ways
 
@@ -226,7 +232,8 @@ review, never something that happens behind you.
 
 | Part                      | How                                                                            | What you get                                     |
 | ------------------------- | ------------------------------------------------------------------------------ | ------------------------------------------------ |
-| **CLI**                   | `npm i -g speccle-oracle@latest`                                               | Silent — it's a binary, not your code            |
+| **CLI, global**           | `npm i -g speccle-oracle@latest`                                               | Silent — it's a binary, not your code            |
+| **CLI, repo-pinned**      | Bump `speccle-oracle` in the repo's `devDependencies`                          | A lockfile diff to review and commit             |
 | **Skills, project-level** | `npx skills update`                                                            | A diff of `.claude/skills/` to review and commit |
 | **Skills, user-level**    | `/plugin marketplace update` then `/plugin update speccle@speccle-marketplace` | Applies on restart                               |
 | **Strength stack**        | No update path yet — see below                                                 | —                                                |

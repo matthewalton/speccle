@@ -74,8 +74,10 @@ in the spec along the way.
 
 ## 5. The checks-gate — deterministic, no judgement
 
-Run in this session, resolving the oracle as every Speccle skill does
-(`speccle-oracle` on `PATH`, else `node <speccle-repo>/packages/oracle/src/cli.ts`):
+Run in this session, resolving the oracle as every Speccle skill does — the repo's own
+`<repo-root>/node_modules/.bin/speccle-oracle` first (a devDependency is never on
+`PATH`, so test for the file), else `speccle-oracle` on `PATH`, else
+`node <speccle-repo>/packages/oracle/src/cli.ts`:
 
 1. `<oracle> lint <feature-folder>` — exit `0`.
 2. `<oracle> claims <target-root>` — exit `0`: every criterion claimed by a test

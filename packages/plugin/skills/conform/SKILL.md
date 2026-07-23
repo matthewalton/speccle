@@ -37,13 +37,18 @@ a new feature. Say so and stop.
 
 Resolve the oracle once, in this order, and reuse what works:
 
-1. `speccle-oracle` on `PATH` — the normal case; Speccle's install links it there.
-2. Otherwise, from a clone of the speccle repo, run it from source — Node ≥ 24
-   executes TypeScript directly, so no build is needed:
+1. `<repo-root>/node_modules/.bin/speccle-oracle` — the repo's own pinned copy, put
+   there by `strength init`. A devDependency is never on `PATH` in this shell, so test
+   for the file; in a monorepo check the package you are working in as well as the
+   root. It wins over a global install: the pin is a committed choice, and lint rules
+   change between versions.
+2. `speccle-oracle` on `PATH` — a global install.
+3. Otherwise, from a clone of the speccle repo, run it from source — Node ≥ 24 executes
+   TypeScript directly, so no build is needed:
    `node <speccle-repo>/packages/oracle/src/cli.ts`.
 
-If neither resolves, point the user at the install steps in Speccle's README and
-stop. Do not hand-check the spec rules in the oracle's place.
+If none resolves, point the user at the install steps in Speccle's README and stop.
+Do not hand-check the spec rules in the oracle's place.
 
 Then walk the checklist for each slice — every item is what the convention requires
 today, and the bundled copy is the authority:
