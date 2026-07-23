@@ -111,7 +111,7 @@ export async function init(root: string, options: InitOptions = {}): Promise<Ini
     ...Object.keys(packageJson.devDependencies ?? {}),
     ...Object.keys(packageJson.dependencies ?? {}),
   ]);
-  const wantedDeps = [`speccle-oracle@^${await ownVersion()}`, ...STRENGTH_DEPS];
+  const wantedDeps = [`speccle@^${await ownVersion()}`, ...STRENGTH_DEPS];
   const missingDeps = wantedDeps.filter((spec) => !declared.has(withoutVersion(spec)));
   const installCommand =
     missingDeps.length > 0 ? installCommandFor(packageManager, missingDeps) : null;

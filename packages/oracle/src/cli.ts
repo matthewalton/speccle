@@ -7,7 +7,7 @@ import { lint } from "./lint.ts";
 import { renderCheck, renderClaims, renderHuman, renderInit, renderStrength } from "./render.ts";
 import { DEFAULT_COVERAGE_SUMMARY, DEFAULT_MUTATION_REPORT, strength } from "./strength.ts";
 
-const USAGE = `Usage: speccle-oracle <command> [options]
+const USAGE = `Usage: speccle <command> [options]
 
 Commands:
   lint [path] [--json]           Lint every SPEC.md under path (default: current directory)

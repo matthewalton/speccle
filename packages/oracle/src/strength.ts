@@ -47,7 +47,7 @@ export interface StaticMutants {
   survivors: MutantSite[];
 }
 
-/** The JSON contract of `speccle-oracle strength --json`. */
+/** The JSON contract of `speccle strength --json`. */
 export interface StrengthReport extends Score {
   root: string;
   lineCoverage: number | null;

@@ -5,7 +5,7 @@ import { parseSpec } from "./spec.ts";
 import { runRules } from "./rules/src/index.ts";
 import type { Violation } from "./violation.ts";
 
-/** The JSON contract of `speccle-oracle lint --json`; files are root-relative and sorted. */
+/** The JSON contract of `speccle lint --json`; files are root-relative and sorted. */
 export interface LintReport {
   root: string;
   files: string[];

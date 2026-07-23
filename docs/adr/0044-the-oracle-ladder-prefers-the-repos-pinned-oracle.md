@@ -1,6 +1,8 @@
 # 0044 — The oracle resolution ladder prefers the repo's pinned oracle
 
-- Status: accepted
+- Status: accepted, amended by
+  [ADR-0045](0045-the-published-cli-is-speccle-the-oracle-stays-the-concept.md) — the
+  ladder's shape stands; its first two rungs are spelled `speccle`
 - Date: 2026-07-23
 
 ## Context

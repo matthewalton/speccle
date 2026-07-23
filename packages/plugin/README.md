@@ -36,7 +36,7 @@ copies are generated; edit the source in `docs/` and run `pnpm sync:plugin-refs`
 skill → ADR map lives in
 [docs/skill-provenance.md](https://github.com/matthewalton/speccle/blob/main/docs/skill-provenance.md).
 
-The skills shell out to `speccle-oracle` for everything deterministic — trust comes from
+The skills shell out to `speccle` for everything deterministic — trust comes from
 the tools, judgement from the skills. Speccle is used from a clone, so that binary comes
 from building the oracle and linking it onto your `PATH`: see
 [Install](https://github.com/matthewalton/speccle#install). Skills that cannot find the

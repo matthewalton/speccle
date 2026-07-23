@@ -17,7 +17,7 @@ itself is absent, check for all four before asking anyone to run anything:
 `perTest` is the hard one: without it Stryker never records `coveredBy`, the join has
 nothing to walk back to criterion ids, and `oracle strength` exits `2` saying so.
 
-`speccle-oracle strength init <path>` provisions all of it — it installs the missing
+`speccle strength init <path>` provisions all of it — it installs the missing
 devDependencies and writes the preset configs, keeping any that already exist. It runs
 only on the user's explicit go-ahead; this skill measures someone else's project, it does
 not quietly re-tool it.

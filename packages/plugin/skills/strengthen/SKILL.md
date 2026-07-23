@@ -28,12 +28,12 @@ mutant", not "missed mutation"; "test-fitting", not "gaming the score"; "fresh" 
 
 Once, in this order, and reuse what works:
 
-1. `<repo-root>/node_modules/.bin/speccle-oracle` — the repo's own pinned copy, put
+1. `<repo-root>/node_modules/.bin/speccle` — the repo's own pinned copy, put
    there by `strength init`. A devDependency is never on `PATH` in this shell, so test
    for the file; in a monorepo check the package you are working in as well as the
    root. It wins over a global install: the pin is a committed choice, and lint rules
    change between versions.
-2. `speccle-oracle` on `PATH` — a global install.
+2. `speccle` on `PATH` — a global install.
 3. Otherwise, from a clone of the speccle repo, run it from source — Node ≥ 24 executes
    TypeScript directly, so no build is needed:
    `node <speccle-repo>/packages/oracle/src/cli.ts`.
@@ -78,7 +78,7 @@ itself is absent, check the four requirements in
 `${CLAUDE_SKILL_DIR}/references/stack.md` before asking anyone to run anything.
 
 **If something is missing, stop and offer.** Show what is absent, then offer the one
-command that provisions all of it — `speccle-oracle strength init <path>` — and wait for
+command that provisions all of it — `speccle strength init <path>` — and wait for
 the user's go-ahead before running it. Never write to the target's `package.json`,
 lockfile, or test config without the user agreeing first — this skill measures someone
 else's project; it does not quietly re-tool it.

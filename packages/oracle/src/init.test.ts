@@ -70,7 +70,7 @@ describe("init", () => {
       { file: "stryker.config.json", action: "written" },
       { file: "vitest.config.ts", action: "written" },
     ]);
-    expect(report.missingDeps[0]).toMatch(/^speccle-oracle@\^\d+\.\d+\.\d+$/);
+    expect(report.missingDeps[0]).toMatch(/^speccle@\^\d+\.\d+\.\d+$/);
     expect(report.missingDeps.slice(1)).toEqual([
       "vitest@^4",
       "@vitest/coverage-istanbul@^4",
@@ -118,7 +118,7 @@ describe("init", () => {
     const root = await scaffold({
       "package.json": JSON.stringify({
         devDependencies: {
-          "speccle-oracle": "^0.7.1",
+          speccle: "^0.7.1",
           vitest: "^4.1.10",
           "@vitest/coverage-istanbul": "^4.1.10",
           "@stryker-mutator/core": "^9.6.1",
@@ -131,13 +131,13 @@ describe("init", () => {
     expect(report.installCommand).toBeNull();
   });
 
-  it("pins the speccle-oracle devDependency to the running oracle's own version", async () => {
+  it("pins the speccle devDependency to the running oracle's own version", async () => {
     const root = await scaffold({ "package.json": "{}" });
     const report = await init(root, { skipInstall: true });
     const own = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8")) as {
       version: string;
     };
-    expect(report.missingDeps[0]).toBe(`speccle-oracle@^${own.version}`);
+    expect(report.missingDeps[0]).toBe(`speccle@^${own.version}`);
   });
 
   it("prefers explicit mutate globs over derivation", async () => {

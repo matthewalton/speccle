@@ -1,6 +1,8 @@
 # 0031 — Project-level install rides the `skills` CLI; the repo layout is the contract
 
-- Status: accepted
+- Status: accepted, amended by
+  [ADR-0045](0045-the-published-cli-is-speccle-the-oracle-stays-the-concept.md) — the
+  install command is spelled `npx speccle strength init`
 - Date: 2026-07-14
 
 ## Context

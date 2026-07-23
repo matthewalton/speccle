@@ -11,9 +11,9 @@ must lint clean and keep every criterion claimed at 100% oracle strength.
 Run from the repo root:
 
 ```sh
-pnpm --filter speccle-oracle test                     # runs this slice's tests with the package's
+pnpm --filter speccle test    # runs this slice's tests with the package's
 node packages/oracle/src/cli.ts lint packages/oracle/src
-pnpm --filter speccle-oracle coverage && pnpm --filter speccle-oracle mutation
+pnpm --filter speccle coverage && pnpm --filter speccle mutation
 node packages/oracle/src/cli.ts strength packages/oracle/src \
   --mutation ../reports/mutation/mutation.json --coverage ../coverage/coverage-summary.json
 ```

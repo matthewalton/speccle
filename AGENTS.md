@@ -19,11 +19,11 @@ pnpm workspace, Node ≥ 24.
 
 ```sh
 pnpm install
-pnpm --filter speccle-oracle test        # oracle unit + e2e tests (vitest)
-pnpm --filter speccle-oracle typecheck
-pnpm --filter speccle-oracle build
-pnpm lint                                # eslint, repo-wide
-pnpm format:check                        # prettier, repo-wide
+pnpm --filter speccle test    # oracle unit + e2e tests (vitest)
+pnpm --filter speccle typecheck
+pnpm --filter speccle build
+pnpm lint                     # eslint, repo-wide
+pnpm format:check             # prettier, repo-wide
 node packages/oracle/src/cli.ts lint targets/checkout       # run the linter from source
 node packages/oracle/src/cli.ts strength targets/checkout   # needs the reports below
 ```
@@ -71,7 +71,7 @@ Node ≥ 24 runs TypeScript directly — no build step needed to run the CLI fro
 
   ```sh
   node packages/oracle/src/cli.ts lint packages/oracle/src
-  pnpm --filter speccle-oracle coverage && pnpm --filter speccle-oracle mutation
+  pnpm --filter speccle coverage && pnpm --filter speccle mutation
   node packages/oracle/src/cli.ts strength packages/oracle/src \
     --mutation ../reports/mutation/mutation.json --coverage ../coverage/coverage-summary.json
   ```

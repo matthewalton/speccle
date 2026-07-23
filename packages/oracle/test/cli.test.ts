@@ -17,7 +17,7 @@ function run(...args: string[]): { status: number | null; stdout: string; stderr
   return spawnSync(process.execPath, [CLI, ...args], { encoding: "utf8" });
 }
 
-describe("speccle-oracle lint (e2e)", () => {
+describe("speccle lint (e2e)", () => {
   it("reports the toy project clean with exit code 0", () => {
     const { status, stdout } = run("lint", TOY);
     expect(status).toBe(0);
@@ -93,11 +93,11 @@ describe("speccle-oracle lint (e2e)", () => {
   it("exits 2 with usage when no command is given", () => {
     const { status, stderr } = run();
     expect(status).toBe(2);
-    expect(stderr).toContain("Usage: speccle-oracle");
+    expect(stderr).toContain("Usage: speccle");
   });
 });
 
-describe("speccle-oracle claims (e2e)", () => {
+describe("speccle claims (e2e)", () => {
   it("reports the toy project fully claimed with exit code 0", () => {
     const { status, stdout } = run("claims", TOY);
     expect(status).toBe(0);
@@ -159,7 +159,7 @@ const SWIFT = resolve(import.meta.dirname, "fixtures/swift");
 const STRENGTH = resolve(import.meta.dirname, "fixtures/strength");
 const REPORTS = ["--mutation", "mutation.json", "--coverage", "coverage-summary.json"];
 
-describe("speccle-oracle strength (e2e)", () => {
+describe("speccle strength (e2e)", () => {
   it("emits the typed JSON report with exit code 0", () => {
     const { status, stdout } = run("strength", STRENGTH, ...REPORTS, "--json");
     expect(status).toBe(0);
@@ -231,7 +231,7 @@ describe("speccle-oracle strength (e2e)", () => {
   });
 });
 
-describe("speccle-oracle strength --check (e2e)", () => {
+describe("speccle strength --check (e2e)", () => {
   const roots: string[] = [];
 
   afterEach(async () => {
@@ -289,7 +289,7 @@ describe("speccle-oracle strength --check (e2e)", () => {
   });
 });
 
-describe("speccle-oracle strength init (e2e)", () => {
+describe("speccle strength init (e2e)", () => {
   const roots: string[] = [];
 
   async function scaffold(): Promise<string> {

@@ -1,12 +1,12 @@
-# speccle-oracle
+# speccle
 
 The deterministic tooling the skills invoke: one bin, three commands —
 
 ```
-speccle-oracle lint            # enforce the convention over a repo's specs
-speccle-oracle claims          # join criteria to the test names that claim them
-speccle-oracle strength        # oracle-strength heatmap: per-criterion killed ÷ covered
-speccle-oracle strength init   # provision the strength stack into a target
+speccle lint            # enforce the convention over a repo's specs
+speccle claims          # join criteria to the test names that claim them
+speccle strength        # oracle-strength heatmap: per-criterion killed ÷ covered
+speccle strength init   # provision the strength stack into a target
 ```
 
 - `lint` — enforce the [convention](https://github.com/matthewalton/speccle/blob/main/docs/convention.md) over a repo's specs.
@@ -27,7 +27,7 @@ typed JSON, never calls an LLM (see [CONTEXT.md](https://github.com/matthewalton
 ## lint
 
 ```sh
-speccle-oracle lint [path] [--json]
+speccle lint [path] [--json]
 ```
 
 Lints every `SPEC.md` under `path` (default: current directory; a file path lints just
@@ -42,7 +42,7 @@ Output is human terminal text by default; `--json` emits the typed `LintReport`
 ## claims
 
 ```sh
-speccle-oracle claims [path] [--json] [--dialect <name>]
+speccle claims [path] [--json] [--dialect <name>]
 ```
 
 Joins every criterion under `path` to the test names that claim it, read statically from
@@ -59,7 +59,7 @@ is read.
 | `ts-vitest` (default) | `*.test.*`, `*.spec.*`                  | `describe` / `it` / `test` titles                                      |
 | `swift`               | `*Tests.swift`, anything under `Tests/` | `@Test("…")` / `@Suite("…")` display names, `func test…()` identifiers |
 
-Dialects are named and owned by speccle-oracle — a repo declares which one it is on,
+Dialects are named and owned by speccle — a repo declares which one it is on,
 never how that dialect works, so a clean run means the same thing in every repo. An
 unsupported stack is a usage error, not a silent empty result. Where a framework gives a
 test no string name, the criterion id takes its identifier-safe spelling:
@@ -74,7 +74,7 @@ claimed and no unknown claims, `1` otherwise, `2` usage error.
 ## strength
 
 ```sh
-speccle-oracle strength [path] [--json] [--mutation <file>] [--coverage <file>]
+speccle strength [path] [--json] [--mutation <file>] [--coverage <file>]
 ```
 
 Joins three inputs into one number per **acceptance criterion**: the `SPEC.md` files under
@@ -119,14 +119,14 @@ separate concern.
 ## strength init
 
 ```sh
-speccle-oracle strength init [path] [--json] [--skip-install] [--mutate <glob>]...
+speccle strength init [path] [--json] [--skip-install] [--mutate <glob>]...
 ```
 
 Provisions the stack `strength` measures against — the explicit command the
 `strengthen` skill offers when a target is missing pieces,
 instead of a hand-assembled config recipe. In one run it:
 
-- installs the missing devDependencies — `speccle-oracle` itself, caret-pinned to the
+- installs the missing devDependencies — `speccle` itself, caret-pinned to the
   running oracle's own version, plus the stack pinned to the majors the join is proven
   on (`vitest@^4`, `@vitest/coverage-istanbul@^4`, `@stryker-mutator/core@^9`,
   `@stryker-mutator/vitest-runner@^9`) — using the package manager the target's
@@ -155,7 +155,7 @@ After init, the loop is the standard one:
 ```sh
 npx vitest run --coverage    # → coverage/coverage-summary.json
 npx stryker run              # → reports/mutation/mutation.json
-speccle-oracle strength .
+speccle strength .
 ```
 
 Repo-specific blind spots stay the target's decision: edit the written config's `mutate`

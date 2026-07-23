@@ -37,7 +37,7 @@ checkout/              ← named for the feature, never a catch-all like src/
 ```
 
 The skills hold the judgement; everything deterministic is delegated to the
-`speccle-oracle` CLI, which lints the specs and scores the tests — and **never calls
+`speccle` CLI, which lints the specs and scores the tests — and **never calls
 an LLM**. This matters most when code and tests are AI-generated and review is the
 bottleneck: your attention moves up to the spec, and everything downstream is
 mechanically attested.
@@ -170,7 +170,7 @@ code change no test noticed.
 ## Install
 
 Speccle is two pieces and you need both: the **skills**, which hold the judgement and
-run inside Claude Code, and the **`speccle-oracle` CLI**, which the skills shell out to
+run inside Claude Code, and the **`speccle` CLI**, which the skills shell out to
 for everything deterministic. Requires Node ≥ 24.
 
 The contract, the lint and the claim join reach every supported test dialect —
@@ -181,19 +181,19 @@ TypeScript with vitest, StrykerJS (`perTest` coverage analysis) and Istanbul
 ### 1. The CLI
 
 ```sh
-npm i -g speccle-oracle
-speccle-oracle lint          # lints every SPEC.md under the current directory
+npm i -g speccle
+speccle lint    # lints every SPEC.md under the current directory
 ```
 
 Global is the simplest way to have it everywhere, but the skills resolve the oracle
 three ways and take the first that answers: the repo's own
-`node_modules/.bin/speccle-oracle`, then your `PATH`, then a clone. **A repo that pins
+`node_modules/.bin/speccle`, then your `PATH`, then a clone. **A repo that pins
 its own version wins** — that pin is a committed choice, and lint rules change between
 releases, so a team all lints the same way. If they can't find the oracle at all they
 **stop rather than guess** — a spec that hasn't been linted hasn't been linted.
 
 So you can skip this step entirely if every repo you work in provisions its own
-(step 3) — bootstrap the first one with `npx speccle-oracle strength init`.
+(step 3) — bootstrap the first one with `npx speccle strength init`.
 
 ### 2. The skills — one of two ways
 
@@ -217,7 +217,7 @@ both.
 ### 3. The strength stack — per target repo, only for the heatmap
 
 ```sh
-speccle-oracle strength init
+speccle strength init
 ```
 
 Installs the devDependencies and writes the preset configs (see the
@@ -232,8 +232,8 @@ review, never something that happens behind you.
 
 | Part                      | How                                                                            | What you get                                     |
 | ------------------------- | ------------------------------------------------------------------------------ | ------------------------------------------------ |
-| **CLI, global**           | `npm i -g speccle-oracle@latest`                                               | Silent — it's a binary, not your code            |
-| **CLI, repo-pinned**      | Bump `speccle-oracle` in the repo's `devDependencies`                          | A lockfile diff to review and commit             |
+| **CLI, global**           | `npm i -g speccle@latest`                                                      | Silent — it's a binary, not your code            |
+| **CLI, repo-pinned**      | Bump `speccle` in the repo's `devDependencies`                                 | A lockfile diff to review and commit             |
 | **Skills, project-level** | `npx skills update`                                                            | A diff of `.claude/skills/` to review and commit |
 | **Skills, user-level**    | `/plugin marketplace update` then `/plugin update speccle@speccle-marketplace` | Applies on restart                               |
 | **Strength stack**        | No update path yet — see below                                                 | —                                                |
@@ -274,7 +274,7 @@ cd speccle && pnpm install
 
 ```sh
 pnpm install
-pnpm --filter speccle-oracle test
+pnpm --filter speccle test
 pnpm lint
 ```
 

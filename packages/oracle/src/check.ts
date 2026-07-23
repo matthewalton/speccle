@@ -13,7 +13,7 @@ export interface ReportCheck {
   staleAgainst?: string;
 }
 
-/** The JSON contract of `speccle-oracle strength --check --json`. */
+/** The JSON contract of `speccle strength --check --json`. */
 export interface CheckReport {
   root: string;
   mutation: ReportCheck;

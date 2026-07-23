@@ -1,6 +1,8 @@
 # 0030 — `speccle-oracle` publishes to npm, on internal demand
 
-- Status: accepted
+- Status: accepted, amended by
+  [ADR-0045](0045-the-published-cli-is-speccle-the-oracle-stays-the-concept.md) — the
+  package named here publishes as `speccle`; everything it decides about substance stands
 - Date: 2026-07-14
 
 ## Context

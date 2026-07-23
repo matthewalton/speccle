@@ -26,7 +26,7 @@ export interface FeatureClaims {
   criteria: CriterionClaims[];
 }
 
-/** The JSON contract of `speccle-oracle claims --json`. */
+/** The JSON contract of `speccle claims --json`. */
 export interface ClaimsReport {
   root: string;
   /** The test dialect the join ran under. */
