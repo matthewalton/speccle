@@ -169,44 +169,34 @@ code change no test noticed.
 
 ## Install
 
-The plugin installs from GitHub, but the skills shell out to the `speccle-oracle`
-binary, so you still need a clone to build it and put it on your `PATH` first. Requires
-Node ≥ 24. The contract, the lint and the claim join reach every supported test dialect
-— TypeScript/vitest and Swift today. The oracle-strength heatmap needs TypeScript with
-vitest, StrykerJS (`perTest` coverage analysis) and Istanbul `json-summary` coverage.
+Speccle is two pieces and you need both: the **skills**, which hold the judgement and
+run inside Claude Code, and the **`speccle-oracle` CLI**, which the skills shell out to
+for everything deterministic. Requires Node ≥ 24.
+
+The contract, the lint and the claim join reach every supported test dialect —
+TypeScript/vitest and Swift today. The oracle-strength heatmap additionally needs
+TypeScript with vitest, StrykerJS (`perTest` coverage analysis) and Istanbul
+`json-summary` coverage.
+
+### 1. The CLI — always global
 
 ```sh
-git clone https://github.com/matthewalton/speccle.git
-cd speccle
-pnpm install
-pnpm --filter speccle-oracle build
-cd packages/oracle && npm link       # puts `speccle-oracle` on your PATH
+npm i -g speccle-oracle
+speccle-oracle lint          # lints every SPEC.md under the current directory
 ```
 
-Check it:
+Global whichever way you install the skills: they look for `speccle-oracle` on your
+`PATH`, and a project devDependency isn't on it. If they can't find the oracle they
+**stop rather than guess** — a spec that hasn't been linted hasn't been linted.
+
+### 2. The skills — one of two ways
+
+**Project-level** — vendor them into the repo so the whole team gets the pipeline by
+cloning; commit what lands:
 
 ```sh
-speccle-oracle lint targets/checkout    # → "2 spec files, clean"
+npx skills add matthewalton/speccle -a claude-code   # → .claude/skills/ + skills-lock.json
 ```
-
-A target repo that doesn't have the vitest + StrykerJS stack yet gets it in one
-command — `speccle-oracle strength init <path>` installs the devDependencies and writes
-the preset configs (see the
-[oracle README](packages/oracle/README.md#strength-init)).
-
-Then get the skills into Claude Code, one of two ways:
-
-**Project-level** — vendor the skills into the repo so the whole team gets
-the pipeline by cloning; commit what lands:
-
-```sh
-npx skills add matthewalton/speccle -a claude-code   # skills → .claude/skills/ + skills-lock.json
-npx speccle-oracle strength init                     # oracle devDep + strength stack + configs
-```
-
-Re-run `npx skills update` to refresh the vendored copies. Don't also install the
-user-level plugin — two copies of every skill would load; `strength init` warns if it
-sees both.
 
 **User-level** — the plugin, for just you, across all your projects:
 
@@ -215,14 +205,54 @@ sees both.
 /plugin install speccle@speccle-marketplace
 ```
 
+Don't do both — two copies of every skill would load; `strength init` warns if it sees
+both.
+
+### 3. The strength stack — per target repo, only for the heatmap
+
+```sh
+speccle-oracle strength init
+```
+
+Installs the devDependencies and writes the preset configs (see the
+[oracle README](packages/oracle/README.md#strength-init)). Skip it if you only want the
+contract, the lint and the claim join — those need nothing but the CLI.
+
+## Updating
+
+Three moving parts, and only one of them updates silently. That is deliberate: the
+skills and the stack become **your repo's files**, so changing them is a diff you
+review, never something that happens behind you.
+
+| Part                      | How                                                                            | What you get                                     |
+| ------------------------- | ------------------------------------------------------------------------------ | ------------------------------------------------ |
+| **CLI**                   | `npm i -g speccle-oracle@latest`                                               | Silent — it's a binary, not your code            |
+| **Skills, project-level** | `npx skills update`                                                            | A diff of `.claude/skills/` to review and commit |
+| **Skills, user-level**    | `/plugin marketplace update` then `/plugin update speccle@speccle-marketplace` | Applies on restart                               |
+| **Strength stack**        | No update path yet — see below                                                 | —                                                |
+
+The skills and the CLI ship on one version line, so keep them in step.
+
+**The strength stack is a known gap.** `strength init` deliberately never overwrites a
+config you already have — it's your file and you may have customised it — but it also
+doesn't yet tell you when yours has drifted from the current preset. Until it does,
+re-read the preset fields in the
+[oracle README](packages/oracle/README.md#strength-init) after a major upgrade and
+reconcile by hand.
+
 <details>
-<summary>No <code>speccle-oracle</code> on your <code>PATH</code>?</summary>
+<summary>Running the oracle from a clone instead</summary>
 <br>
 
-The skills fall back to running the oracle from the clone's source
-(`node <speccle>/packages/oracle/src/cli.ts` — Node ≥ 24 runs TypeScript directly, no
-build needed). If they can find neither, they **stop rather than guess**: a spec that
-hasn't been linted hasn't been linted.
+Contributors, and anyone who'd rather not install globally, can skip step 1: the skills
+fall back to running the oracle from a clone's source
+(`node <speccle>/packages/oracle/src/cli.ts` — Node ≥ 24 runs TypeScript directly, so
+no build step).
+
+```sh
+git clone https://github.com/matthewalton/speccle.git
+cd speccle && pnpm install
+```
 
 </details>
 
