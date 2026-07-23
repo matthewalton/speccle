@@ -40,7 +40,10 @@ _Avoid_: prefix (unqualified), namespace.
 **Criterion id** (**`[KEY-n]`**):
 A feature key plus a number, bracketed on the criterion's heading and in test names.
 An id is a name, not an order: a new criterion takes the next never-used number under
-its key, and an id is never renumbered or reused.
+its key, and an id is never renumbered or reused. Where a test framework offers no
+string name to carry it, the id has an identifier-safe spelling — `KEY_n` — and the two
+spellings are one id, not two
+([ADR-0039](docs/adr/0039-a-criterion-id-has-an-identifier-safe-spelling.md)).
 _Avoid_: tag, label, reference.
 
 **Feature CONTEXT.md**:
@@ -120,8 +123,19 @@ The link between a test and a criterion: a test claims a criterion when the `[KE
 token appears in its full concatenated name
 ([ADR-0004](docs/adr/0004-tests-claim-criteria-in-the-full-test-name.md)).
 `oracle claims` reads the join statically from test-file titles — no reports —
-which is what makes the checks-gate seconds cheap.
+which is what makes the checks-gate seconds cheap. What counts as a test file, and what
+counts as its name, is the **test dialect**'s business.
 _Avoid_: link, mapping, coverage (for this relationship).
+
+**Test dialect**:
+The per-language knowledge Speccle carries about a test stack: which files are tests,
+and how a test's full name is read. Dialects are named and owned by Speccle — a repo
+declares which dialect it is on, never how that dialect works — so a clean `claims` run
+means the same thing in every repo
+([ADR-0038](docs/adr/0038-test-dialects-make-speccle-multi-language-not-agnostic.md)).
+Speccle is multi-language across a supported set, not language-agnostic: an unsupported
+stack is unsupported, visibly.
+_Avoid_: adapter, language plugin, runner config, language-agnostic (of Speccle).
 
 **Code voice**:
 Statement language that reads as implementation rather than product — a code span, a
@@ -181,6 +195,93 @@ Writing an assertion that pins a surviving mutant's exact behaviour when no crit
 promises it — killing the mutant while defending nothing. The failure mode `strengthen`'s
 routing exists to prevent.
 _Avoid_: gaming the score, overfitting (unqualified).
+
+**Inner loop / outer loop / meta loop**:
+The three nested loops Speccle is built as.
+**Inner loop** — `edit · run · check` — is the `feature` pipeline, with the checks-gate
+as its `check`; it drives autonomy.
+**Outer loop** — `test · lint · review` — runs on a change set rather than a slice; it
+drives automation.
+**Meta loop** reads what the outer loop found and ships prevention back down into the
+other two, owning the **remedy record** and the **calibration record**; it drives quality
+([ADR-0043](docs/adr/0043-review-is-the-outer-loop-the-meta-loop-routes-remedies-home.md)).
+_Avoid_: stage, phase, cycle.
+
+**`.speccle/`**:
+The repo-root folder Speccle reads **repo facts** from — the test dialect, the suite
+command and per-path overrides in `config.json`, plus `lenses/`, `checks/` and the risk
+policy. A repo fact is something Speccle cannot know and there is nothing to game; it is
+never judgement. `init` auto-detects and then writes the result down, and the written
+record is the source of truth, never the detection
+([ADR-0040](docs/adr/0040-speccle-reads-repo-facts-from-a-dot-speccle-folder.md)).
+_Avoid_: config (unqualified), settings, knobs.
+
+**Lens**:
+One dimension a review looks along — accessibility, architecture, security, a repo's own
+conventions — written as a markdown prompt: a stance, what to look for, how to report.
+Speccle ships a baseline set; a repo's house-conventions lens is its own. A lens is the
+dimension, independent of whether it runs in a local session or in CI.
+_Avoid_: agent, reviewer, rule, check, rubric.
+
+**Finding**:
+One thing a lens reports, anchored to a changed line. A finding is fixed in the code and
+then **routed** to a durable artefact so the class cannot recur: a new acceptance
+criterion, a deterministic check, or a sharpened lens — the same posture `strengthen`
+takes to a surviving mutant, routed on what the finding is and never on a count.
+_Avoid_: issue, comment, violation (that's lint), defect.
+
+**Remedy**:
+The known-correct response to a class of finding: the fix applied to the code, plus the
+prevention artefact that stops the class recurring — an `oracle verify` check, a new
+acceptance criterion, or a sharpened lens. The meta loop chooses which, per finding, and
+logs it in the **remedy record**, which it consults to fix consistently next time
+([ADR-0043](docs/adr/0043-review-is-the-outer-loop-the-meta-loop-routes-remedies-home.md)).
+_Avoid_: fix (alone), patch, resolution, rule.
+
+**Remedy record**:
+The meta loop's durable log of each finding, the fix applied, and the prevention artefact
+chosen for it. Memory, not policy: the loop consults it to answer a repeat finding the
+way it answered the first one
+([ADR-0043](docs/adr/0043-review-is-the-outer-loop-the-meta-loop-routes-remedies-home.md)).
+_Avoid_: changelog, backlog, knowledge base.
+
+**Verify check**:
+A deterministic invariant `oracle verify` enforces in the checks-gate — path scope, a
+required or forbidden pattern, and the finding it came from — held in `.speccle/checks/`.
+Its reason to exist is the invariant no linter can express: cross-file and whole-change
+relationships. A Speccle tool: no LLM.
+_Avoid_: lint rule, linter rule, assertion, verifier.
+
+**Risk signal**:
+One deterministic fact about a change that contributes to its risk score — including ones
+only Speccle can see: behaviour changed in a governed slice whose `SPEC.md` did not,
+a criterion retired, changed code no test claims. Speccle ships a baseline set; a repo
+adds its own in its **risk policy**.
+_Avoid_: criterion (reserved for acceptance criteria), rule, heuristic, factor.
+
+**Risk policy**:
+A repo's declared risk signals and their weights, plus its **review threshold**, held in
+`.speccle/`. The one sanctioned exception to "no configurable judgement": what counts as
+consequential is irreducibly repo-specific, so Speccle cannot own it — but only a human
+moves a weight or the threshold, and only on calibration evidence
+([ADR-0041](docs/adr/0041-risk-gates-fix-authority-deterministic-floor-lens-escalates.md)).
+_Avoid_: risk config, rules, policy (unqualified).
+
+**Risk score**:
+The weighted sum of the risk signals a change fires, computed deterministically with no
+LLM. It is a **floor**: a risk lens may escalate it for subtlety no signal catches, and
+may never lower it. At or above the **review threshold** a human is required and `review`
+stops at findings; below it, `review` fixes and reports
+([ADR-0041](docs/adr/0041-risk-gates-fix-authority-deterministic-floor-lens-escalates.md)).
+_Avoid_: risk level, severity, confidence.
+
+**Calibration record**:
+The durable log of every reviewed change — score, signals fired, any escalation, and the
+human's actual verdict — and the evidence base for moving signal weights and the review
+threshold. Speccle reports on it; only a human acts on it, because nothing that reduces
+supervision may apply itself
+([ADR-0042](docs/adr/0042-calibration-proposes-only-the-human-reduces-supervision.md)).
+_Avoid_: training data, model, history, feedback loop.
 
 **Speccle tool**:
 A component that is deterministic, independently runnable, emits typed JSON, and

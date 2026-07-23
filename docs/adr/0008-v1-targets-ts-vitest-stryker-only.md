@@ -1,6 +1,9 @@
 # 0008 — v1 targets TypeScript + vitest + StrykerJS only
 
-- Status: accepted
+- Status: accepted, amended by
+  [ADR-0038](0038-test-dialects-make-speccle-multi-language-not-agnostic.md) — the
+  convention reaches a supported set of languages via named test dialects, not every
+  language; `strength` stays TypeScript-first
 - Date: 2026-07-09
 
 ## Context

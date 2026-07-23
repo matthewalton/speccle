@@ -1,6 +1,8 @@
 # 0004 — Tests claim criteria via the token in the full test name
 
-- Status: accepted
+- Status: accepted, amended by
+  [ADR-0039](0039-a-criterion-id-has-an-identifier-safe-spelling.md) — where a framework
+  offers no string name, the token takes its identifier-safe spelling
 - Date: 2026-07-09
 
 ## Context

@@ -1,6 +1,8 @@
 # 0007 — Lint rules are fixed heuristics: structure plus heading quality
 
-- Status: accepted
+- Status: accepted, amended by
+  [ADR-0040](0040-speccle-reads-repo-facts-from-a-dot-speccle-folder.md) — the stance is
+  no configurable _judgement_; repo facts live in `.speccle/`
 - Date: 2026-07-09
 
 ## Context
