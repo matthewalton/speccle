@@ -2,7 +2,9 @@
 
 - Status: accepted, amended by
   [ADR-0045](0045-the-published-cli-is-speccle-the-oracle-stays-the-concept.md) — the
-  package named here publishes as `speccle`; everything it decides about substance stands
+  package named here publishes as `speccle`; everything it decides about substance stands —
+  and by [ADR-0046](0046-the-speccle-tarball-carries-the-skills.md) — the tarball ships
+  `dist/` plus the skills payload, still with no runtime dependencies
 - Date: 2026-07-14
 
 ## Context

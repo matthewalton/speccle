@@ -1,6 +1,10 @@
 # 0031 — Project-level install rides the `skills` CLI; the repo layout is the contract
 
-- Status: accepted, amended by
+- Status: superseded by
+  [ADR-0046](0046-the-speccle-tarball-carries-the-skills.md) — the skills materialize from
+  the `speccle` tarball, not from the GitHub repo via `skills.sh`. The install-agnostic
+  skill-body rules below still stand for the user-level plugin path.
+- Was: accepted, amended by
   [ADR-0045](0045-the-published-cli-is-speccle-the-oracle-stays-the-concept.md) — the
   install command is spelled `npx speccle strength init`
 - Date: 2026-07-14

@@ -32,4 +32,6 @@ All skills additionally sit under the plugin-wide decisions:
 [0025](adr/0025-skill-frontmatter-grants-read-access-to-bundled-references.md),
 [0026](adr/0026-every-skill-carries-the-plugin-wide-references-grant.md),
 [0028](adr/0028-shipped-skills-carry-no-repo-citations.md),
-[0031](adr/0031-project-level-install-rides-the-skills-cli.md).
+[0031](adr/0031-project-level-install-rides-the-skills-cli.md) (superseded by
+[0046](adr/0046-the-speccle-tarball-carries-the-skills.md) on materialization; its
+install-agnostic skill-body rules survive).
