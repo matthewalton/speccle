@@ -43,7 +43,7 @@ const LOCKFILES: [string, PackageManager][] = [
   ["bun.lockb", "bun"],
 ];
 
-const STRYKER_CONFIG_NAMES = ["stryker.config", "stryker.conf"].flatMap((base) =>
+export const STRYKER_CONFIG_NAMES = ["stryker.config", "stryker.conf"].flatMap((base) =>
   ["json", "js", "mjs", "cjs"].map((ext) => `${base}.${ext}`),
 );
 
@@ -170,7 +170,8 @@ export async function detectDoubleLoad(
   }
 }
 
-async function ownVersion(): Promise<string> {
+/** The installed CLI's own version — the `speccle@X` that ships this bin and its skills. */
+export async function ownVersion(): Promise<string> {
   const raw = await readFile(new URL("../package.json", import.meta.url), "utf8");
   return (JSON.parse(raw) as { version: string }).version;
 }

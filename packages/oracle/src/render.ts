@@ -1,6 +1,7 @@
 import type { CheckReport, ReportCheck } from "./check.ts";
 import type { ClaimsReport } from "./claims.ts";
 import type { ConfigInitReport } from "./config.ts";
+import type { DoctorReport } from "./doctor.ts";
 import type { InitReport } from "./init.ts";
 import type { SkillsInitReport } from "./skills.ts";
 
@@ -35,6 +36,58 @@ export function renderSkillsInit(report: SkillsInitReport): string {
   lines.push("");
   lines.push("these are generated files — commit them; re-run `speccle init` to refresh");
   return lines.join("\n");
+}
+
+export function renderDoctor(report: DoctorReport): string {
+  const lines = [
+    `speccle ${report.cli}`,
+    "",
+    `skills   ${describeSkills(report.skills)}`,
+    `stack    ${describeStack(report.stack)}`,
+  ];
+  if (report.stack.status === "drift") {
+    const width = Math.max(...report.stack.deps.map((dep) => dep.name.length));
+    for (const dep of report.stack.deps) {
+      if (dep.status === "ok") continue;
+      lines.push(`  ${dep.name.padEnd(width)}  ${describeDep(dep)}`);
+    }
+  }
+  lines.push("");
+  if (report.skills.status === "absent" && report.stack.status === "absent") {
+    lines.push("Speccle is not set up here — run `speccle init`");
+  } else if (report.ok) {
+    lines.push("up to date");
+  } else {
+    lines.push("out of date — run `speccle update`");
+  }
+  return lines.join("\n");
+}
+
+function describeSkills(skills: DoctorReport["skills"]): string {
+  switch (skills.status) {
+    case "current":
+      return `current (${skills.bundled})`;
+    case "stale":
+      return `stale — committed ${skills.recorded}, this CLI ships ${skills.bundled}`;
+    case "ahead":
+      return `ahead — committed ${skills.recorded} is newer than this CLI (${skills.bundled})`;
+    case "unstamped":
+      return "present but unversioned — re-run `speccle init` to record the version";
+    case "absent":
+      return "not materialized — run `speccle init`";
+  }
+}
+
+function describeStack(stack: DoctorReport["stack"]): string {
+  if (stack.status === "absent") return "not provisioned — run `speccle strength init`";
+  if (stack.status === "current") return "current";
+  return "drift — the stack is behind the current preset";
+}
+
+function describeDep(dep: DoctorReport["stack"]["deps"][number]): string {
+  return dep.status === "missing"
+    ? `missing — preset wants ^${dep.wantedMajor}`
+    : `behind — has ${dep.declared}, preset wants ^${dep.wantedMajor}`;
 }
 
 export function renderCheck(report: CheckReport): string {

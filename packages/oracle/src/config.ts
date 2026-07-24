@@ -23,6 +23,12 @@ export interface SpeccleConfig {
   dialect: string;
   suite: string;
   overrides?: PathOverride[];
+  /**
+   * The `speccle@X` that last materialized this repo's committed skills — the staleness
+   * anchor `doctor` reads (ADR-0046). Written by `init` when it materializes; the tarball
+   * version, not a content hash.
+   */
+  skillsVersion?: string;
 }
 
 /** The dialect and suite command in force at one path, overrides resolved. */
@@ -92,13 +98,23 @@ export async function detectConfig(root: string): Promise<SpeccleConfig> {
  * Writes `.speccle/config.json` from detection, or keeps an existing one untouched — the
  * written record is the source of truth, never the detection (ADR-0040), the same posture
  * `strength init` takes with the stack it provisions.
+ *
+ * When `skillsVersion` is given, it is (re)stamped even on the kept path: materialization
+ * always refreshes the skills to the current version, so the anchor must move with them or
+ * a re-run would leave the recorded version behind the files it just wrote. The facts
+ * themselves stay kept — only the stamp follows the skills.
  */
-export async function initConfig(root: string): Promise<ConfigInitReport> {
+export async function initConfig(root: string, skillsVersion?: string): Promise<ConfigInitReport> {
   const existing = await readConfig(root);
   if (existing !== undefined) {
-    return { root, file: CONFIG_FILE, action: "kept", config: existing };
+    const config = skillsVersion !== undefined ? { ...existing, skillsVersion } : existing;
+    if (skillsVersion !== undefined && existing.skillsVersion !== skillsVersion) {
+      await writeConfig(root, config);
+    }
+    return { root, file: CONFIG_FILE, action: "kept", config };
   }
-  const config = await detectConfig(root);
+  const detected = await detectConfig(root);
+  const config = skillsVersion !== undefined ? { ...detected, skillsVersion } : detected;
   await writeConfig(root, config);
   return { root, file: CONFIG_FILE, action: "written", config };
 }

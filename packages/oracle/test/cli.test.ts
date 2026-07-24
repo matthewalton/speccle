@@ -6,6 +6,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import type { CheckReport } from "../src/check.ts";
 import type { ClaimsReport } from "../src/claims.ts";
 import type { ConfigInitReport } from "../src/config.ts";
+import type { DoctorReport } from "../src/doctor.ts";
 import type { InitReport } from "../src/init.ts";
 import type { LintReport } from "../src/lint.ts";
 import type { SkillsInitReport } from "../src/skills.ts";
@@ -14,6 +15,11 @@ import type { StrengthReport } from "../src/strength.ts";
 const CLI = resolve(import.meta.dirname, "../src/cli.ts");
 const TOY = resolve(import.meta.dirname, "../../..", "targets/checkout");
 const DIRTY = resolve(import.meta.dirname, "fixtures/dirty");
+const PKG_VERSION = (
+  JSON.parse(await readFile(resolve(import.meta.dirname, "../package.json"), "utf8")) as {
+    version: string;
+  }
+).version;
 
 function run(...args: string[]): { status: number | null; stdout: string; stderr: string } {
   return spawnSync(process.execPath, [CLI, ...args], { encoding: "utf8" });
@@ -386,7 +392,11 @@ describe("speccle init (e2e)", () => {
     expect(status).toBe(0);
     const report = JSON.parse(stdout) as { config: ConfigInitReport; skills: SkillsInitReport };
     expect(report.config.action).toBe("written");
-    expect(report.config.config).toEqual({ dialect: "ts-vitest", suite: "pnpm test" });
+    expect(report.config.config).toEqual({
+      dialect: "ts-vitest",
+      suite: "pnpm test",
+      skillsVersion: PKG_VERSION,
+    });
     expect(report.skills.dir).toBe(".claude/skills");
     expect(report.skills.skills.map((skill) => skill.name)).toContain("feature");
   });
@@ -401,6 +411,94 @@ describe("speccle init (e2e)", () => {
 
   it("exits 2 on an unknown option", () => {
     expect(run("init", "--nope").status).toBe(2);
+  });
+});
+
+describe("speccle doctor (e2e)", () => {
+  const roots: string[] = [];
+
+  afterEach(async () => {
+    await Promise.all(roots.splice(0).map((root) => rm(root, { recursive: true, force: true })));
+  });
+
+  async function scaffold(files: Record<string, string>): Promise<string> {
+    const root = await mkdtemp(join(tmpdir(), "speccle-doctor-e2e-"));
+    roots.push(root);
+    for (const [name, content] of Object.entries(files)) {
+      await mkdir(dirname(join(root, name)), { recursive: true });
+      await writeFile(join(root, name), content);
+    }
+    return root;
+  }
+
+  it("reports an uninitialized repo as not set up, exit 0", async () => {
+    const root = await scaffold({ "package.json": "{}" });
+    const { status, stdout } = run("doctor", root);
+    expect(status).toBe(0);
+    expect(stdout).toContain(`speccle ${PKG_VERSION}`);
+    expect(stdout).toContain("not materialized");
+    expect(stdout).toContain("not provisioned");
+    expect(stdout).toContain("Speccle is not set up here");
+  });
+
+  it("reports freshly-inited skills as current, exit 0", async () => {
+    const root = await scaffold({ "package.json": "{}" });
+    expect(run("init", root).status).toBe(0);
+    const { status, stdout } = run("doctor", root);
+    expect(status).toBe(0);
+    expect(stdout).toContain(`skills   current (${PKG_VERSION})`);
+    expect(stdout).toContain("up to date");
+  });
+
+  it("flags committed skills behind the CLI as stale, exit 1", async () => {
+    const root = await scaffold({ "package.json": "{}" });
+    run("init", root);
+    const config = JSON.parse(await readFile(join(root, ".speccle/config.json"), "utf8")) as {
+      skillsVersion: string;
+    };
+    await writeFile(
+      join(root, ".speccle/config.json"),
+      JSON.stringify({ ...config, skillsVersion: "0.0.1" }),
+    );
+    const { status, stdout } = run("doctor", root);
+    expect(status).toBe(1);
+    expect(stdout).toContain("stale — committed 0.0.1");
+    expect(stdout).toContain("out of date");
+  });
+
+  it("flags a strength stack behind the preset major as drift, exit 1", async () => {
+    const root = await scaffold({
+      "package.json": JSON.stringify({ devDependencies: { "@stryker-mutator/core": "^8.0.0" } }),
+      "stryker.config.json": "{}",
+    });
+    const { status, stdout } = run("doctor", root);
+    expect(status).toBe(1);
+    expect(stdout).toContain("drift");
+    expect(stdout).toContain("@stryker-mutator/core");
+    expect(stdout).toContain("behind — has ^8.0.0, preset wants ^9");
+    expect(stdout).toContain("vitest");
+    expect(stdout).toContain("missing — preset wants ^4");
+  });
+
+  it("emits the typed JSON report", async () => {
+    const root = await scaffold({ "package.json": "{}" });
+    run("init", root);
+    const { status, stdout } = run("doctor", root, "--json");
+    expect(status).toBe(0);
+    const report = JSON.parse(stdout) as DoctorReport;
+    expect(report.cli).toBe(PKG_VERSION);
+    expect(report.skills).toEqual({
+      recorded: PKG_VERSION,
+      bundled: PKG_VERSION,
+      status: "current",
+    });
+    expect(report.stack.status).toBe("absent");
+    expect(report.stack.deps.map((dep) => dep.name)).toContain("@stryker-mutator/core");
+    expect(report.ok).toBe(true);
+  });
+
+  it("exits 2 on a missing path", () => {
+    expect(run("doctor", resolve(DIRTY, "no-such-dir")).status).toBe(2);
   });
 });
 
