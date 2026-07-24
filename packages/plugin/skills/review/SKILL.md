@@ -1,6 +1,6 @@
 ---
 name: review
-description: Review a change set the way the outer loop does — fan a panel of lenses over the working diff, let `oracle risk` decide whether a human is needed, then below that threshold fix what the lenses find (re-running the checks-gate after each fix and reverting any that goes red) and above it report findings and stop, closing with an overruleable summary that proposes a remedy for each finding. Use when the user wants to review a branch or the pending change, asks to "review this", "review my changes", "run the lenses", find-and-fix issues before a PR, or check a change set for correctness, security, accessibility, architecture, performance, test-quality, or house-convention problems.
+description: Review a change set the way the outer loop does — fan a panel of lenses over the working diff, let `oracle risk` decide whether a human is needed, then below that threshold fix what the lenses find (re-running the checks-gate after each fix and reverting any that goes red) and above it report findings and stop, closing with an overruleable summary that proposes a remedy for each finding and records the change to the calibration record. Use when the user wants to review a branch or the pending change, asks to "review this", "review my changes", "run the lenses", find-and-fix issues before a PR, or check a change set for correctness, security, accessibility, architecture, performance, test-quality, or house-convention problems.
 allowed-tools: Read(/${CLAUDE_PLUGIN_ROOT}/skills/*/references/**)
 ---
 
@@ -135,3 +135,35 @@ There is no approval gate. Below the threshold the fixes already landed and the 
 reverts what the summary makes them regret; at or above it nothing was fixed and the findings
 await the human. Either way the summary is the whole interaction — overruleable, never a
 "proceed? y/n".
+
+## 8. Calibrate — record the change, then surface the evidence
+
+The review is the outer loop's eyes; the **calibration record** is its memory — one entry per
+reviewed change, the evidence a **review threshold** earns a move on. Close every review by
+adding this change to it.
+
+The floor is known (§3) and the panel's outcome is known (§4). The one thing neither can
+answer is the honest verdict — _did this change actually need a human?_ That answer is the
+human's, and the record is worthless without it, so never invent it:
+
+```sh
+<oracle> calibrate record <path> --found-real <true|false> --needed-human <true|false> [--escalated]
+```
+
+- `--found-real` — true when any lens returned a real finding this run; you know this.
+- `--escalated` — include it only if the risk lens escalated the floor in §3.
+- `--needed-human` — the human's honest call, whatever the floor said. With a human here to
+  answer, ask once and record it; with none, print the command for them to run and stop. A
+  threshold that rose on a guessed verdict is worse than one that never rose.
+
+Then read the record back and fold its proposals into the close:
+
+```sh
+<oracle> calibrate report <path>
+```
+
+It names the signals that have never fired on a change that mattered, the signals that fired
+on every change that needed a human, and the threshold the record would support. These are
+**evidence, not instructions**: escalation is free, but only a human moves a weight or the
+review threshold, and only on this evidence. Surface them so ignoring them is a choice — never
+act on them here.
