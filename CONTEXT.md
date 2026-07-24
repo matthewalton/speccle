@@ -216,12 +216,29 @@ record is the source of truth, never the detection
 ([ADR-0040](docs/adr/0040-speccle-reads-repo-facts-from-a-dot-speccle-folder.md)).
 _Avoid_: config (unqualified), settings, knobs.
 
+**Change set**:
+The unit the outer loop reviews: one coherent change, not a slice. It is read either from
+the working tree's pending change — the local driver's default — or from the commits
+between a base ref and `HEAD`, measured at their merge base, which is what a CI run needs,
+where the tree is clean and the change lives in commits (`--base`). A finding must anchor
+to a line the change set touched; a lens does not audit the repository.
+_Avoid_: diff, PR, patch, branch (for the thing under review).
+
 **Lens**:
 One dimension a review looks along — accessibility, architecture, security, a repo's own
 conventions — written as a markdown prompt: a stance, what to look for, how to report.
 Speccle ships a baseline set; a repo's house-conventions lens is its own. A lens is the
 dimension, independent of whether it runs in a local session or in CI.
 _Avoid_: agent, reviewer, rule, check, rubric.
+
+**Driver**:
+What runs a review. The **local driver** is the `review` skill: it fans the lenses as
+subagents in a session, needs no API key, and — below the review threshold — fixes what it
+finds. The **CI driver** is `speccle review run`: it fans the same lenses over a pull
+request, needs a metered key, and only finds and comments. The lens is the dimension; the
+driver is what runs it, and the same lens file feeds both
+([ADR-0047](docs/adr/0047-the-ci-driver-ships-in-the-tarball-and-is-the-one-llm-caller.md)).
+_Avoid_: runner, backend, mode, integration.
 
 **Finding**:
 One thing a lens reports, anchored to a changed line. A finding is fixed in the code and
@@ -286,7 +303,10 @@ _Avoid_: training data, model, history, feedback loop.
 **Speccle tool**:
 A component that is deterministic, independently runnable, emits typed JSON, and
 **never calls an LLM**. Trust comes from the tools; judgement comes from the skills.
-Everything in `packages/oracle` is a Speccle tool.
+Every command in `packages/oracle` is a Speccle tool but one: `review run`, the **CI
+driver**, which calls a model and is therefore not a tool by this definition — it is
+isolated in its own module so the rest of the package stays checkably deterministic
+([ADR-0047](docs/adr/0047-the-ci-driver-ships-in-the-tarball-and-is-the-one-llm-caller.md)).
 _Avoid_: plugin (that's the skills package), service.
 
 **Lint violation**:

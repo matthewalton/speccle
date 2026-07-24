@@ -5,6 +5,7 @@ import {
   assertPredicate,
   contentReader,
   gitChangeSet,
+  gitRangeChangeSet,
   isDirectory,
   matching,
   messageOf,
@@ -85,6 +86,8 @@ export interface RiskReport {
   root: string;
   /** Root-relative changed paths the signals ran against. */
   changed: string[];
+  /** The base ref the change set was measured against; absent for the working tree's change. */
+  base?: string;
   /** Only the signals that fired, baseline before policy. */
   signals: FiredSignal[];
   /** The weighted sum of the fired signals — the deterministic floor (ADR-0041). */
@@ -101,8 +104,17 @@ export interface RiskOptions {
    */
   changed?: string[];
   /**
+   * Read the change set from the commits between this base ref and HEAD instead of the working
+   * tree — what the CI driver needs, where the tree is clean and the change is committed. It also
+   * moves the criterion baseline to the merge base, because on a branch HEAD already contains the
+   * change: diffing a changed SPEC.md against HEAD would compare it with itself and no criterion
+   * would ever read as retired or reworded. Ignored when `changed` is given.
+   */
+  base?: string;
+  /**
    * The pre-change content of a root-relative path, or undefined when it is new — the baseline a
-   * criterion diff needs. Defaults to `git show HEAD:<file>`; injectable so the core stays git-free.
+   * criterion diff needs. Defaults to `git show HEAD:<file>`, or the merge base under `base`;
+   * injectable so the core stays git-free.
    */
   baseline?: (file: string) => string | undefined | Promise<string | undefined>;
   /** Test dialect. Overrides `.speccle/config.json`; both fall back to the default. */
@@ -117,10 +129,14 @@ export async function risk(target: string, options: RiskOptions = {}): Promise<R
   const threshold = policy.threshold ?? DEFAULT_THRESHOLD;
   const weightOf = (id: BaselineSignalId): number => policy.weights?.[id] ?? BASELINE_WEIGHTS[id];
 
-  const changed = (options.changed ?? gitChangeSet(root)).slice().sort();
+  // Read the range once: it carries both the change set and the ref a criterion's baseline
+  // reads from, and the two must agree or the diff is measured against the wrong commit.
+  const range = options.base === undefined ? undefined : gitRangeChangeSet(root, options.base);
+  const changed = (options.changed ?? range?.changed ?? gitChangeSet(root)).slice().sort();
   const declared = options.dialect ?? (await readConfig(root))?.dialect;
   const dialect = resolveDialect(declared ?? DEFAULT_DIALECT);
-  const baseline = options.baseline ?? ((file: string) => gitBaseline(root, file));
+  const baselineRef = range?.baseline ?? "HEAD";
+  const baseline = options.baseline ?? ((file: string) => gitBaseline(root, file, baselineRef));
   const read = contentReader(root);
 
   const signals: FiredSignal[] = [];
@@ -169,7 +185,15 @@ export async function risk(target: string, options: RiskOptions = {}): Promise<R
   }
 
   const score = signals.reduce((sum, signal) => sum + signal.weight, 0);
-  return { root, changed, signals, score, threshold, humanRequired: score >= threshold };
+  return {
+    root,
+    changed,
+    ...(options.base !== undefined && { base: options.base }),
+    signals,
+    score,
+    threshold,
+    humanRequired: score >= threshold,
+  };
 }
 
 /** Governed-slice production source that changed while the slice's SPEC.md stayed silent. */
@@ -304,9 +328,9 @@ function assertPolicy(policy: RiskPolicy): void {
   }
 }
 
-/** Committed content of a path, or undefined when git has no baseline for it (new or no commits). */
-function gitBaseline(root: string, file: string): string | undefined {
-  const result = spawnSync("git", ["show", `HEAD:./${file}`], { cwd: root, encoding: "utf8" });
+/** Content of a path at `ref`, or undefined when git has no baseline for it (new or no commits). */
+function gitBaseline(root: string, file: string, ref: string): string | undefined {
+  const result = spawnSync("git", ["show", `${ref}:./${file}`], { cwd: root, encoding: "utf8" });
   return result.status === 0 ? result.stdout : undefined;
 }
 

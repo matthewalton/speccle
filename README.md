@@ -249,6 +249,29 @@ Installs the devDependencies and writes the preset configs (see the
 [oracle README](packages/oracle/README.md#strength-init)). Skip it if you only want the
 contract, the lint and the claim join — those need nothing but the CLI.
 
+### 4. Review in CI — opt-in
+
+`review` runs in a session with no key at all; that's the on-ramp. The same lenses can also
+run on every pull request, which needs a metered key and so is never set up for you:
+
+```sh
+speccle review init
+```
+
+That writes one file — `.github/workflows/speccle-review.yml` — pinned to the CLI version
+you ran it with. Then add an `ANTHROPIC_API_KEY` repo secret, and protect `.github/` with
+CODEOWNERS: anyone who can edit a workflow can read the secrets it uses.
+
+On a pull request it fans `.speccle/lenses/` over the change set, posts the findings as one
+review with inline comments, and reports the risk verdict as a status check. It **finds and
+comments only** — fixes come back through the local skill, which re-runs the checks-gate and
+reverts what goes red. Whether a failing check blocks the merge is branch protection: your
+setting, not Speccle's.
+
+Fork pull requests are skipped (they must not reach the key), the reviewing code is fetched
+from npm rather than the branch under review, and one automatic review is posted per pull
+request — comment `@review` to run it again. Re-run `speccle review init` to move the pin.
+
 ## Updating
 
 Three moving parts — the CLI, the vendored skills, and the strength stack — and only the
@@ -301,10 +324,10 @@ cd speccle && pnpm install
 
 ## Packages
 
-| Package                              | Role                                                                                                                          |
-| ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------- |
-| [`packages/plugin`](packages/plugin) | The Claude Code plugin: the skills. Judgement lives here.                                                                     |
-| [`packages/oracle`](packages/oracle) | The deterministic tooling the skills invoke: one bin — `lint`, `claims`, and the oracle-strength heatmap. Never calls an LLM. |
+| Package                              | Role                                                                                                                                        |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`packages/plugin`](packages/plugin) | The Claude Code plugin: the skills. Judgement lives here.                                                                                   |
+| [`packages/oracle`](packages/oracle) | The deterministic tooling the skills invoke: one bin — `lint`, `claims`, and the oracle-strength heatmap. No LLM, bar the opt-in CI driver. |
 
 ## Development
 

@@ -59,18 +59,52 @@ export function gitChangeSet(root: string): string[] {
   // --untracked-files=all lists new files individually; the default collapses a wholly
   // untracked directory to its name, hiding the files that must be seen.
   const args = ["status", "--porcelain", "--untracked-files=all"];
-  const result = spawnSync("git", args, { cwd: root, encoding: "utf8" });
-  if (result.error !== undefined || result.status !== 0) {
+  const stdout = git(root, args);
+  if (stdout === undefined) {
     throw new Error("could not read a change set from git — run this inside a git repository");
   }
   const changed = new Set<string>();
-  for (const line of result.stdout.split("\n")) {
+  for (const line of stdout.split("\n")) {
     if (line === "") continue;
     // Porcelain: two status chars, a space, then the path — or "old -> new" for a rename.
     const path = line.slice(3);
     changed.add(path.includes(" -> ") ? path.slice(path.indexOf(" -> ") + 4) : path);
   }
   return [...changed];
+}
+
+/** A committed change set, and the commit its content baseline reads from. */
+export interface RangeChangeSet {
+  changed: string[];
+  /** The merge base: the commit the change set is measured from, and its content baseline. */
+  baseline: string;
+}
+
+/**
+ * The committed change set between a base ref and HEAD — the change set a CI driver reviews,
+ * where the working tree is clean and the change lives in commits instead. Measured from the
+ * **merge base**, not the base's tip, so commits that landed on the base after this branch
+ * left it are not attributed to this change; that is the set a pull request shows.
+ */
+export function gitRangeChangeSet(root: string, base: string): RangeChangeSet {
+  const mergeBase = git(root, ["merge-base", base, "HEAD"])?.trim();
+  if (mergeBase === undefined || mergeBase === "") {
+    // The likeliest cause in CI by far: a shallow checkout that fetched no shared history.
+    throw new Error(
+      `no merge base between "${base}" and HEAD — fetch enough history for the two to share a commit`,
+    );
+  }
+  // A rename reports its destination path only, matching the working tree's "old -> new".
+  const stdout = git(root, ["diff", "--name-only", mergeBase, "HEAD"]);
+  if (stdout === undefined) throw new Error(`could not diff "${base}" against HEAD`);
+  const changed = stdout.split("\n").filter((line) => line !== "");
+  return { changed: [...new Set(changed)], baseline: mergeBase };
+}
+
+/** Git's stdout, or undefined when the command could not run or failed. */
+function git(root: string, args: string[]): string | undefined {
+  const result = spawnSync("git", args, { cwd: root, encoding: "utf8" });
+  return result.error === undefined && result.status === 0 ? result.stdout : undefined;
 }
 
 /** Validates a predicate's shape, naming the offending file — a silently broken predicate is worse than none. */

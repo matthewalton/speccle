@@ -21,12 +21,16 @@ import {
   renderLensesInit,
   renderRemedyRecall,
   renderRemedyRecord,
+  renderReviewInit,
+  renderReviewRun,
   renderRisk,
   renderSkillsInit,
   renderStrength,
   renderUpdate,
   renderVerify,
 } from "./render.ts";
+import { scaffoldReviewWorkflow } from "./reviewinit.ts";
+import { reviewRun } from "./reviewrun.ts";
 import { risk } from "./risk.ts";
 import { materializeSkills } from "./skills.ts";
 import { DEFAULT_COVERAGE_SUMMARY, DEFAULT_MUTATION_REPORT, strength } from "./strength.ts";
@@ -48,12 +52,20 @@ Commands:
   calibrate report [path]        Read the calibration record: signal reliability + the supported threshold
   remedy record [path]           Record a remedy: the finding, the fix, and the prevention artefact
   remedy recall [path]           Recall the known remedy for a finding's class — fix consistently
+  review init [path] [--json]    Scaffold the opt-in CI driver: a GitHub Actions workflow, pinned
+  review run [path]              Review a pull request with the lens panel and post one review.
+                                 The one command here that calls a model — needs a metered key
   strength [path] [--json]       Oracle-strength heatmap: per-criterion killed ÷ covered
   strength init [path] [--json]  Provision the strength stack: devDependencies + configs
   --version, -v                  Print the installed CLI version
 
 claims / risk options:
   --dialect <name>    Test dialect: ${DIALECT_NAMES.join(", ")} (default: ${DEFAULT_DIALECT})
+
+verify / risk options:
+  --base <ref>        Read the change set from the commits between <ref> and HEAD, instead of the
+                      working tree's pending change — what a CI driver needs, where the tree is
+                      clean. Measured from the merge base, so it needs their shared history
 
 risk exit codes: 0 below the review threshold (review may fix), 1 at or above it (human required)
 
@@ -75,6 +87,15 @@ remedy record options:
 
 remedy recall options:
   --class <handle>             The finding's class to look up (required)
+
+review run options:
+  --pr <number>                The pull request to review (required)
+  --repo <owner/name>          Defaults to GITHUB_REPOSITORY
+  --base <ref>                 Base ref for the risk verdict (default: origin/<the PR's base>)
+  --force                      Review again even if this driver already reviewed the PR
+  --model <id>                 Overrides SPECCLE_REVIEW_MODEL
+  --dry-run                    Report what would be posted, and post nothing
+  Reads ANTHROPIC_API_KEY and GITHUB_TOKEN from the environment
 
 strength options:
   --check             Report whether the reports are fresh, stale, or missing — never runs them
@@ -111,6 +132,12 @@ async function main(argv: string[]): Promise<number> {
   if (command === "remedy" && rest[0] === "recall") return runRemedyRecall(rest.slice(1));
   if (command === "remedy") {
     console.error(`remedy needs a subcommand: record or recall\n\n${USAGE}`);
+    return 2;
+  }
+  if (command === "review" && rest[0] === "init") return runReviewInit(rest.slice(1));
+  if (command === "review" && rest[0] === "run") return runReviewRun(rest.slice(1));
+  if (command === "review") {
+    console.error(`review needs a subcommand: init or run\n\n${USAGE}`);
     return 2;
   }
   if (command === "strength" && rest[0] === "init") return runStrengthInit(rest.slice(1));
@@ -156,10 +183,19 @@ async function runClaims(args: string[]): Promise<number> {
 
 async function runVerify(args: string[]): Promise<number> {
   let json = false;
+  let base: string | undefined;
   const positional: string[] = [];
-  for (const arg of args) {
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i]!;
     if (arg === "--json") json = true;
-    else if (arg.startsWith("-")) {
+    else if (arg === "--base") {
+      const value = args[++i];
+      if (value === undefined) {
+        console.error(`--base needs a git ref\n\n${USAGE}`);
+        return 2;
+      }
+      base = value;
+    } else if (arg.startsWith("-")) {
       console.error(`Unknown option: ${arg}\n\n${USAGE}`);
       return 2;
     } else positional.push(arg);
@@ -171,7 +207,7 @@ async function runVerify(args: string[]): Promise<number> {
 
   let report;
   try {
-    report = await verify(positional[0] ?? ".");
+    report = await verify(positional[0] ?? ".", { ...(base !== undefined && { base }) });
   } catch (err) {
     console.error(message(err));
     return 2;
@@ -183,17 +219,21 @@ async function runVerify(args: string[]): Promise<number> {
 async function runRisk(args: string[]): Promise<number> {
   let json = false;
   let dialect: string | undefined;
+  let base: string | undefined;
   const positional: string[] = [];
   for (let i = 0; i < args.length; i++) {
     const arg = args[i]!;
     if (arg === "--json") json = true;
-    else if (arg === "--dialect") {
+    else if (arg === "--dialect" || arg === "--base") {
       const value = args[++i];
       if (value === undefined) {
-        console.error(`--dialect needs a dialect name\n\n${USAGE}`);
+        console.error(
+          `${arg} needs ${arg === "--base" ? "a git ref" : "a dialect name"}\n\n${USAGE}`,
+        );
         return 2;
       }
-      dialect = value;
+      if (arg === "--dialect") dialect = value;
+      else base = value;
     } else if (arg.startsWith("-")) {
       console.error(`Unknown option: ${arg}\n\n${USAGE}`);
       return 2;
@@ -206,7 +246,10 @@ async function runRisk(args: string[]): Promise<number> {
 
   let report;
   try {
-    report = await risk(positional[0] ?? ".", { ...(dialect !== undefined && { dialect }) });
+    report = await risk(positional[0] ?? ".", {
+      ...(dialect !== undefined && { dialect }),
+      ...(base !== undefined && { base }),
+    });
   } catch (err) {
     console.error(message(err));
     return 2;
@@ -591,6 +634,96 @@ async function runInit(args: string[]): Promise<number> {
     console.log("");
     console.log(renderLensesInit(lenses));
   }
+  return 0;
+}
+
+async function runReviewInit(args: string[]): Promise<number> {
+  let json = false;
+  const positional: string[] = [];
+  for (const arg of args) {
+    if (arg === "--json") json = true;
+    else if (arg.startsWith("-")) {
+      console.error(`Unknown option: ${arg}\n\n${USAGE}`);
+      return 2;
+    } else positional.push(arg);
+  }
+  if (positional.length > 1) {
+    console.error(`review init takes at most one path\n\n${USAGE}`);
+    return 2;
+  }
+
+  let report;
+  try {
+    report = await scaffoldReviewWorkflow(positional[0] ?? ".");
+  } catch (err) {
+    console.error(message(err));
+    return 2;
+  }
+  console.log(json ? JSON.stringify(report, null, 2) : renderReviewInit(report));
+  return 0;
+}
+
+async function runReviewRun(args: string[]): Promise<number> {
+  let json = false;
+  let force = false;
+  let dryRun = false;
+  let pr: number | undefined;
+  let repo: string | undefined;
+  let base: string | undefined;
+  let model: string | undefined;
+  const positional: string[] = [];
+
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i]!;
+    if (arg === "--json") json = true;
+    else if (arg === "--force") force = true;
+    else if (arg === "--dry-run") dryRun = true;
+    else if (arg === "--pr" || arg === "--repo" || arg === "--base" || arg === "--model") {
+      const value = args[++i];
+      if (value === undefined) {
+        console.error(`${arg} needs a value\n\n${USAGE}`);
+        return 2;
+      }
+      if (arg === "--pr") {
+        const number = Number(value);
+        if (!Number.isInteger(number) || number <= 0) {
+          console.error(`--pr needs a pull request number\n\n${USAGE}`);
+          return 2;
+        }
+        pr = number;
+      } else if (arg === "--repo") repo = value;
+      else if (arg === "--base") base = value;
+      else model = value;
+    } else if (arg.startsWith("-")) {
+      console.error(`Unknown option: ${arg}\n\n${USAGE}`);
+      return 2;
+    } else positional.push(arg);
+  }
+  if (positional.length > 1) {
+    console.error(`review run takes at most one path\n\n${USAGE}`);
+    return 2;
+  }
+  if (pr === undefined) {
+    console.error(`review run needs --pr\n\n${USAGE}`);
+    return 2;
+  }
+
+  let report;
+  try {
+    report = await reviewRun(positional[0] ?? ".", {
+      pr,
+      force,
+      dryRun,
+      ...(repo !== undefined && { repo }),
+      ...(base !== undefined && { base }),
+      ...(model !== undefined && { model }),
+    });
+  } catch (err) {
+    console.error(message(err));
+    return 2;
+  }
+  console.log(json ? JSON.stringify(report, null, 2) : renderReviewRun(report));
+  // Posting findings is not a failure: the risk gate is the check, and it runs as its own step.
   return 0;
 }
 

@@ -53,6 +53,58 @@ export function renderLensesInit(report: LensesInitReport): string {
   return lines.join("\n");
 }
 
+export function renderReviewInit(report: ReviewInitReport): string {
+  const verb = report.action === "written" ? "wrote" : "refreshed";
+  const lines = [
+    `${verb} ${report.file} — pinned to speccle@${report.pin}`,
+    "",
+    `the driver is opt-in and needs a metered ${API_KEY_SECRET} repo secret; add it before the`,
+    "next pull request, or the review step fails with no key",
+    "",
+    "it finds and comments — fixes come back through the local `review` skill",
+    "whether the risk gate blocks a merge is branch protection: GitHub's setting, your call",
+  ];
+  if (report.action === "refreshed" && !report.movedPin) {
+    lines.splice(1, 0, "  (unchanged — the workflow already pinned this version)");
+  }
+  return lines.join("\n");
+}
+
+export function renderReviewRun(report: ReviewRunReport): string {
+  if (report.outcome === "already-reviewed") {
+    return join(
+      `${report.repo}#${report.pr} — already reviewed by this driver, so nothing was posted`,
+      "comment `@review` on the pull request to run again",
+    );
+  }
+
+  const lines: string[] = [];
+  const findings = report.findings.length;
+  lines.push(
+    `${report.repo}#${report.pr} at ${report.headSha.slice(0, 7)} — ${plural(report.lenses.length, "lens", "lenses")} ran, ${plural(findings, "finding")}`,
+  );
+  for (const lens of report.lenses) {
+    lines.push(`  ${String(lens.findings).padStart(3)}  ${lens.name}`);
+  }
+  for (const skip of [...report.skippedLenses, ...report.skippedFiles]) {
+    lines.push(`  skipped  ${skip.name} — ${skip.reason}`);
+  }
+  lines.push("");
+  if (findings > 0) {
+    lines.push(`${report.comments} inline, ${report.unplaced} unplaced in the summary`);
+  }
+  const verdict = report.risk;
+  lines.push(
+    verdict === null
+      ? `risk not computed — no shared history with ${report.base}`
+      : verdict.humanRequired
+        ? `risk ${verdict.score} ≥ threshold ${verdict.threshold} — human required; the gate step fails`
+        : `risk ${verdict.score} < threshold ${verdict.threshold} — the gate step passes`,
+  );
+  lines.push(report.outcome === "dry-run" ? "dry run — nothing was posted" : "posted one review");
+  return lines.join("\n");
+}
+
 export function renderDoctor(report: DoctorReport): string {
   const lines = [
     `speccle ${report.cli}`,
@@ -168,6 +220,8 @@ function describeReport(check: ReportCheck): string {
 import type { CalibrationReport, RecordReport } from "./calibration.ts";
 import type { LintReport } from "./lint.ts";
 import type { RemedyRecallReport, RemedyRecordReport } from "./remedy.ts";
+import { API_KEY_SECRET, type ReviewInitReport } from "./reviewinit.ts";
+import type { ReviewRunReport } from "./reviewrun.ts";
 import type { RiskReport } from "./risk.ts";
 import type { CriterionStrength, MutantSite, StrengthReport } from "./strength.ts";
 import type { CheckResult, VerifyReport } from "./verify.ts";
@@ -177,10 +231,12 @@ export function renderVerify(report: VerifyReport): string {
   if (enforced.length === 0) {
     const scanned = plural(report.changed.length, "changed file");
     const authored = report.checks.length === 0 ? "no checks authored" : "no check applied";
-    return `${authored} — ${scanned} scanned`;
+    return join(changeSetLine(report), `${authored} — ${scanned} scanned`);
   }
 
   const lines: string[] = [];
+  const header = changeSetLine(report);
+  if (header !== undefined) lines.push(header, "");
   for (const check of enforced.filter((check) => check.status === "breach")) {
     lines.push(renderBreach(check));
   }
@@ -203,6 +259,8 @@ function renderBreach(check: CheckResult): string {
 
 export function renderRisk(report: RiskReport): string {
   const lines: string[] = [];
+  const header = changeSetLine(report);
+  if (header !== undefined) lines.push(header, "");
   for (const signal of report.signals) {
     lines.push(`${signal.id}  +${signal.weight}  ${signal.reason}`);
     for (const item of signal.evidence) lines.push(`  ${item}`);
@@ -541,4 +599,18 @@ function bold(text: string, color: boolean): string {
 
 function plural(n: number, noun: string, plural = `${noun}s`): string {
   return `${n} ${n === 1 ? noun : plural}`;
+}
+
+/**
+ * Names the change set a committed-range run was measured over — a score whose change set is
+ * invisible is not auditable, and the CI driver's whole output is read from a log. Absent for
+ * the working tree's pending change, where "what changed" is already in front of you.
+ */
+function changeSetLine(report: { base?: string; changed: string[] }): string | undefined {
+  if (report.base === undefined) return undefined;
+  return `change set: ${report.base}...HEAD — ${plural(report.changed.length, "file")}`;
+}
+
+function join(...lines: (string | undefined)[]): string {
+  return lines.filter((line) => line !== undefined).join("\n");
 }

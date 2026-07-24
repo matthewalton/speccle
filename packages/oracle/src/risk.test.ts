@@ -363,6 +363,63 @@ describe("risk", () => {
     });
   });
 
+  describe("--base — the committed range a CI driver reviews", () => {
+    /** A governed slice committed on `main`, with the change made in a commit on a branch. */
+    async function branched(retire: boolean): Promise<string> {
+      const root = await scaffold({
+        "checkout/SPEC.md": spec("[CHECKOUT-1] a", "[CHECKOUT-2] b"),
+        "checkout/tax.test.ts": claiming("CHECKOUT-1", "CHECKOUT-2"),
+      });
+      const git = (...args: string[]) => spawnSync("git", args, { cwd: root, encoding: "utf8" });
+      git("init", "-q", "-b", "main");
+      git("config", "user.email", "t@t.t");
+      git("config", "user.name", "t");
+      git("add", ".");
+      git("commit", "-qm", "the slice");
+      git("checkout", "-qb", "feature");
+      if (retire) {
+        await write(root, "checkout/SPEC.md", spec("[CHECKOUT-1] a"));
+        await write(root, "checkout/tax.test.ts", claiming("CHECKOUT-1"));
+        git("commit", "-qam", "retire CHECKOUT-2");
+      }
+      return root;
+    }
+
+    it("reads the criterion baseline from the merge base, not HEAD", async () => {
+      const root = await branched(true);
+
+      // Without --base the tree is clean, so nothing is under review and nothing can fire.
+      const workingTree = await risk(root);
+      expect(workingTree.signals).toEqual([]);
+      expect(workingTree.humanRequired).toBe(false);
+
+      // With it, the commit is the change set — and the retired criterion is only visible
+      // because the baseline moved to the merge base. Against HEAD the spec matches itself.
+      const range = await risk(root, { base: "main" });
+      expect(range.base).toBe("main");
+      expect(range.changed).toContain("checkout/SPEC.md");
+      expect(find(range, "criterion-retired")).toMatchObject({ evidence: ["CHECKOUT-2"] });
+      expect(range.humanRequired).toBe(true);
+    });
+
+    it("fires nothing when the branch changed nothing", async () => {
+      const report = await risk(await branched(false), { base: "main" });
+      expect(report.changed).toEqual([]);
+      expect(report.signals).toEqual([]);
+    });
+
+    it("lets an explicit change set override the base", async () => {
+      const root = await branched(true);
+      const report = await risk(root, {
+        base: "main",
+        changed: ["README.md"],
+        baseline: noBaseline,
+      });
+      expect(report.changed).toEqual(["README.md"]);
+      expect(report.signals).toEqual([]);
+    });
+  });
+
   it("reads the change set and the criterion baseline from git when neither is injected", async () => {
     const root = await scaffold({
       "checkout/SPEC.md": spec("[CHECKOUT-1] a", "[CHECKOUT-2] b"),

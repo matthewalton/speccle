@@ -8,6 +8,12 @@ speccle doctor          # report staleness across the CLI, skills, and strength 
 speccle update          # refresh the vendored skills; print the CLI + stack fix commands
 speccle lint            # enforce the convention over a repo's specs
 speccle claims          # join criteria to the test names that claim them
+speccle verify          # run .speccle/checks/ over a change set: cross-file invariants
+speccle risk            # score a change set from spec-aware signals; gate on the threshold
+speccle calibrate       # record / report the calibration evidence a threshold moves on
+speccle remedy          # record / recall the known remedy for a class of finding
+speccle review init     # scaffold the opt-in CI review driver (a GitHub Actions workflow)
+speccle review run      # review a pull request with the lens panel and post one review
 speccle strength        # oracle-strength heatmap: per-criterion killed ÷ covered
 speccle strength init   # provision the strength stack into a target
 ```
@@ -21,6 +27,13 @@ speccle strength init   # provision the strength stack into a target
 - `lint` — enforce the [convention](https://github.com/matthewalton/speccle/blob/main/docs/convention.md) over a repo's specs.
 - `claims` — join every criterion to the test names carrying its id, statically. No
   reports needed, so it is cheap enough to gate on.
+- `verify` / `risk` — the change-set surface. Both read the working tree's pending change
+  by default, or a committed range with `--base <ref>`, measured at the merge base — which
+  is what a CI run needs, where the working tree is clean. `risk` exits 1 at or above the
+  review threshold, so it works as a status check.
+- `calibrate` / `remedy` — the meta loop's two records: the evidence a review threshold
+  moves on, and the known-correct remedy for a class of finding.
+- `review init` / `review run` — the CI driver. See [review](#review) below.
 - `strength` — join specs + Stryker mutation report + coverage into per-criterion
   `killed ÷ covered`.
 - `strength init` — the setup `strength` measures against: install the stack's
@@ -30,8 +43,9 @@ The bin is named after the package; every command is an explicit subcommand (a b
 invocation is a usage error, exit code 2). `strength` names the measurement — oracle
 strength — not the heatmap rendering of it.
 
-Everything here is a **Speccle tool**: deterministic, independently runnable, emits
-typed JSON, never calls an LLM (see [CONTEXT.md](https://github.com/matthewalton/speccle/blob/main/CONTEXT.md)).
+Every command here but one is a **Speccle tool**: deterministic, independently runnable,
+emits typed JSON, never calls an LLM (see [CONTEXT.md](https://github.com/matthewalton/speccle/blob/main/CONTEXT.md)).
+The exception is `review run`, the CI driver, which calls a model by definition.
 
 ## lint
 
@@ -124,6 +138,50 @@ no spec declares are reported too.
 `--json` emits the typed `StrengthReport` (see [`src/strength.ts`](src/strength.ts)). The
 command exits `0` whenever it produced a report — judging a diff against a threshold is a
 separate concern.
+
+## review
+
+The outer loop has two drivers. The **local driver** is the `review` skill: it fans the
+lenses as subagents in a session and needs no key. The **CI driver** is these two commands,
+and it is **opt-in**, because it needs a metered `ANTHROPIC_API_KEY`.
+
+```sh
+speccle review init [path] [--json]
+```
+
+Writes one file — `.github/workflows/speccle-review.yml` — pinned to the version of the CLI
+that wrote it. Nothing else is vendored: the driver ships in this tarball and the workflow
+fetches it from npm, so the code doing the reviewing never comes from the branch under
+review. Re-running moves the pin, which is how a repo updates the driver.
+
+```sh
+speccle review run --pr <number> [path] [--repo <owner/name>] [--base <ref>]
+                                        [--force] [--model <id>] [--dry-run] [--json]
+```
+
+Fans every lens in `.speccle/lenses/` over the pull request's change set — one model call
+per lens, findings forced into shape by a tool schema — and posts them as a single review
+with inline comments. It **finds and comments only**: it never edits the tree, commits, or
+pushes, because a fix has to re-run the checks-gate and be revertible, which is the local
+driver's job.
+
+- Skips `risk.md` (it escalates authority rather than reporting findings) and an unauthored
+  `house-conventions.md`, exactly as the local driver does.
+- Posts one automatic review per pull request, recognised by a marker in its own body;
+  `--force` overrides that, which is what the workflow's `@review` rerun path passes.
+- A finding that cannot anchor to a line in the diff is carried in the summary rather than
+  dropped, and if GitHub rejects the anchors outright the retry carries every finding in
+  the body.
+- Reads `ANTHROPIC_API_KEY` and `GITHUB_TOKEN` from the environment; `--dry-run` reports
+  what would be posted and posts nothing. The default model is overridable with
+  `SPECCLE_REVIEW_MODEL`.
+
+The risk verdict leads the summary, and the workflow runs `speccle risk --base` as its own
+step so the **status check stays deterministic** — it survives a bad API day. Whether a
+failing check blocks the merge is branch protection: GitHub's setting, the repo's call.
+
+This is the one command here that calls a model
+([ADR-0047](https://github.com/matthewalton/speccle/blob/main/docs/adr/0047-the-ci-driver-ships-in-the-tarball-and-is-the-one-llm-caller.md)).
 
 ## strength init
 

@@ -10,6 +10,7 @@ import type { DoctorReport } from "../src/doctor.ts";
 import type { InitReport } from "../src/init.ts";
 import type { LensesInitReport } from "../src/lenses.ts";
 import type { LintReport } from "../src/lint.ts";
+import type { ReviewInitReport } from "../src/reviewinit.ts";
 import type { SkillsInitReport } from "../src/skills.ts";
 import type { UpdateReport } from "../src/update.ts";
 import type { StrengthReport } from "../src/strength.ts";
@@ -584,6 +585,137 @@ describe("speccle update (e2e)", () => {
     const { status, stderr } = run("update", root);
     expect(status).toBe(2);
     expect(stderr).toContain("run `speccle init` first");
+  });
+});
+
+describe("speccle review (e2e)", () => {
+  const roots: string[] = [];
+
+  afterEach(async () => {
+    await Promise.all(roots.splice(0).map((root) => rm(root, { recursive: true, force: true })));
+  });
+
+  async function scaffold(): Promise<string> {
+    const root = await mkdtemp(join(tmpdir(), "speccle-review-e2e-"));
+    roots.push(root);
+    return root;
+  }
+
+  it("scaffolds the workflow, pinned to this CLI's version", async () => {
+    const root = await scaffold();
+    const { status, stdout } = run("review", "init", root);
+    expect(status).toBe(0);
+    expect(stdout).toContain(`pinned to speccle@${PKG_VERSION}`);
+    const workflow = await readFile(join(root, ".github/workflows/speccle-review.yml"), "utf8");
+    expect(workflow).toContain(`npx -y speccle@${PKG_VERSION} review run`);
+  });
+
+  it("emits the typed JSON report", async () => {
+    const root = await scaffold();
+    const { status, stdout } = run("review", "init", root, "--json");
+    expect(status).toBe(0);
+    const report = JSON.parse(stdout) as ReviewInitReport;
+    expect(report).toMatchObject({
+      file: ".github/workflows/speccle-review.yml",
+      action: "written",
+      pin: PKG_VERSION,
+    });
+  });
+
+  it("exits 2 with the subcommands when given none", () => {
+    const { status, stderr } = run("review");
+    expect(status).toBe(2);
+    expect(stderr).toContain("review needs a subcommand: init or run");
+  });
+
+  it("exits 2 when review run has no --pr", () => {
+    const { status, stderr } = run("review", "run");
+    expect(status).toBe(2);
+    expect(stderr).toContain("review run needs --pr");
+  });
+
+  it("exits 2 on a --pr that is not a pull request number", () => {
+    expect(run("review", "run", "--pr", "zero").status).toBe(2);
+    expect(run("review", "run", "--pr", "0").status).toBe(2);
+    expect(run("review", "run", "--pr").status).toBe(2);
+  });
+
+  it("exits 2 on an unknown option", () => {
+    expect(run("review", "init", "--nope").status).toBe(2);
+  });
+});
+
+describe("speccle --base (e2e)", () => {
+  const roots: string[] = [];
+
+  afterEach(async () => {
+    await Promise.all(roots.splice(0).map((root) => rm(root, { recursive: true, force: true })));
+  });
+
+  /** A repo whose branch commit retires a criterion — invisible without a committed range. */
+  async function branched(): Promise<string> {
+    const root = await mkdtemp(join(tmpdir(), "speccle-base-e2e-"));
+    roots.push(root);
+    const write = async (file: string, body: string) => {
+      await mkdir(dirname(join(root, file)), { recursive: true });
+      await writeFile(join(root, file), body);
+    };
+    const git = (...args: string[]) => spawnSync("git", args, { cwd: root, encoding: "utf8" });
+    await write("checkout/SPEC.md", "## [CHECKOUT-1] a\n\n## [CHECKOUT-2] b\n");
+    await write(
+      "checkout/tax.test.ts",
+      'it("[CHECKOUT-1] a", () => {});\nit("[CHECKOUT-2] b", () => {});\n',
+    );
+    git("init", "-q", "-b", "main");
+    git("config", "user.email", "t@t.t");
+    git("config", "user.name", "t");
+    git("add", ".");
+    git("commit", "-qm", "the slice");
+    git("checkout", "-qb", "feature");
+    await write("checkout/SPEC.md", "## [CHECKOUT-1] a\n");
+    git("commit", "-qam", "retire CHECKOUT-2");
+    return root;
+  }
+
+  it("risk scores the committed range and names the change set it measured", async () => {
+    const root = await branched();
+
+    // The working tree is clean, so without --base there is nothing to score.
+    expect(run("risk", root).status).toBe(0);
+
+    const { status, stdout } = run("risk", root, "--base", "main");
+    expect(status).toBe(1);
+    expect(stdout).toContain("change set: main...HEAD — 1 file");
+    expect(stdout).toContain("criterion-retired");
+  });
+
+  it("verify runs its checks over the committed range", async () => {
+    const root = await branched();
+    await mkdir(join(root, ".speccle/checks"), { recursive: true });
+    await writeFile(
+      join(root, ".speccle/checks/spec-needs-test.json"),
+      JSON.stringify({
+        when: { path: "**/SPEC.md" },
+        require: { path: "**/*.test.ts" },
+        message: "a changed SPEC.md needs a test in the same change",
+      }),
+    );
+
+    const { status, stdout } = run("verify", root, "--base", "main");
+    expect(status).toBe(1);
+    expect(stdout).toContain("change set: main...HEAD");
+    expect(stdout).toContain("1 check, 1 breach");
+  });
+
+  it("exits 2 with a fetch-more-history message when the base is not there", async () => {
+    const { status, stderr } = run("risk", await branched(), "--base", "no-such-branch");
+    expect(status).toBe(2);
+    expect(stderr).toContain("no merge base");
+  });
+
+  it("exits 2 when --base has no value", () => {
+    expect(run("risk", "--base").status).toBe(2);
+    expect(run("verify", "--base").status).toBe(2);
   });
 });
 

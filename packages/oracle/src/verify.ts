@@ -5,6 +5,7 @@ import {
   assertPredicate,
   contentReader,
   gitChangeSet,
+  gitRangeChangeSet,
   isDirectory,
   matching,
   messageOf,
@@ -53,6 +54,8 @@ export interface VerifyReport {
   root: string;
   /** Root-relative changed paths the checks ran against. */
   changed: string[];
+  /** The base ref the change set was measured against; absent for the working tree's change. */
+  base?: string;
   checks: CheckResult[];
   breaches: number;
   /** True when no enforced check was breached. */
@@ -66,6 +69,12 @@ export interface VerifyOptions {
    * default reads the working tree's pending change.
    */
   changed?: string[];
+  /**
+   * Read the change set from the commits between this base ref and HEAD instead of the working
+   * tree — what the CI driver needs, where the tree is clean and the change is committed.
+   * Ignored when `changed` is given, which overrides the change set outright.
+   */
+  base?: string;
 }
 
 export async function verify(target: string, options: VerifyOptions = {}): Promise<VerifyReport> {
@@ -73,7 +82,7 @@ export async function verify(target: string, options: VerifyOptions = {}): Promi
   if (!(await isDirectory(root))) throw new Error(`path not found: ${target}`);
 
   const checks = await loadChecks(root);
-  const changed = (options.changed ?? gitChangeSet(root)).slice().sort();
+  const changed = (options.changed ?? changeSetOf(root, options.base)).slice().sort();
   const read = contentReader(root);
 
   const results: CheckResult[] = [];
@@ -82,7 +91,19 @@ export async function verify(target: string, options: VerifyOptions = {}): Promi
   }
 
   const breaches = results.filter((result) => result.status === "breach").length;
-  return { root, changed, checks: results, breaches, clean: breaches === 0 };
+  return {
+    root,
+    changed,
+    ...(options.base !== undefined && { base: options.base }),
+    checks: results,
+    breaches,
+    clean: breaches === 0,
+  };
+}
+
+/** The working tree's pending change, or the commits a base ref and HEAD differ by. */
+function changeSetOf(root: string, base: string | undefined): string[] {
+  return base === undefined ? gitChangeSet(root) : gitRangeChangeSet(root, base).changed;
 }
 
 async function evaluate(

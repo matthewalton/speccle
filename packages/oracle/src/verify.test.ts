@@ -207,6 +207,36 @@ describe("verify", () => {
     await expect(verify("/no/such/dir")).rejects.toThrow("path not found");
   });
 
+  it("reads the committed range when a base ref is given", async () => {
+    const root = await scaffold(
+      { "committed.ts": "" },
+      {
+        "spec-needs-test": {
+          when: { path: "**/SPEC.md" },
+          require: { path: "**/*.test.ts" },
+          message: "a changed SPEC.md needs a test in the same change",
+        },
+      },
+    );
+    const git = (...args: string[]) => spawnSync("git", args, { cwd: root, encoding: "utf8" });
+    git("init", "-q", "-b", "main");
+    git("config", "user.email", "t@t.t");
+    git("config", "user.name", "t");
+    git("add", ".");
+    git("commit", "-qm", "init");
+    git("checkout", "-qb", "feature");
+    await write(root, "checkout/SPEC.md", "## [CHECKOUT-1] a\n");
+    git("add", ".");
+    git("commit", "-qm", "a spec, no test");
+
+    // The working tree is clean, so only the range sees the change the check is about.
+    expect((await verify(root)).checks[0]).toMatchObject({ status: "inactive" });
+    const report = await verify(root, { base: "main" });
+    expect(report.base).toBe("main");
+    expect(report.changed).toEqual(["checkout/SPEC.md"]);
+    expect(report.checks[0]).toMatchObject({ status: "breach" });
+  });
+
   it("reads the pending change set from git when none is injected", async () => {
     const root = await scaffold(
       { "committed.ts": "" },

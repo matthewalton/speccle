@@ -41,7 +41,10 @@ Node ≥ 24 runs TypeScript directly — no build step needed to run the CLI fro
 ## Map and boundaries
 
 - `packages/oracle` — Speccle tools: deterministic, independently runnable, typed JSON
-  output, and they **never call an LLM**.
+  output. Every command **calls no LLM**, with one named exception: `review run`, the CI
+  review driver, which is the whole reason it lives in `reviewrun.ts` and nothing else
+  imports it ([ADR-0047](docs/adr/0047-the-ci-driver-ships-in-the-tarball-and-is-the-one-llm-caller.md)).
+  Keep it that way — a second caller makes the boundary unverifiable.
 - `packages/oracle/lenses/` — the baseline review lenses (one markdown prompt each), the
   dimensions the `review` skill fans out over. Unlike the skills — copied in from the
   plugin at build time — these are committed source that ships in the tarball (`files`) and
