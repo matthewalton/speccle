@@ -167,6 +167,7 @@ function describeReport(check: ReportCheck): string {
 }
 import type { CalibrationReport, RecordReport } from "./calibration.ts";
 import type { LintReport } from "./lint.ts";
+import type { RemedyRecallReport, RemedyRecordReport } from "./remedy.ts";
 import type { RiskReport } from "./risk.ts";
 import type { CriterionStrength, MutantSite, StrengthReport } from "./strength.ts";
 import type { CheckResult, VerifyReport } from "./verify.ts";
@@ -276,6 +277,45 @@ export function renderCalibrateReport(report: CalibrationReport): string {
   lines.push("");
   lines.push("proposals — evidence, not instructions (only a human reduces supervision):");
   for (const proposal of report.proposals) lines.push(`  ${proposal}`);
+  return lines.join("\n");
+}
+
+/** The route with its artefact, or the honest one-off — how a remedy's prevention reads on one line. */
+function remedyDestination(route: string, artefact?: string): string {
+  return route === "none" ? "one-off — no prevention artefact" : `${route} → ${artefact}`;
+}
+
+export function renderRemedyRecord(report: RemedyRecordReport): string {
+  const entry = report.entry;
+  const lines = [
+    `recorded ${report.file} — ${plural(report.count, "remedy", "remedies")}`,
+    `  ${entry.class}: ${entry.finding}`,
+    `  fix: ${entry.fix}`,
+    `  remedy: ${remedyDestination(entry.route, entry.artefact)}`,
+  ];
+  if (entry.note !== undefined) lines.push(`  note: ${entry.note}`);
+  return lines.join("\n");
+}
+
+export function renderRemedyRecall(report: RemedyRecallReport): string {
+  if (report.count === 0) {
+    return `no remedy record yet — nothing to recall for "${report.query}"`;
+  }
+  if (report.matches.length === 0) {
+    const onRecord = plural(report.count, "remedy", "remedies");
+    return `no prior remedy for "${report.query}" — route it fresh, then record it (${onRecord} on record)`;
+  }
+
+  const found = plural(report.matches.length, "prior remedy", "prior remedies");
+  const lines = [`${found} for "${report.query}" — reuse to fix consistently:`];
+  for (const entry of report.matches) {
+    lines.push("");
+    lines.push(`  ${entry.class}  (${entry.at})`);
+    lines.push(`    finding: ${entry.finding}`);
+    lines.push(`    fix: ${entry.fix}`);
+    lines.push(`    remedy: ${remedyDestination(entry.route, entry.artefact)}`);
+    if (entry.note !== undefined) lines.push(`    note: ${entry.note}`);
+  }
   return lines.join("\n");
 }
 

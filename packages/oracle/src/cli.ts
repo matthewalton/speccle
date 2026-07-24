@@ -8,6 +8,7 @@ import { doctor } from "./doctor.ts";
 import { init, ownVersion } from "./init.ts";
 import { materializeLenses } from "./lenses.ts";
 import { lint } from "./lint.ts";
+import { recallRemedy, recordRemedy, REMEDY_ROUTES, type RemedyRoute } from "./remedy.ts";
 import {
   renderCalibrateRecord,
   renderCalibrateReport,
@@ -18,6 +19,8 @@ import {
   renderHuman,
   renderInit,
   renderLensesInit,
+  renderRemedyRecall,
+  renderRemedyRecord,
   renderRisk,
   renderSkillsInit,
   renderStrength,
@@ -43,6 +46,8 @@ Commands:
   risk [path] [--json]           Score the change set from spec-aware signals; gate on the review threshold
   calibrate record [path]        Append a calibration entry: the risk floor + your honest verdict
   calibrate report [path]        Read the calibration record: signal reliability + the supported threshold
+  remedy record [path]           Record a remedy: the finding, the fix, and the prevention artefact
+  remedy recall [path]           Recall the known remedy for a finding's class — fix consistently
   strength [path] [--json]       Oracle-strength heatmap: per-criterion killed ÷ covered
   strength init [path] [--json]  Provision the strength stack: devDependencies + configs
   --version, -v                  Print the installed CLI version
@@ -58,6 +63,18 @@ calibrate record options:
   --escalated                  A risk lens escalated beyond the deterministic floor
   --note <text>                Free-text context for the entry
   --dialect <name>             Test dialect: ${DIALECT_NAMES.join(", ")} (default: ${DEFAULT_DIALECT})
+
+remedy record options:
+  --class <handle>             Short, stable handle for the finding's class (required — the recall key)
+  --finding <text>             What the finding is (required)
+  --fix <text>                 The fix applied to the code (required)
+  --route <route>              Prevention route: ${REMEDY_ROUTES.join(", ")} (required)
+  --artefact <ref>             The prevention artefact: a .speccle/checks|lenses path or a SPEC
+                               criterion id (required for every route but none)
+  --note <text>                Free-text context for the entry
+
+remedy recall options:
+  --class <handle>             The finding's class to look up (required)
 
 strength options:
   --check             Report whether the reports are fresh, stale, or missing — never runs them
@@ -88,6 +105,12 @@ async function main(argv: string[]): Promise<number> {
   if (command === "calibrate" && rest[0] === "report") return runCalibrateReport(rest.slice(1));
   if (command === "calibrate") {
     console.error(`calibrate needs a subcommand: record or report\n\n${USAGE}`);
+    return 2;
+  }
+  if (command === "remedy" && rest[0] === "record") return runRemedyRecord(rest.slice(1));
+  if (command === "remedy" && rest[0] === "recall") return runRemedyRecall(rest.slice(1));
+  if (command === "remedy") {
+    console.error(`remedy needs a subcommand: record or recall\n\n${USAGE}`);
     return 2;
   }
   if (command === "strength" && rest[0] === "init") return runStrengthInit(rest.slice(1));
@@ -275,6 +298,119 @@ async function runCalibrateReport(args: string[]): Promise<number> {
     return 2;
   }
   console.log(json ? JSON.stringify(report, null, 2) : renderCalibrateReport(report));
+  return 0;
+}
+
+async function runRemedyRecord(args: string[]): Promise<number> {
+  let json = false;
+  let classHandle: string | undefined;
+  let finding: string | undefined;
+  let fix: string | undefined;
+  let route: string | undefined;
+  let artefact: string | undefined;
+  let note: string | undefined;
+  const positional: string[] = [];
+
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i]!;
+    if (arg === "--json") json = true;
+    else if (
+      arg === "--class" ||
+      arg === "--finding" ||
+      arg === "--fix" ||
+      arg === "--route" ||
+      arg === "--artefact" ||
+      arg === "--note"
+    ) {
+      const value = args[++i];
+      if (value === undefined) {
+        console.error(`${arg} needs a value\n\n${USAGE}`);
+        return 2;
+      }
+      if (arg === "--class") classHandle = value;
+      else if (arg === "--finding") finding = value;
+      else if (arg === "--fix") fix = value;
+      else if (arg === "--route") route = value;
+      else if (arg === "--artefact") artefact = value;
+      else note = value;
+    } else if (arg.startsWith("-")) {
+      console.error(`Unknown option: ${arg}\n\n${USAGE}`);
+      return 2;
+    } else positional.push(arg);
+  }
+  if (positional.length > 1) {
+    console.error(`remedy record takes at most one path\n\n${USAGE}`);
+    return 2;
+  }
+  if (
+    classHandle === undefined ||
+    finding === undefined ||
+    fix === undefined ||
+    route === undefined
+  ) {
+    console.error(`remedy record needs --class, --finding, --fix, and --route\n\n${USAGE}`);
+    return 2;
+  }
+  if (!REMEDY_ROUTES.includes(route as RemedyRoute)) {
+    console.error(`--route must be one of ${REMEDY_ROUTES.join(", ")}\n\n${USAGE}`);
+    return 2;
+  }
+
+  let report;
+  try {
+    report = await recordRemedy(positional[0] ?? ".", {
+      class: classHandle,
+      finding,
+      fix,
+      route: route as RemedyRoute,
+      ...(artefact !== undefined && { artefact }),
+      ...(note !== undefined && { note }),
+    });
+  } catch (err) {
+    console.error(message(err));
+    return 2;
+  }
+  console.log(json ? JSON.stringify(report, null, 2) : renderRemedyRecord(report));
+  return 0;
+}
+
+async function runRemedyRecall(args: string[]): Promise<number> {
+  let json = false;
+  let classHandle: string | undefined;
+  const positional: string[] = [];
+
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i]!;
+    if (arg === "--json") json = true;
+    else if (arg === "--class") {
+      const value = args[++i];
+      if (value === undefined) {
+        console.error(`--class needs a value\n\n${USAGE}`);
+        return 2;
+      }
+      classHandle = value;
+    } else if (arg.startsWith("-")) {
+      console.error(`Unknown option: ${arg}\n\n${USAGE}`);
+      return 2;
+    } else positional.push(arg);
+  }
+  if (positional.length > 1) {
+    console.error(`remedy recall takes at most one path\n\n${USAGE}`);
+    return 2;
+  }
+  if (classHandle === undefined) {
+    console.error(`remedy recall needs --class\n\n${USAGE}`);
+    return 2;
+  }
+
+  let report;
+  try {
+    report = await recallRemedy(positional[0] ?? ".", classHandle);
+  } catch (err) {
+    console.error(message(err));
+    return 2;
+  }
+  console.log(json ? JSON.stringify(report, null, 2) : renderRemedyRecall(report));
   return 0;
 }
 
