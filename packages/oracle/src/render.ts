@@ -139,6 +139,7 @@ function describeReport(check: ReportCheck): string {
   return `${check.path} — fresh`;
 }
 import type { LintReport } from "./lint.ts";
+import type { RiskReport } from "./risk.ts";
 import type { CriterionStrength, MutantSite, StrengthReport } from "./strength.ts";
 import type { CheckResult, VerifyReport } from "./verify.ts";
 
@@ -168,6 +169,27 @@ function renderBreach(check: CheckResult): string {
   const lines = [`${check.id}  ${check.message}`];
   for (const offender of check.offenders ?? []) lines.push(`  ${offender}`);
   if (check.because !== undefined) lines.push(`  because ${check.because}`);
+  return lines.join("\n");
+}
+
+export function renderRisk(report: RiskReport): string {
+  const lines: string[] = [];
+  for (const signal of report.signals) {
+    lines.push(`${signal.id}  +${signal.weight}  ${signal.reason}`);
+    for (const item of signal.evidence) lines.push(`  ${item}`);
+    if (signal.because !== undefined) lines.push(`  because ${signal.because}`);
+  }
+  if (report.signals.length > 0) lines.push("");
+  else
+    lines.push(`no risk signals fired — ${plural(report.changed.length, "changed file")} scanned`);
+
+  lines.push(
+    report.humanRequired
+      ? `score ${report.score} ≥ threshold ${report.threshold} — human required, review stops at findings`
+      : `score ${report.score} < threshold ${report.threshold} — review may fix and report`,
+  );
+  // Legibility (ADR-0041): the computed score is a floor a risk lens may raise, never lower.
+  lines.push("this score is a floor — a risk lens may escalate it, never lower it");
   return lines.join("\n");
 }
 

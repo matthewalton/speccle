@@ -13,11 +13,13 @@ import {
   renderDoctor,
   renderHuman,
   renderInit,
+  renderRisk,
   renderSkillsInit,
   renderStrength,
   renderUpdate,
   renderVerify,
 } from "./render.ts";
+import { risk } from "./risk.ts";
 import { materializeSkills } from "./skills.ts";
 import { DEFAULT_COVERAGE_SUMMARY, DEFAULT_MUTATION_REPORT, strength } from "./strength.ts";
 import { update } from "./update.ts";
@@ -33,12 +35,15 @@ Commands:
   lint [path] [--json]           Lint every SPEC.md under path (default: current directory)
   claims [path] [--json]         Join criteria to the test names that claim them — no reports needed
   verify [path] [--json]         Run .speccle/checks/ against the change set: cross-file invariants
+  risk [path] [--json]           Score the change set from spec-aware signals; gate on the review threshold
   strength [path] [--json]       Oracle-strength heatmap: per-criterion killed ÷ covered
   strength init [path] [--json]  Provision the strength stack: devDependencies + configs
   --version, -v                  Print the installed CLI version
 
-claims options:
+claims / risk options:
   --dialect <name>    Test dialect: ${DIALECT_NAMES.join(", ")} (default: ${DEFAULT_DIALECT})
+
+risk exit codes: 0 below the review threshold (review may fix), 1 at or above it (human required)
 
 strength options:
   --check             Report whether the reports are fresh, stale, or missing — never runs them
@@ -64,6 +69,7 @@ async function main(argv: string[]): Promise<number> {
   if (command === "lint") return runLint(rest);
   if (command === "claims") return runClaims(rest);
   if (command === "verify") return runVerify(rest);
+  if (command === "risk") return runRisk(rest);
   if (command === "strength" && rest[0] === "init") return runStrengthInit(rest.slice(1));
   if (command === "strength") return runStrength(rest);
   console.error(USAGE);
@@ -129,6 +135,41 @@ async function runVerify(args: string[]): Promise<number> {
   }
   console.log(json ? JSON.stringify(report, null, 2) : renderVerify(report));
   return report.clean ? 0 : 1;
+}
+
+async function runRisk(args: string[]): Promise<number> {
+  let json = false;
+  let dialect: string | undefined;
+  const positional: string[] = [];
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i]!;
+    if (arg === "--json") json = true;
+    else if (arg === "--dialect") {
+      const value = args[++i];
+      if (value === undefined) {
+        console.error(`--dialect needs a dialect name\n\n${USAGE}`);
+        return 2;
+      }
+      dialect = value;
+    } else if (arg.startsWith("-")) {
+      console.error(`Unknown option: ${arg}\n\n${USAGE}`);
+      return 2;
+    } else positional.push(arg);
+  }
+  if (positional.length > 1) {
+    console.error(`risk takes at most one path\n\n${USAGE}`);
+    return 2;
+  }
+
+  let report;
+  try {
+    report = await risk(positional[0] ?? ".", { ...(dialect !== undefined && { dialect }) });
+  } catch (err) {
+    console.error(message(err));
+    return 2;
+  }
+  console.log(json ? JSON.stringify(report, null, 2) : renderRisk(report));
+  return report.humanRequired ? 1 : 0;
 }
 
 async function runDoctor(args: string[]): Promise<number> {
