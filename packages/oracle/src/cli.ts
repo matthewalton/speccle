@@ -16,10 +16,12 @@ import {
   renderSkillsInit,
   renderStrength,
   renderUpdate,
+  renderVerify,
 } from "./render.ts";
 import { materializeSkills } from "./skills.ts";
 import { DEFAULT_COVERAGE_SUMMARY, DEFAULT_MUTATION_REPORT, strength } from "./strength.ts";
 import { update } from "./update.ts";
+import { verify } from "./verify.ts";
 
 const USAGE = `Usage: speccle <command> [options]
 
@@ -30,6 +32,7 @@ Commands:
   update [path] [--json]         Refresh the skills as a diff; report the stack and binary fixes
   lint [path] [--json]           Lint every SPEC.md under path (default: current directory)
   claims [path] [--json]         Join criteria to the test names that claim them — no reports needed
+  verify [path] [--json]         Run .speccle/checks/ against the change set: cross-file invariants
   strength [path] [--json]       Oracle-strength heatmap: per-criterion killed ÷ covered
   strength init [path] [--json]  Provision the strength stack: devDependencies + configs
   --version, -v                  Print the installed CLI version
@@ -60,6 +63,7 @@ async function main(argv: string[]): Promise<number> {
   if (command === "update") return runUpdate(rest);
   if (command === "lint") return runLint(rest);
   if (command === "claims") return runClaims(rest);
+  if (command === "verify") return runVerify(rest);
   if (command === "strength" && rest[0] === "init") return runStrengthInit(rest.slice(1));
   if (command === "strength") return runStrength(rest);
   console.error(USAGE);
@@ -98,6 +102,32 @@ async function runClaims(args: string[]): Promise<number> {
     return 2;
   }
   console.log(json ? JSON.stringify(report, null, 2) : renderClaims(report));
+  return report.clean ? 0 : 1;
+}
+
+async function runVerify(args: string[]): Promise<number> {
+  let json = false;
+  const positional: string[] = [];
+  for (const arg of args) {
+    if (arg === "--json") json = true;
+    else if (arg.startsWith("-")) {
+      console.error(`Unknown option: ${arg}\n\n${USAGE}`);
+      return 2;
+    } else positional.push(arg);
+  }
+  if (positional.length > 1) {
+    console.error(`verify takes at most one path\n\n${USAGE}`);
+    return 2;
+  }
+
+  let report;
+  try {
+    report = await verify(positional[0] ?? ".");
+  } catch (err) {
+    console.error(message(err));
+    return 2;
+  }
+  console.log(json ? JSON.stringify(report, null, 2) : renderVerify(report));
   return report.clean ? 0 : 1;
 }
 

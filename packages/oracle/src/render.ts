@@ -140,6 +140,36 @@ function describeReport(check: ReportCheck): string {
 }
 import type { LintReport } from "./lint.ts";
 import type { CriterionStrength, MutantSite, StrengthReport } from "./strength.ts";
+import type { CheckResult, VerifyReport } from "./verify.ts";
+
+export function renderVerify(report: VerifyReport): string {
+  const enforced = report.checks.filter((check) => check.status !== "inactive");
+  if (enforced.length === 0) {
+    const scanned = plural(report.changed.length, "changed file");
+    const authored = report.checks.length === 0 ? "no checks authored" : "no check applied";
+    return `${authored} — ${scanned} scanned`;
+  }
+
+  const lines: string[] = [];
+  for (const check of enforced.filter((check) => check.status === "breach")) {
+    lines.push(renderBreach(check));
+  }
+  if (lines.length > 0) lines.push("");
+
+  const breaches = report.breaches;
+  const checks = plural(enforced.length, "check");
+  lines.push(
+    report.clean ? `${checks}, clean` : `${checks}, ${plural(breaches, "breach", "breaches")}`,
+  );
+  return lines.join("\n");
+}
+
+function renderBreach(check: CheckResult): string {
+  const lines = [`${check.id}  ${check.message}`];
+  for (const offender of check.offenders ?? []) lines.push(`  ${offender}`);
+  if (check.because !== undefined) lines.push(`  because ${check.because}`);
+  return lines.join("\n");
+}
 
 export function renderClaims(report: ClaimsReport): string {
   if (report.features.length === 0) return "No SPEC.md files found.";
@@ -361,6 +391,6 @@ function bold(text: string, color: boolean): string {
   return color ? ansi(text, "1") : text;
 }
 
-function plural(n: number, noun: string): string {
-  return `${n} ${noun}${n === 1 ? "" : "s"}`;
+function plural(n: number, noun: string, plural = `${noun}s`): string {
+  return `${n} ${n === 1 ? noun : plural}`;
 }
