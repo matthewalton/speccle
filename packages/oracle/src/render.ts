@@ -165,6 +165,7 @@ function describeReport(check: ReportCheck): string {
   if (check.status === "stale") return `${check.path} — stale (${check.staleAgainst} is newer)`;
   return `${check.path} — fresh`;
 }
+import type { CalibrationReport, RecordReport } from "./calibration.ts";
 import type { LintReport } from "./lint.ts";
 import type { RiskReport } from "./risk.ts";
 import type { CriterionStrength, MutantSite, StrengthReport } from "./strength.ts";
@@ -217,6 +218,64 @@ export function renderRisk(report: RiskReport): string {
   );
   // Legibility (ADR-0041): the computed score is a floor a risk lens may raise, never lower.
   lines.push("this score is a floor — a risk lens may escalate it, never lower it");
+  return lines.join("\n");
+}
+
+export function renderCalibrateRecord(report: RecordReport): string {
+  const entry = report.entry;
+  const floor = `score ${entry.score} vs threshold ${entry.threshold}`;
+  const gate = entry.humanRequired ? " — floor required a human" : "";
+  const escalated = entry.escalated ? " — a lens escalated" : "";
+  const verdict = `${entry.verdict.neededHuman ? "needed a human" : "no human needed"}, ${
+    entry.verdict.foundReal ? "found something real" : "found nothing real"
+  }`;
+  const lines = [
+    `recorded ${report.file} — ${plural(report.count, "entry", "entries")}`,
+    `  ${floor}${gate}${escalated}`,
+    `  verdict: ${verdict}`,
+  ];
+  if (entry.signals.length > 0) lines.push(`  signals: ${entry.signals.join(", ")}`);
+  return lines.join("\n");
+}
+
+export function renderCalibrateReport(report: CalibrationReport): string {
+  if (report.count === 0) {
+    return "no calibration entries yet — review some changes to build the record";
+  }
+
+  const changes = plural(report.count, "reviewed change");
+  const lines = [
+    `${changes} — ${report.neededByHuman} needed a human, floor gated ${report.gatedByFloor}`,
+  ];
+  if (report.floorMisses > 0) {
+    lines.push(
+      `  ${plural(report.floorMisses, "floor miss", "floor misses")} — needed a human the floor did not catch`,
+    );
+  }
+  if (report.overSupervised > 0) {
+    lines.push(
+      `  ${report.overSupervised} over-supervised — floor required a human the verdict did not`,
+    );
+  }
+
+  if (report.signals.length > 0) {
+    lines.push("");
+    const width = Math.max(...report.signals.map((signal) => signal.id.length));
+    for (const signal of report.signals) {
+      const note = signal.neverUseful
+        ? " — never on a change that mattered"
+        : signal.firedOnEveryNeeded
+          ? " — on every change that needed a human"
+          : "";
+      lines.push(
+        `  ${signal.id.padEnd(width)}  ${signal.firedOnMattered}/${signal.fired} mattered${note}`,
+      );
+    }
+  }
+
+  lines.push("");
+  lines.push("proposals — evidence, not instructions (only a human reduces supervision):");
+  for (const proposal of report.proposals) lines.push(`  ${proposal}`);
   return lines.join("\n");
 }
 

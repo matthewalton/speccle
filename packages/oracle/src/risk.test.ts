@@ -3,7 +3,7 @@ import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { type FiredSignal, risk, type RiskReport } from "./risk.ts";
+import { type FiredSignal, reviewThreshold, risk, type RiskReport } from "./risk.ts";
 
 describe("risk", () => {
   const roots: string[] = [];
@@ -352,6 +352,15 @@ describe("risk", () => {
 
   it("throws on a missing path", async () => {
     await expect(risk("/no/such/dir")).rejects.toThrow("path not found");
+  });
+
+  describe("reviewThreshold", () => {
+    it("returns the policy override, else the shipped default", async () => {
+      const bare = await scaffold({});
+      expect(await reviewThreshold(bare)).toBe(3);
+      const tuned = await scaffold({}, { threshold: 12 });
+      expect(await reviewThreshold(tuned)).toBe(12);
+    });
   });
 
   it("reads the change set and the criterion baseline from git when neither is injected", async () => {

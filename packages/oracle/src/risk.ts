@@ -240,6 +240,11 @@ function criteriaOf(content: string, file: string): Map<string, string> {
   return criteria;
 }
 
+/** The review threshold in force at a repo — its policy override, or the shipped default. */
+export async function reviewThreshold(root: string): Promise<number> {
+  return (await loadPolicy(root)).threshold ?? DEFAULT_THRESHOLD;
+}
+
 async function loadPolicy(root: string): Promise<RiskPolicy> {
   let raw: string;
   try {

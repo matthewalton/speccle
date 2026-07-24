@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { calibrationReport, recordCalibration } from "./calibration.ts";
 import { check } from "./check.ts";
 import { claims } from "./claims.ts";
 import { initConfig } from "./config.ts";
@@ -8,6 +9,8 @@ import { init, ownVersion } from "./init.ts";
 import { materializeLenses } from "./lenses.ts";
 import { lint } from "./lint.ts";
 import {
+  renderCalibrateRecord,
+  renderCalibrateReport,
   renderCheck,
   renderClaims,
   renderConfigInit,
@@ -38,6 +41,8 @@ Commands:
   claims [path] [--json]         Join criteria to the test names that claim them — no reports needed
   verify [path] [--json]         Run .speccle/checks/ against the change set: cross-file invariants
   risk [path] [--json]           Score the change set from spec-aware signals; gate on the review threshold
+  calibrate record [path]        Append a calibration entry: the risk floor + your honest verdict
+  calibrate report [path]        Read the calibration record: signal reliability + the supported threshold
   strength [path] [--json]       Oracle-strength heatmap: per-criterion killed ÷ covered
   strength init [path] [--json]  Provision the strength stack: devDependencies + configs
   --version, -v                  Print the installed CLI version
@@ -46,6 +51,13 @@ claims / risk options:
   --dialect <name>    Test dialect: ${DIALECT_NAMES.join(", ")} (default: ${DEFAULT_DIALECT})
 
 risk exit codes: 0 below the review threshold (review may fix), 1 at or above it (human required)
+
+calibrate record options:
+  --needed-human <true|false>  Did this change actually need a human? (required — the honest verdict)
+  --found-real <true|false>    Did the review find something real? (required)
+  --escalated                  A risk lens escalated beyond the deterministic floor
+  --note <text>                Free-text context for the entry
+  --dialect <name>             Test dialect: ${DIALECT_NAMES.join(", ")} (default: ${DEFAULT_DIALECT})
 
 strength options:
   --check             Report whether the reports are fresh, stale, or missing — never runs them
@@ -72,6 +84,12 @@ async function main(argv: string[]): Promise<number> {
   if (command === "claims") return runClaims(rest);
   if (command === "verify") return runVerify(rest);
   if (command === "risk") return runRisk(rest);
+  if (command === "calibrate" && rest[0] === "record") return runCalibrateRecord(rest.slice(1));
+  if (command === "calibrate" && rest[0] === "report") return runCalibrateReport(rest.slice(1));
+  if (command === "calibrate") {
+    console.error(`calibrate needs a subcommand: record or report\n\n${USAGE}`);
+    return 2;
+  }
   if (command === "strength" && rest[0] === "init") return runStrengthInit(rest.slice(1));
   if (command === "strength") return runStrength(rest);
   console.error(USAGE);
@@ -172,6 +190,92 @@ async function runRisk(args: string[]): Promise<number> {
   }
   console.log(json ? JSON.stringify(report, null, 2) : renderRisk(report));
   return report.humanRequired ? 1 : 0;
+}
+
+async function runCalibrateRecord(args: string[]): Promise<number> {
+  let json = false;
+  let dialect: string | undefined;
+  let neededHuman: boolean | undefined;
+  let foundReal: boolean | undefined;
+  let escalated = false;
+  let note: string | undefined;
+  const positional: string[] = [];
+
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i]!;
+    if (arg === "--json") json = true;
+    else if (arg === "--escalated") escalated = true;
+    else if (arg === "--needed-human" || arg === "--found-real") {
+      const value = args[++i];
+      if (value !== "true" && value !== "false") {
+        console.error(`${arg} needs true or false\n\n${USAGE}`);
+        return 2;
+      }
+      if (arg === "--needed-human") neededHuman = value === "true";
+      else foundReal = value === "true";
+    } else if (arg === "--note" || arg === "--dialect") {
+      const value = args[++i];
+      if (value === undefined) {
+        console.error(`${arg} needs a value\n\n${USAGE}`);
+        return 2;
+      }
+      if (arg === "--note") note = value;
+      else dialect = value;
+    } else if (arg.startsWith("-")) {
+      console.error(`Unknown option: ${arg}\n\n${USAGE}`);
+      return 2;
+    } else positional.push(arg);
+  }
+  if (positional.length > 1) {
+    console.error(`calibrate record takes at most one path\n\n${USAGE}`);
+    return 2;
+  }
+  // The honest verdict is required, never defaulted — a fabricated verdict is the dishonest
+  // calibration data ADR-0042 exists to keep out of the record.
+  if (neededHuman === undefined || foundReal === undefined) {
+    console.error(`calibrate record needs --needed-human and --found-real\n\n${USAGE}`);
+    return 2;
+  }
+
+  let report;
+  try {
+    report = await recordCalibration(
+      positional[0] ?? ".",
+      { neededHuman, foundReal, escalated, ...(note !== undefined && { note }) },
+      { ...(dialect !== undefined && { dialect }) },
+    );
+  } catch (err) {
+    console.error(message(err));
+    return 2;
+  }
+  console.log(json ? JSON.stringify(report, null, 2) : renderCalibrateRecord(report));
+  return 0;
+}
+
+async function runCalibrateReport(args: string[]): Promise<number> {
+  let json = false;
+  const positional: string[] = [];
+  for (const arg of args) {
+    if (arg === "--json") json = true;
+    else if (arg.startsWith("-")) {
+      console.error(`Unknown option: ${arg}\n\n${USAGE}`);
+      return 2;
+    } else positional.push(arg);
+  }
+  if (positional.length > 1) {
+    console.error(`calibrate report takes at most one path\n\n${USAGE}`);
+    return 2;
+  }
+
+  let report;
+  try {
+    report = await calibrationReport(positional[0] ?? ".");
+  } catch (err) {
+    console.error(message(err));
+    return 2;
+  }
+  console.log(json ? JSON.stringify(report, null, 2) : renderCalibrateReport(report));
+  return 0;
 }
 
 async function runDoctor(args: string[]): Promise<number> {
