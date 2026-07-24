@@ -12,7 +12,7 @@
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 ![Node ≥ 24](https://img.shields.io/badge/node-%E2%89%A5%2024-brightgreen)
-![Plugin 0.7.0](https://img.shields.io/badge/plugin-0.7.0-8250df)
+[![npm](https://img.shields.io/npm/v/speccle?color=8250df&label=speccle)](https://www.npmjs.com/package/speccle)
 ![Oracle: deterministic, no LLM](https://img.shields.io/badge/oracle-deterministic%20%C2%B7%20no%20LLM-24292f)
 
 </div>
@@ -21,9 +21,10 @@
 
 ## What is Speccle?
 
-Speccle is a **Claude Code plugin** for building features as **vertical slices**. Its
-unit of work is the feature folder — one directory owning everything a feature needs,
-side by side:
+Speccle builds features as **vertical slices** in Claude Code — a set of skills plus a
+`speccle` CLI, shipped as one npm package you vendor into a repo (or a Claude Code
+plugin, for just you). Its unit of work is the feature folder — one directory owning
+everything a feature needs, side by side:
 
 ```
 checkout/              ← named for the feature, never a catch-all like src/
@@ -230,27 +231,37 @@ contract, the lint and the claim join — those need nothing but the CLI.
 
 ## Updating
 
-Three moving parts, and only one of them updates silently. That is deliberate: the
-skills and the stack become **your repo's files**, so changing them is a diff you
-review, never something that happens behind you.
+Three moving parts — the CLI, the vendored skills, and the strength stack — and only the
+CLI updates silently. That is deliberate: the skills and the stack become **your repo's
+files**, so changing them is a diff you review, never something that happens behind you.
+
+Two commands drive it, and neither ever touches your global install:
+
+```sh
+speccle doctor   # what's stale? CLI version, whether the skills match it, stack drift
+speccle update   # refresh the vendored skills forward; print the CLI + stack fix commands
+```
 
 | Part                      | How                                                                            | What you get                                     |
 | ------------------------- | ------------------------------------------------------------------------------ | ------------------------------------------------ |
 | **CLI, global**           | `npm i -g speccle@latest`                                                      | Silent — it's a binary, not your code            |
 | **CLI, repo-pinned**      | Bump `speccle` in the repo's `devDependencies`                                 | A lockfile diff to review and commit             |
-| **Skills, project-level** | `speccle init` (re-run)                                                        | A diff of `.claude/skills/` to review and commit |
+| **Skills, project-level** | `speccle update` (or re-run `speccle init`)                                    | A diff of `.claude/skills/` to review and commit |
 | **Skills, user-level**    | `/plugin marketplace update` then `/plugin update speccle@speccle-marketplace` | Applies on restart                               |
-| **Strength stack**        | No update path yet — see below                                                 | —                                                |
+| **Strength stack**        | `speccle doctor` names the drift; run the `npm install` `update` prints        | The reconcile command — you run it               |
 
-The skills ride inside the CLI's tarball, so `speccle@X` is one skill↔oracle pairing:
-update the CLI, then re-run `speccle init` to refresh the vendored skills to match.
+Bumping the CLI is **two steps, in order**: `npm i -g speccle@latest` for the new binary
+and its bundled skills, **then** `speccle update` to refresh the vendored skills to match.
+`update` prints the `npm i -g` line rather than running it — it can't reach your global
+install, so it never self-updates the binary. The skills ride inside the CLI's tarball, so
+`speccle@X` is one skill↔oracle pairing; run `update` before bumping the CLI and it just
+re-materializes the skills you already have.
 
-**The strength stack is a known gap.** `strength init` deliberately never overwrites a
-config you already have — it's your file and you may have customised it — but it also
-doesn't yet tell you when yours has drifted from the current preset. Until it does,
-re-read the preset fields in the
-[oracle README](packages/oracle/README.md#strength-init) after a major upgrade and
-reconcile by hand.
+The strength stack stays a config you own — `strength init` never overwrites a
+`stryker.config.json` you've customised — but `doctor` now flags when yours has drifted
+from the current preset (a major behind, a missing devDependency), and `update` prints the
+exact `npm install` to reconcile. The preset fields are documented in the
+[oracle README](packages/oracle/README.md#strength-init).
 
 <details>
 <summary>Running the oracle from a clone instead</summary>

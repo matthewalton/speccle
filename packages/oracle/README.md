@@ -1,14 +1,23 @@
 # speccle
 
-The deterministic tooling the skills invoke: one bin, three commands —
+The deterministic tooling the skills invoke — one bin:
 
 ```
+speccle init            # record repo facts + vendor the skills into .claude/skills/
+speccle doctor          # report staleness across the CLI, skills, and strength stack
+speccle update          # refresh the vendored skills; print the CLI + stack fix commands
 speccle lint            # enforce the convention over a repo's specs
 speccle claims          # join criteria to the test names that claim them
 speccle strength        # oracle-strength heatmap: per-criterion killed ÷ covered
 speccle strength init   # provision the strength stack into a target
 ```
 
+- `init` / `doctor` / `update` — the setup and staleness surface: `init` records the
+  repo's test facts in `.speccle/config.json` and vendors the skills into
+  `.claude/skills/`; `doctor` reports whether those skills and the strength stack still
+  match this CLI; `update` refreshes the skills forward and prints the CLI + stack fix
+  commands. See [Install](https://github.com/matthewalton/speccle/blob/main/README.md#install)
+  and [Updating](https://github.com/matthewalton/speccle/blob/main/README.md#updating).
 - `lint` — enforce the [convention](https://github.com/matthewalton/speccle/blob/main/docs/convention.md) over a repo's specs.
 - `claims` — join every criterion to the test names carrying its id, statically. No
   reports needed, so it is cheap enough to gate on.

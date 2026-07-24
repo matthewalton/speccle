@@ -104,6 +104,14 @@ describe("speccle lint (e2e)", () => {
     expect(status).toBe(2);
     expect(stderr).toContain("Usage: speccle");
   });
+
+  it("prints the version string with exit 0 for --version and -v", () => {
+    for (const flag of ["--version", "-v"]) {
+      const { status, stdout } = run(flag);
+      expect(status).toBe(0);
+      expect(stdout.trim()).toBe(PKG_VERSION);
+    }
+  });
 });
 
 describe("speccle claims (e2e)", () => {

@@ -32,6 +32,7 @@ Commands:
   claims [path] [--json]         Join criteria to the test names that claim them — no reports needed
   strength [path] [--json]       Oracle-strength heatmap: per-criterion killed ÷ covered
   strength init [path] [--json]  Provision the strength stack: devDependencies + configs
+  --version, -v                  Print the installed CLI version
 
 claims options:
   --dialect <name>    Test dialect: ${DIALECT_NAMES.join(", ")} (default: ${DEFAULT_DIALECT})
@@ -50,6 +51,10 @@ Exit codes: 0 clean, 1 violations, 2 usage error`;
 
 async function main(argv: string[]): Promise<number> {
   const [command, ...rest] = argv;
+  if (command === "--version" || command === "-v") {
+    console.log(await ownVersion());
+    return 0;
+  }
   if (command === "init") return runInit(rest);
   if (command === "doctor") return runDoctor(rest);
   if (command === "update") return runUpdate(rest);
