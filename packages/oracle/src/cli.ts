@@ -1,15 +1,24 @@
 #!/usr/bin/env node
 import { check } from "./check.ts";
 import { claims } from "./claims.ts";
+import { initConfig } from "./config.ts";
 import { DEFAULT_DIALECT, DIALECT_NAMES } from "./dialects.ts";
 import { init } from "./init.ts";
 import { lint } from "./lint.ts";
-import { renderCheck, renderClaims, renderHuman, renderInit, renderStrength } from "./render.ts";
+import {
+  renderCheck,
+  renderClaims,
+  renderConfigInit,
+  renderHuman,
+  renderInit,
+  renderStrength,
+} from "./render.ts";
 import { DEFAULT_COVERAGE_SUMMARY, DEFAULT_MUTATION_REPORT, strength } from "./strength.ts";
 
 const USAGE = `Usage: speccle <command> [options]
 
 Commands:
+  init [path] [--json]           Detect and record repo facts in .speccle/config.json
   lint [path] [--json]           Lint every SPEC.md under path (default: current directory)
   claims [path] [--json]         Join criteria to the test names that claim them — no reports needed
   strength [path] [--json]       Oracle-strength heatmap: per-criterion killed ÷ covered
@@ -32,9 +41,10 @@ Exit codes: 0 clean, 1 violations, 2 usage error`;
 
 async function main(argv: string[]): Promise<number> {
   const [command, ...rest] = argv;
+  if (command === "init") return runInit(rest);
   if (command === "lint") return runLint(rest);
   if (command === "claims") return runClaims(rest);
-  if (command === "strength" && rest[0] === "init") return runInit(rest.slice(1));
+  if (command === "strength" && rest[0] === "init") return runStrengthInit(rest.slice(1));
   if (command === "strength") return runStrength(rest);
   console.error(USAGE);
   return 2;
@@ -163,6 +173,32 @@ async function runStrength(args: string[]): Promise<number> {
 }
 
 async function runInit(args: string[]): Promise<number> {
+  let json = false;
+  const positional: string[] = [];
+  for (const arg of args) {
+    if (arg === "--json") json = true;
+    else if (arg.startsWith("-")) {
+      console.error(`Unknown option: ${arg}\n\n${USAGE}`);
+      return 2;
+    } else positional.push(arg);
+  }
+  if (positional.length > 1) {
+    console.error(`init takes at most one path\n\n${USAGE}`);
+    return 2;
+  }
+
+  let report;
+  try {
+    report = await initConfig(positional[0] ?? ".");
+  } catch (err) {
+    console.error(message(err));
+    return 2;
+  }
+  console.log(json ? JSON.stringify(report, null, 2) : renderConfigInit(report));
+  return 0;
+}
+
+async function runStrengthInit(args: string[]): Promise<number> {
   let json = false;
   let skipInstall = false;
   const mutate: string[] = [];

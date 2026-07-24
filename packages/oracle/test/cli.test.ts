@@ -1,10 +1,11 @@
 import { spawnSync } from "node:child_process";
-import { mkdir, mkdtemp, rm, utimes, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, utimes, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import type { CheckReport } from "../src/check.ts";
 import type { ClaimsReport } from "../src/claims.ts";
+import type { ConfigInitReport } from "../src/config.ts";
 import type { InitReport } from "../src/init.ts";
 import type { LintReport } from "../src/lint.ts";
 import type { StrengthReport } from "../src/strength.ts";
@@ -338,5 +339,101 @@ describe("speccle strength init (e2e)", () => {
     const { status, stderr } = run("strength", "init", root, "--skip-install", "--mutate");
     expect(status).toBe(2);
     expect(stderr).toContain("--mutate needs a glob");
+  });
+});
+
+describe("speccle init (e2e)", () => {
+  const roots: string[] = [];
+
+  afterEach(async () => {
+    await Promise.all(roots.splice(0).map((root) => rm(root, { recursive: true, force: true })));
+  });
+
+  async function scaffold(files: Record<string, string>): Promise<string> {
+    const root = await mkdtemp(join(tmpdir(), "speccle-config-e2e-"));
+    roots.push(root);
+    for (const [name, content] of Object.entries(files)) {
+      await writeFile(join(root, name), content);
+    }
+    return root;
+  }
+
+  it("detects a swift repo, writes the config, and reports the facts", async () => {
+    const root = await scaffold({ "Package.swift": "" });
+    const { status, stdout } = run("init", root);
+    expect(status).toBe(0);
+    expect(stdout).toContain(`wrote ${join(".speccle", "config.json")}`);
+    expect(stdout).toContain("dialect  swift");
+    expect(stdout).toContain("suite    swift test");
+    const written = JSON.parse(await readFile(join(root, ".speccle/config.json"), "utf8")) as {
+      dialect: string;
+    };
+    expect(written.dialect).toBe("swift");
+  });
+
+  it("emits the typed JSON report", async () => {
+    const root = await scaffold({ "package.json": "{}", "pnpm-lock.yaml": "" });
+    const { status, stdout } = run("init", root, "--json");
+    expect(status).toBe(0);
+    const report = JSON.parse(stdout) as ConfigInitReport;
+    expect(report.action).toBe("written");
+    expect(report.config).toEqual({ dialect: "ts-vitest", suite: "pnpm test" });
+  });
+
+  it("keeps an existing config on a second run", async () => {
+    const root = await scaffold({ "Package.swift": "" });
+    run("init", root);
+    const { status, stdout } = run("init", root);
+    expect(status).toBe(0);
+    expect(stdout).toContain("kept");
+  });
+
+  it("exits 2 on an unknown option", () => {
+    expect(run("init", "--nope").status).toBe(2);
+  });
+});
+
+describe("speccle claims reads the dialect from .speccle/config.json (e2e)", () => {
+  const roots: string[] = [];
+
+  afterEach(async () => {
+    await Promise.all(roots.splice(0).map((root) => rm(root, { recursive: true, force: true })));
+  });
+
+  async function scaffold(files: Record<string, string>): Promise<string> {
+    const root = await mkdtemp(join(tmpdir(), "speccle-claims-config-e2e-"));
+    roots.push(root);
+    for (const [file, content] of Object.entries(files)) {
+      await mkdir(dirname(join(root, file)), { recursive: true });
+      await writeFile(join(root, file), content);
+    }
+    return root;
+  }
+
+  const SWIFT_SLICE = {
+    "features/ladder/SPEC.md":
+      "---\nkey: LADDER\n---\n\n## [LADDER-1] A rung raises the climber by one\n",
+    "features/ladder/src/LadderTests.swift":
+      "final class LadderTests: XCTestCase {\n  func test_LADDER_1_raisesByOne() {}\n}\n",
+  };
+
+  it("joins the swift slice with no --dialect flag when the config declares swift", async () => {
+    const root = await scaffold({
+      ...SWIFT_SLICE,
+      ".speccle/config.json": JSON.stringify({ dialect: "swift", suite: "swift test" }),
+    });
+    const { status, stdout } = run("claims", root);
+    expect(status).toBe(0);
+    expect(stdout).toContain("swift — 1 spec file, 1 criterion, 1 claimed, clean");
+  });
+
+  it("an explicit --dialect overrides the recorded dialect", async () => {
+    const root = await scaffold({
+      ...SWIFT_SLICE,
+      ".speccle/config.json": JSON.stringify({ dialect: "swift", suite: "swift test" }),
+    });
+    const { status, stdout } = run("claims", root, "--dialect", "ts-vitest");
+    expect(status).toBe(1);
+    expect(stdout).toContain("no test files matched the ts-vitest dialect");
   });
 });

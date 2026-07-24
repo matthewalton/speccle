@@ -209,3 +209,31 @@ Two frontiers, and they are not the same:
 
 Adding a language is a Speccle change with tests behind it, never a regex a repo
 supplies.
+
+## Repo facts
+
+Two things Speccle needs are true about a repo, not decidable by Speccle: which **test
+dialect** the repo is on, and the **suite command** that runs its tests — the checks gate
+cannot infer `xcodebuild test -scheme Ladder`. They live in `.speccle/config.json` at the
+repo root:
+
+```json
+{
+  "dialect": "swift",
+  "suite": "xcodebuild test -scheme Ladder",
+  "overrides": [{ "path": "web", "dialect": "ts-vitest", "suite": "pnpm test" }]
+}
+```
+
+`speccle init` auto-detects the dialect — `swift` from a `Package.swift`, `ts-vitest`
+otherwise — and a default suite command, then **writes the result down**: the written
+record is the source of truth, never the detection, and `init` never overwrites a config
+it finds. A mixed-language tree corrects the defaults under a subtree with `overrides`,
+where the longest matching path wins
+(ADR-0040).
+
+This is the one thing Speccle reads from a repo, and it never grows into a knob on
+judgement. "Speccle has no configuration" is really **"Speccle has no configurable
+judgement"**: a dialect name or a shell command is a fact — Speccle cannot know it and
+there is nothing to game — while a lint rule or the claim join decides whether you pass,
+and stays fixed so a clean run keeps meaning the same thing in every repo.

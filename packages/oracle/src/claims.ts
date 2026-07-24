@@ -1,5 +1,6 @@
 import { readFile, stat } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
+import { readConfig } from "./config.ts";
 import { DEFAULT_DIALECT, resolveDialect } from "./dialects.ts";
 import { discoverSpecs, discoverTests } from "./discover.ts";
 import { compareCriterionIds, parseSpec, readClaimedIds } from "./spec.ts";
@@ -42,14 +43,17 @@ export interface ClaimsReport {
 }
 
 export interface ClaimsOptions {
-  /** Test dialect name (default: `ts-vitest`). */
+  /** Test dialect name. Overrides `.speccle/config.json`; both fall back to `ts-vitest`. */
   dialect?: string;
 }
 
 export async function claims(target: string, options: ClaimsOptions = {}): Promise<ClaimsReport> {
-  const dialect = resolveDialect(options.dialect ?? DEFAULT_DIALECT);
   const root = resolve(target);
   if (!(await isDirectory(root))) throw new Error(`path not found: ${target}`);
+  // An explicit --dialect wins outright; otherwise `.speccle/config.json` is the source
+  // of truth, falling back to the default only when the repo has recorded nothing.
+  const declared = options.dialect ?? (await readConfig(root))?.dialect;
+  const dialect = resolveDialect(declared ?? DEFAULT_DIALECT);
 
   const specFiles = await discoverSpecs(root);
   const specs = await Promise.all(

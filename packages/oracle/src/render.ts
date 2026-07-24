@@ -1,6 +1,30 @@
 import type { CheckReport, ReportCheck } from "./check.ts";
 import type { ClaimsReport } from "./claims.ts";
+import type { ConfigInitReport } from "./config.ts";
 import type { InitReport } from "./init.ts";
+
+export function renderConfigInit(report: ConfigInitReport): string {
+  const lines = [
+    report.action === "written"
+      ? `wrote ${report.file}`
+      : `kept ${report.file} — already present, left untouched`,
+    `  dialect  ${report.config.dialect}`,
+    `  suite    ${report.config.suite}`,
+  ];
+  for (const override of report.config.overrides ?? []) {
+    const facts = [
+      override.dialect !== undefined ? `dialect ${override.dialect}` : undefined,
+      override.suite !== undefined ? `suite ${override.suite}` : undefined,
+    ].filter((fact) => fact !== undefined);
+    lines.push(`  ${override.path}: ${facts.join(", ")}`);
+  }
+  lines.push("");
+  lines.push("these are facts about your repo, not judgement — edit .speccle/config.json by hand");
+  if (report.config.dialect === "swift" && report.config.suite === "swift test") {
+    lines.push("swift: set suite to your xcodebuild scheme if this is not a SwiftPM package");
+  }
+  return lines.join("\n");
+}
 
 export function renderCheck(report: CheckReport): string {
   const lines = [

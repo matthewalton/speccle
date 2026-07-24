@@ -190,7 +190,7 @@ async function readPackageJson(root: string): Promise<PackageJson> {
   return JSON.parse(raw) as PackageJson;
 }
 
-async function detectPackageManager(root: string): Promise<PackageManager> {
+export async function detectPackageManager(root: string): Promise<PackageManager> {
   for (const [lockfile, manager] of LOCKFILES) {
     if (await exists(join(root, lockfile))) return manager;
   }
