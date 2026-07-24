@@ -52,6 +52,10 @@ Node ≥ 24 runs TypeScript directly — no build step needed to run the CLI fro
   A skill may only _order_ the agent to read a doc that is bundled beside it under
   `skills/<name>/references/`. Those reference files are **generated** — edit the source
   under `docs/` and run `pnpm sync:plugin-refs`; `pnpm check:plugin-refs` guards them in
+  pre-commit. Any change under `packages/plugin/` must **bump the plugin version** —
+  `plugin.json` and its `.claude-plugin/marketplace.json` mirror move together — because
+  the marketplace cache is keyed by version, so shipping changed content under an
+  unchanged version serves a stale tree; `pnpm check:plugin-version` guards this in
   pre-commit. Skill bodies carry **no links out of `packages/plugin`** — no ADR or doc
   citations ([ADR-0028](docs/adr/0028-shipped-skills-carry-no-repo-citations.md)): an
   installed plugin caches only that directory, and its readers don't have this repo.

@@ -11,6 +11,7 @@
     "format:check": "prettier --check .",
     "sync:plugin-refs": "node scripts/sync-plugin-references.mjs",
     "check:plugin-refs": "node scripts/sync-plugin-references.mjs --check",
+    "check:plugin-version": "node scripts/check-plugin-version.mjs",
     "prepare": "husky"
   },
   "lint-staged": {
