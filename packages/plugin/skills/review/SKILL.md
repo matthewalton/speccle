@@ -1,6 +1,6 @@
 ---
 name: review
-description: Review a change set the way the outer loop does — fan a panel of lenses over the working diff, let `oracle risk` decide whether a human is needed, then below that threshold fix what the lenses find (re-running the checks-gate after each fix and reverting any that goes red) and above it report findings and stop, closing with an overruleable summary that proposes a remedy for each finding and records the change to the calibration record. Use when the user wants to review a branch or the pending change, asks to "review this", "review my changes", "run the lenses", find-and-fix issues before a PR, or check a change set for correctness, security, accessibility, architecture, performance, test-quality, or house-convention problems.
+description: Review a change set the way the outer loop does — fan a panel of lenses over the working diff, let `oracle risk` decide whether a human is needed, then below that threshold fix what the lenses find (re-running the checks-gate after each fix and reverting any that goes red) and above it report findings and stop, closing with an overruleable summary that proposes a remedy for each finding — recalled from and recorded to the remedy record — and records the change to the calibration record. Use when the user wants to review a branch or the pending change, asks to "review this", "review my changes", "run the lenses", find-and-fix issues before a PR, or check a change set for correctness, security, accessibility, architecture, performance, test-quality, or house-convention problems.
 allowed-tools: Read(/${CLAUDE_PLUGIN_ROOT}/skills/*/references/**)
 ---
 
@@ -105,9 +105,20 @@ its own is one you cannot safely apply. The fixes join the working change set; `
 
 ## 6. Route each finding to a remedy
 
-For every finding — fixed, reverted, or left for the human — propose the durable artefact
-that stops the class recurring, routed on **what the finding is**, never on a count, the
-same posture `strengthen` takes to a surviving mutant:
+For every finding — fixed, reverted, or left for the human — name the durable artefact that
+stops the class recurring, routed on **what the finding is**, never on a count, the same
+posture `strengthen` takes to a surviving mutant. The **remedy record** is the meta loop's
+memory of that routing: consult it before deriving, add to it after applying.
+
+**Recall first — answer a repeat the way you answered it before.** Give the finding a short,
+stable class handle (kebab-case, e.g. `missing-model-roundtrip-test`) and ask the record:
+
+```sh
+<oracle> remedy recall <path> --class <handle>
+```
+
+A hit is the known-correct remedy — reuse its route and artefact rather than re-deriving, so
+the same finding gets the same answer. A miss means route it fresh:
 
 - a deterministic, cross-file invariant → an `oracle verify` check in `.speccle/checks/`.
 - behaviour a criterion should own → a new acceptance criterion, and its tagged test, in the
@@ -116,8 +127,18 @@ same posture `strengthen` takes to a surviving mutant:
   the house-conventions lens above all.
 - a genuine one-off → none.
 
-This run **proposes** the remedy in the summary; recording it durably and consulting it to
-answer a repeat finding the same way is the meta loop's job, not this skill's.
+**Then record what you applied**, so the next review recalls it:
+
+```sh
+<oracle> remedy record <path> --class <handle> --finding <what> --fix <what you did> \
+  --route <check|criterion|lens|none> [--artefact <ref>]
+```
+
+`--artefact` names the prevention home — the `.speccle/checks/` or `.speccle/lenses/` path, or
+the `SPEC.md` criterion id — and is required for every route but `none`. Record the remedies you
+**applied** this run; a finding left for the human (§3 required one, so nothing was fixed) is
+proposed in the summary, never recorded — the record holds enacted remedies, not intentions, the
+same honesty §8 keeps for the verdict.
 
 ## 7. Summary — announce, never gate
 
