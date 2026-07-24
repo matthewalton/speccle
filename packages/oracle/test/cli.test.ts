@@ -8,6 +8,7 @@ import type { ClaimsReport } from "../src/claims.ts";
 import type { ConfigInitReport } from "../src/config.ts";
 import type { InitReport } from "../src/init.ts";
 import type { LintReport } from "../src/lint.ts";
+import type { SkillsInitReport } from "../src/skills.ts";
 import type { StrengthReport } from "../src/strength.ts";
 
 const CLI = resolve(import.meta.dirname, "../src/cli.ts");
@@ -371,13 +372,23 @@ describe("speccle init (e2e)", () => {
     expect(written.dialect).toBe("swift");
   });
 
-  it("emits the typed JSON report", async () => {
+  it("materializes the skills into .claude/skills/ alongside the config", async () => {
+    const root = await scaffold({ "package.json": "{}" });
+    const { status, stdout } = run("init", root);
+    expect(status).toBe(0);
+    expect(stdout).toContain(`materialized`);
+    expect(await readFile(join(root, ".claude/skills/feature/SKILL.md"), "utf8")).toContain("---");
+  });
+
+  it("emits the typed JSON report for both the config and the skills", async () => {
     const root = await scaffold({ "package.json": "{}", "pnpm-lock.yaml": "" });
     const { status, stdout } = run("init", root, "--json");
     expect(status).toBe(0);
-    const report = JSON.parse(stdout) as ConfigInitReport;
-    expect(report.action).toBe("written");
-    expect(report.config).toEqual({ dialect: "ts-vitest", suite: "pnpm test" });
+    const report = JSON.parse(stdout) as { config: ConfigInitReport; skills: SkillsInitReport };
+    expect(report.config.action).toBe("written");
+    expect(report.config.config).toEqual({ dialect: "ts-vitest", suite: "pnpm test" });
+    expect(report.skills.dir).toBe(".claude/skills");
+    expect(report.skills.skills.map((skill) => skill.name)).toContain("feature");
   });
 
   it("keeps an existing config on a second run", async () => {

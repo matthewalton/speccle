@@ -1,5 +1,6 @@
 node_modules/
 dist/
+/packages/oracle/skills/
 coverage/
 reports/
 .stryker-tmp/

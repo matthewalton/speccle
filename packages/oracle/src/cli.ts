@@ -11,14 +11,17 @@ import {
   renderConfigInit,
   renderHuman,
   renderInit,
+  renderSkillsInit,
   renderStrength,
 } from "./render.ts";
+import { materializeSkills } from "./skills.ts";
 import { DEFAULT_COVERAGE_SUMMARY, DEFAULT_MUTATION_REPORT, strength } from "./strength.ts";
 
 const USAGE = `Usage: speccle <command> [options]
 
 Commands:
-  init [path] [--json]           Detect and record repo facts in .speccle/config.json
+  init [path] [--json]           Record repo facts in .speccle/config.json and materialize
+                                 the skills into .claude/skills/
   lint [path] [--json]           Lint every SPEC.md under path (default: current directory)
   claims [path] [--json]         Join criteria to the test names that claim them — no reports needed
   strength [path] [--json]       Oracle-strength heatmap: per-criterion killed ÷ covered
@@ -187,14 +190,23 @@ async function runInit(args: string[]): Promise<number> {
     return 2;
   }
 
-  let report;
+  const root = positional[0] ?? ".";
+  let config;
+  let skills;
   try {
-    report = await initConfig(positional[0] ?? ".");
+    config = await initConfig(root);
+    skills = await materializeSkills(root);
   } catch (err) {
     console.error(message(err));
     return 2;
   }
-  console.log(json ? JSON.stringify(report, null, 2) : renderConfigInit(report));
+  if (json) {
+    console.log(JSON.stringify({ config, skills }, null, 2));
+  } else {
+    console.log(renderConfigInit(config));
+    console.log("");
+    console.log(renderSkillsInit(skills));
+  }
   return 0;
 }
 

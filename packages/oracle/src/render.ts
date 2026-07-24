@@ -2,6 +2,7 @@ import type { CheckReport, ReportCheck } from "./check.ts";
 import type { ClaimsReport } from "./claims.ts";
 import type { ConfigInitReport } from "./config.ts";
 import type { InitReport } from "./init.ts";
+import type { SkillsInitReport } from "./skills.ts";
 
 export function renderConfigInit(report: ConfigInitReport): string {
   const lines = [
@@ -23,6 +24,16 @@ export function renderConfigInit(report: ConfigInitReport): string {
   if (report.config.dialect === "swift" && report.config.suite === "swift test") {
     lines.push("swift: set suite to your xcodebuild scheme if this is not a SwiftPM package");
   }
+  return lines.join("\n");
+}
+
+export function renderSkillsInit(report: SkillsInitReport): string {
+  const lines = [`materialized ${plural(report.skills.length, "skill")} into ${report.dir}/`];
+  for (const { name, action } of report.skills) {
+    lines.push(`  ${(action === "written" ? "wrote" : "refreshed").padEnd(9)} ${name}`);
+  }
+  lines.push("");
+  lines.push("these are generated files — commit them; re-run `speccle init` to refresh");
   return lines.join("\n");
 }
 

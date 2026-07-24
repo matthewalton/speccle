@@ -198,11 +198,15 @@ So you can skip this step entirely if every repo you work in provisions its own
 ### 2. The skills — one of two ways
 
 **Project-level** — vendor them into the repo so the whole team gets the pipeline by
-cloning; commit what lands:
+cloning; commit what lands. With the CLI installed (step 1), from the repo root:
 
 ```sh
-npx skills add matthewalton/speccle -a claude-code   # → .claude/skills/ + skills-lock.json
+speccle init   # → .claude/skills/ + .speccle/config.json, both committed
 ```
+
+`init` materializes the skills from the CLI's own tarball, so `speccle@X` names one
+skill↔oracle pairing — nothing to drift. It also records the repo's test facts in
+`.speccle/config.json`. Re-run it any time to refresh the skills as a reviewable diff.
 
 **User-level** — the plugin, for just you, across all your projects:
 
@@ -234,11 +238,12 @@ review, never something that happens behind you.
 | ------------------------- | ------------------------------------------------------------------------------ | ------------------------------------------------ |
 | **CLI, global**           | `npm i -g speccle@latest`                                                      | Silent — it's a binary, not your code            |
 | **CLI, repo-pinned**      | Bump `speccle` in the repo's `devDependencies`                                 | A lockfile diff to review and commit             |
-| **Skills, project-level** | `npx skills update`                                                            | A diff of `.claude/skills/` to review and commit |
+| **Skills, project-level** | `speccle init` (re-run)                                                        | A diff of `.claude/skills/` to review and commit |
 | **Skills, user-level**    | `/plugin marketplace update` then `/plugin update speccle@speccle-marketplace` | Applies on restart                               |
 | **Strength stack**        | No update path yet — see below                                                 | —                                                |
 
-The skills and the CLI ship on one version line, so keep them in step.
+The skills ride inside the CLI's tarball, so `speccle@X` is one skill↔oracle pairing:
+update the CLI, then re-run `speccle init` to refresh the vendored skills to match.
 
 **The strength stack is a known gap.** `strength init` deliberately never overwrites a
 config you already have — it's your file and you may have customised it — but it also
