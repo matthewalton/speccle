@@ -29,6 +29,13 @@ export interface SpeccleConfig {
    * version, not a content hash.
    */
   skillsVersion?: string;
+  /**
+   * The `speccle@X` that last vendored this repo's `.speccle/lenses/` (ADR-0043). Its own
+   * anchor, not folded into `skillsVersion`, because lenses arrived after skills: a repo
+   * initialized before them carries a `skillsVersion` and no `lensesVersion`, and that gap
+   * is exactly the signal `doctor` needs to tell `update` to vendor them for the first time.
+   */
+  lensesVersion?: string;
 }
 
 /** The dialect and suite command in force at one path, overrides resolved. */
@@ -99,22 +106,27 @@ export async function detectConfig(root: string): Promise<SpeccleConfig> {
  * written record is the source of truth, never the detection (ADR-0040), the same posture
  * `strength init` takes with the stack it provisions.
  *
- * When `skillsVersion` is given, it is (re)stamped even on the kept path: materialization
- * always refreshes the skills to the current version, so the anchor must move with them or
- * a re-run would leave the recorded version behind the files it just wrote. The facts
- * themselves stay kept — only the stamp follows the skills.
+ * When `payloadVersion` is given, it is (re)stamped onto both the skills and the lenses
+ * anchors even on the kept path: `init`/`update` materialize both from the same tarball, so
+ * the two anchors must move with them or a re-run would leave a recorded version behind the
+ * files it just wrote. The facts themselves stay kept — only the stamps follow the payload.
  */
-export async function initConfig(root: string, skillsVersion?: string): Promise<ConfigInitReport> {
+export async function initConfig(root: string, payloadVersion?: string): Promise<ConfigInitReport> {
+  const stamped = (config: SpeccleConfig): SpeccleConfig =>
+    payloadVersion === undefined
+      ? config
+      : { ...config, skillsVersion: payloadVersion, lensesVersion: payloadVersion };
+
   const existing = await readConfig(root);
   if (existing !== undefined) {
-    const config = skillsVersion !== undefined ? { ...existing, skillsVersion } : existing;
-    if (skillsVersion !== undefined && existing.skillsVersion !== skillsVersion) {
-      await writeConfig(root, config);
-    }
+    const config = stamped(existing);
+    const moved =
+      payloadVersion !== undefined &&
+      (existing.skillsVersion !== payloadVersion || existing.lensesVersion !== payloadVersion);
+    if (moved) await writeConfig(root, config);
     return { root, file: CONFIG_FILE, action: "kept", config };
   }
-  const detected = await detectConfig(root);
-  const config = skillsVersion !== undefined ? { ...detected, skillsVersion } : detected;
+  const config = stamped(await detectConfig(root));
   await writeConfig(root, config);
   return { root, file: CONFIG_FILE, action: "written", config };
 }

@@ -2,10 +2,11 @@ import { access, readdir, readFile, stat } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { readConfig } from "./config.ts";
 import { ownVersion, STRENGTH_DEPS, STRYKER_CONFIG_NAMES } from "./init.ts";
+import { LENSES_DIR } from "./lenses.ts";
 import { SKILLS_DIR } from "./skills.ts";
 
-/** How the repo's committed skills stand against the CLI's bundled copy. */
-export type SkillsStatus = "current" | "stale" | "ahead" | "unstamped" | "absent";
+/** How a repo's committed payload — skills or lenses — stands against the CLI's bundled copy. */
+export type PayloadStatus = "current" | "stale" | "ahead" | "unstamped" | "absent";
 
 /** Whether the strength stack matches the current preset. `absent` = never provisioned. */
 export type StackStatus = "current" | "drift" | "absent";
@@ -31,7 +32,14 @@ export interface DoctorReport {
     recorded: string | null;
     /** The version this CLI would materialize — its own version. */
     bundled: string;
-    status: SkillsStatus;
+    status: PayloadStatus;
+  };
+  lenses: {
+    /** The version recorded in `.speccle/config.json`, or null when unstamped. */
+    recorded: string | null;
+    /** The version this CLI would vendor — its own version. */
+    bundled: string;
+    status: PayloadStatus;
   };
   stack: {
     /** True when a stryker config exists — the marker `strength init` leaves. */
@@ -56,8 +64,10 @@ export async function doctor(target: string): Promise<DoctorReport> {
   const cli = await ownVersion();
 
   const config = await readConfig(root);
-  const recorded = config?.skillsVersion ?? null;
-  const skillsStatus = deriveSkillsStatus(await hasSkills(root), recorded, cli);
+  const skillsRecorded = config?.skillsVersion ?? null;
+  const skillsStatus = derivePayloadStatus(await hasSkills(root), skillsRecorded, cli);
+  const lensesRecorded = config?.lensesVersion ?? null;
+  const lensesStatus = derivePayloadStatus(await hasLenses(root), lensesRecorded, cli);
 
   const provisioned = await anyPresent(root, STRYKER_CONFIG_NAMES);
   const declared = await declaredDeps(root);
@@ -68,22 +78,24 @@ export async function doctor(target: string): Promise<DoctorReport> {
       ? "drift"
       : "current";
 
-  const ok = (skillsStatus === "current" || skillsStatus === "absent") && stackStatus !== "drift";
+  const current = (status: PayloadStatus): boolean => status === "current" || status === "absent";
+  const ok = current(skillsStatus) && current(lensesStatus) && stackStatus !== "drift";
 
   return {
     root,
     cli,
-    skills: { recorded, bundled: cli, status: skillsStatus },
+    skills: { recorded: skillsRecorded, bundled: cli, status: skillsStatus },
+    lenses: { recorded: lensesRecorded, bundled: cli, status: lensesStatus },
     stack: { provisioned, deps, status: stackStatus },
     ok,
   };
 }
 
-function deriveSkillsStatus(
+function derivePayloadStatus(
   present: boolean,
   recorded: string | null,
   bundled: string,
-): SkillsStatus {
+): PayloadStatus {
   if (!present) return "absent";
   if (recorded === null) return "unstamped";
   const order = compareVersions(recorded, bundled);
@@ -124,6 +136,15 @@ async function hasSkills(root: string): Promise<boolean> {
   try {
     const entries = await readdir(join(root, SKILLS_DIR), { withFileTypes: true });
     return entries.some((entry) => entry.isDirectory());
+  } catch {
+    return false;
+  }
+}
+
+async function hasLenses(root: string): Promise<boolean> {
+  try {
+    const entries = await readdir(join(root, LENSES_DIR));
+    return entries.some((entry) => entry.endsWith(".md"));
   } catch {
     return false;
   }

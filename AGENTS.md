@@ -42,6 +42,12 @@ Node ≥ 24 runs TypeScript directly — no build step needed to run the CLI fro
 
 - `packages/oracle` — Speccle tools: deterministic, independently runnable, typed JSON
   output, and they **never call an LLM**.
+- `packages/oracle/lenses/` — the baseline review lenses (one markdown prompt each), the
+  dimensions the `review` skill fans out over. Unlike the skills — copied in from the
+  plugin at build time — these are committed source that ships in the tarball (`files`) and
+  `speccle init`/`update` vendor into a consumer's `.speccle/lenses/`. `house-conventions.md`
+  is a template the consumer owns; a refresh never overwrites it. Vendored into arbitrary
+  repos, so they carry **no citations out of this package**, same as the skills.
 - `packages/oracle/test/fixtures/dirty/` — specs that deliberately violate the
   convention; they are lint regression fixtures. Never "fix" them.
 - `packages/oracle/test/fixtures/strength/` — a spec plus a hand-written mutation report

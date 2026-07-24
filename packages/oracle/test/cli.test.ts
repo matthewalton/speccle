@@ -8,6 +8,7 @@ import type { ClaimsReport } from "../src/claims.ts";
 import type { ConfigInitReport } from "../src/config.ts";
 import type { DoctorReport } from "../src/doctor.ts";
 import type { InitReport } from "../src/init.ts";
+import type { LensesInitReport } from "../src/lenses.ts";
 import type { LintReport } from "../src/lint.ts";
 import type { SkillsInitReport } from "../src/skills.ts";
 import type { UpdateReport } from "../src/update.ts";
@@ -395,19 +396,26 @@ describe("speccle init (e2e)", () => {
     expect(await readFile(join(root, ".claude/skills/feature/SKILL.md"), "utf8")).toContain("---");
   });
 
-  it("emits the typed JSON report for both the config and the skills", async () => {
+  it("emits the typed JSON report for the config, the skills, and the lenses", async () => {
     const root = await scaffold({ "package.json": "{}", "pnpm-lock.yaml": "" });
     const { status, stdout } = run("init", root, "--json");
     expect(status).toBe(0);
-    const report = JSON.parse(stdout) as { config: ConfigInitReport; skills: SkillsInitReport };
+    const report = JSON.parse(stdout) as {
+      config: ConfigInitReport;
+      skills: SkillsInitReport;
+      lenses: LensesInitReport;
+    };
     expect(report.config.action).toBe("written");
     expect(report.config.config).toEqual({
       dialect: "ts-vitest",
       suite: "pnpm test",
       skillsVersion: PKG_VERSION,
+      lensesVersion: PKG_VERSION,
     });
     expect(report.skills.dir).toBe(".claude/skills");
     expect(report.skills.skills.map((skill) => skill.name)).toContain("feature");
+    expect(report.lenses.dir).toBe(".speccle/lenses");
+    expect(report.lenses.lenses.map((lens) => lens.name)).toContain("security.md");
   });
 
   it("keeps an existing config on a second run", async () => {

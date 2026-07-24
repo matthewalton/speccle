@@ -76,6 +76,37 @@ describe("update: skills", () => {
   });
 });
 
+describe("update: lenses", () => {
+  it("vendors the bundled lenses and reports from null when they were never vendored", async () => {
+    const version = await ownVersion();
+    const root = await scaffold({ "package.json": "{}", ".speccle/config.json": config("0.0.1") });
+    const report = await update(root);
+    expect(report.lenses.from).toBeNull();
+    expect(report.lenses.to).toBe(version);
+    expect(await readFile(join(root, ".speccle/lenses/security.md"), "utf8")).toContain("security");
+    const raw = await readFile(join(root, ".speccle/config.json"), "utf8");
+    expect((JSON.parse(raw) as { lensesVersion?: string }).lensesVersion).toBe(version);
+  });
+
+  it("refreshes the baseline lenses but never clobbers an authored house-conventions lens", async () => {
+    const root = await scaffold({
+      "package.json": "{}",
+      ".speccle/config.json": config("0.0.1"),
+      ".speccle/lenses/house-conventions.md": "my repo's own conventions",
+      ".speccle/lenses/security.md": "stale baseline",
+    });
+    const report = await update(root);
+    const house = report.lenses.lenses.find((lens) => lens.name === "house-conventions.md");
+    expect(house?.action).toBe("kept");
+    expect(await readFile(join(root, ".speccle/lenses/house-conventions.md"), "utf8")).toBe(
+      "my repo's own conventions",
+    );
+    expect(await readFile(join(root, ".speccle/lenses/security.md"), "utf8")).not.toBe(
+      "stale baseline",
+    );
+  });
+});
+
 describe("update: stack", () => {
   it("builds a fix command for the behind and missing deps", async () => {
     const root = await scaffold({

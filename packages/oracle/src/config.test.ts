@@ -166,4 +166,20 @@ describe("initConfig", () => {
     await initConfig(root);
     expect((await initConfig(root)).action).toBe("kept");
   });
+
+  it("stamps both the skills and lenses anchors with the payload version", async () => {
+    const root = await scaffold({ "package.json": "{}" });
+    const report = await initConfig(root, "1.2.3");
+    expect(report.config.skillsVersion).toBe("1.2.3");
+    expect(report.config.lensesVersion).toBe("1.2.3");
+  });
+
+  it("re-stamps both anchors forward on the kept path when the version moves", async () => {
+    const root = await scaffold({ "package.json": "{}" });
+    await initConfig(root, "1.2.3");
+    const moved = await initConfig(root, "1.3.0");
+    expect(moved.action).toBe("kept");
+    expect(moved.config.lensesVersion).toBe("1.3.0");
+    expect((await readConfig(root))?.lensesVersion).toBe("1.3.0");
+  });
 });

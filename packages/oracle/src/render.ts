@@ -3,6 +3,7 @@ import type { ClaimsReport } from "./claims.ts";
 import type { ConfigInitReport } from "./config.ts";
 import type { DoctorReport } from "./doctor.ts";
 import type { InitReport } from "./init.ts";
+import type { LensesInitReport } from "./lenses.ts";
 import type { SkillsInitReport } from "./skills.ts";
 import type { UpdateReport } from "./update.ts";
 
@@ -39,11 +40,25 @@ export function renderSkillsInit(report: SkillsInitReport): string {
   return lines.join("\n");
 }
 
+export function renderLensesInit(report: LensesInitReport): string {
+  const lines = [`vendored ${plural(report.lenses.length, "lens", "lenses")} into ${report.dir}/`];
+  for (const { name, action } of report.lenses) {
+    const verb = action === "written" ? "wrote" : action;
+    lines.push(`  ${verb.padEnd(9)} ${name}`);
+  }
+  lines.push("");
+  lines.push(
+    "the baseline lenses are Speccle's — refreshed each run; house-conventions.md is yours to author",
+  );
+  return lines.join("\n");
+}
+
 export function renderDoctor(report: DoctorReport): string {
   const lines = [
     `speccle ${report.cli}`,
     "",
-    `skills   ${describeSkills(report.skills)}`,
+    `skills   ${describePayload(report.skills, "materialized")}`,
+    `lenses   ${describePayload(report.lenses, "vendored")}`,
     `stack    ${describeStack(report.stack)}`,
   ];
   if (report.stack.status === "drift") {
@@ -54,7 +69,11 @@ export function renderDoctor(report: DoctorReport): string {
     }
   }
   lines.push("");
-  if (report.skills.status === "absent" && report.stack.status === "absent") {
+  const allAbsent =
+    report.skills.status === "absent" &&
+    report.lenses.status === "absent" &&
+    report.stack.status === "absent";
+  if (allAbsent) {
     lines.push("Speccle is not set up here — run `speccle init`");
   } else if (report.ok) {
     lines.push("up to date");
@@ -64,18 +83,18 @@ export function renderDoctor(report: DoctorReport): string {
   return lines.join("\n");
 }
 
-function describeSkills(skills: DoctorReport["skills"]): string {
-  switch (skills.status) {
+function describePayload(payload: DoctorReport["skills"], verb: string): string {
+  switch (payload.status) {
     case "current":
-      return `current (${skills.bundled})`;
+      return `current (${payload.bundled})`;
     case "stale":
-      return `stale — committed ${skills.recorded}, this CLI ships ${skills.bundled}`;
+      return `stale — committed ${payload.recorded}, this CLI ships ${payload.bundled}`;
     case "ahead":
-      return `ahead — committed ${skills.recorded} is newer than this CLI (${skills.bundled})`;
+      return `ahead — committed ${payload.recorded} is newer than this CLI (${payload.bundled})`;
     case "unstamped":
       return "present but unversioned — re-run `speccle init` to record the version";
     case "absent":
-      return "not materialized — run `speccle init`";
+      return `not ${verb} — run \`speccle init\``;
   }
 }
 
@@ -100,6 +119,14 @@ export function renderUpdate(report: UpdateReport): string {
     lines.push(
       `skills   ${report.skills.from ?? "unversioned"} → ${report.skills.to} — review & commit the diff`,
     );
+  }
+
+  if (report.lenses.from === null) {
+    lines.push(`lenses   vendored at ${report.lenses.to} — new; review & commit the diff`);
+  } else if (report.lenses.from === report.lenses.to) {
+    lines.push(`lenses   already at ${report.lenses.to} — refreshed in place; review the diff`);
+  } else {
+    lines.push(`lenses   ${report.lenses.from} → ${report.lenses.to} — review & commit the diff`);
   }
 
   if (report.stack.status === "absent") {

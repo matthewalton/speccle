@@ -1,6 +1,6 @@
 {
   "name": "speccle",
-  "version": "0.12.0",
+  "version": "0.13.0",
   "description": "Speccle's deterministic tooling: spec lint and the oracle-strength heatmap. Never calls an LLM.",
   "license": "MIT",
   "author": {
@@ -27,7 +27,8 @@
   },
   "files": [
     "dist",
-    "skills"
+    "skills",
+    "lenses"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json && node ../../scripts/bundle-skills.mjs",

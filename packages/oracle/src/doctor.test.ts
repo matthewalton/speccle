@@ -21,16 +21,19 @@ async function scaffold(files: Record<string, string>): Promise<string> {
   return root;
 }
 
-function config(skillsVersion?: string): string {
+function config(skillsVersion?: string, lensesVersion?: string): string {
   return JSON.stringify({
     dialect: "ts-vitest",
     suite: "pnpm test",
     ...(skillsVersion !== undefined && { skillsVersion }),
+    ...(lensesVersion !== undefined && { lensesVersion }),
   });
 }
 
 /** Any file under .claude/skills/<name>/ makes the dir count as materialized. */
 const SKILL = ".claude/skills/feature/SKILL.md";
+/** Any .md under .speccle/lenses/ makes the dir count as vendored. */
+const LENS = ".speccle/lenses/correctness.md";
 
 describe("doctor: skills staleness", () => {
   it("is current when the recorded version equals the CLI's", async () => {
@@ -68,6 +71,48 @@ describe("doctor: skills staleness", () => {
     expect(report.skills.status).toBe("absent");
     // Absent is not a failure — a fresh repo has nothing to be stale against.
     expect(report.ok).toBe(true);
+  });
+});
+
+describe("doctor: lenses staleness", () => {
+  it("is current when the recorded lenses version equals the CLI's", async () => {
+    const root = await scaffold({
+      [LENS]: "",
+      ".speccle/config.json": config(undefined, await ownVersion()),
+    });
+    expect((await doctor(root)).lenses.status).toBe("current");
+  });
+
+  it("is stale when the recorded lenses version trails the CLI", async () => {
+    const root = await scaffold({ [LENS]: "", ".speccle/config.json": config(undefined, "0.0.1") });
+    const report = await doctor(root);
+    expect(report.lenses.status).toBe("stale");
+    expect(report.ok).toBe(false);
+  });
+
+  it("is unstamped when lenses are present but no version was recorded", async () => {
+    const root = await scaffold({ [LENS]: "", ".speccle/config.json": config() });
+    const report = await doctor(root);
+    expect(report.lenses.status).toBe("unstamped");
+    expect(report.ok).toBe(false);
+  });
+
+  it("is absent, and not a failure, when a current repo has no lenses vendored", async () => {
+    const root = await scaffold({
+      [SKILL]: "",
+      ".speccle/config.json": config(await ownVersion()),
+    });
+    const report = await doctor(root);
+    expect(report.lenses.status).toBe("absent");
+    expect(report.ok).toBe(true); // skills current + lenses absent → clean
+  });
+
+  it("a pre-lenses repo upgrades through skills staleness, then update vendors lenses", async () => {
+    const root = await scaffold({ [SKILL]: "", ".speccle/config.json": config("0.0.1") });
+    const report = await doctor(root);
+    expect(report.skills.status).toBe("stale"); // trailing CLI → out of date
+    expect(report.lenses.status).toBe("absent"); // never vendored before lenses existed
+    expect(report.ok).toBe(false);
   });
 });
 

@@ -2,6 +2,7 @@ import { resolve } from "node:path";
 import { initConfig, readConfig } from "./config.ts";
 import { doctor, type DepCheck, type StackStatus } from "./doctor.ts";
 import { detectPackageManager, installCommandFor } from "./init.ts";
+import { materializeLenses, type LensResult } from "./lenses.ts";
 import { materializeSkills, type SkillResult } from "./skills.ts";
 
 /** The global-install one-liner. npm is the portable choice: it ships with Node. */
@@ -23,6 +24,14 @@ export interface UpdateReport {
     dir: string;
     skills: SkillResult[];
   };
+  lenses: {
+    /** The version recorded before this run, or null when lenses were never vendored here. */
+    from: string | null;
+    /** The version now stamped — the installed CLI's. */
+    to: string;
+    dir: string;
+    lenses: LensResult[];
+  };
   stack: {
     status: StackStatus;
     deps: DepCheck[];
@@ -33,8 +42,9 @@ export interface UpdateReport {
 
 /**
  * Brings a Speccle consumer current (#182). Only the per-repo halves are touched, and only
- * as a reviewable diff: the skills are re-materialized from the bundled copy and the anchor
- * re-stamped, while the strength stack and global binary are reported, never rewritten — the
+ * as a reviewable diff: the skills and the baseline lenses are re-materialized from the
+ * bundled copy and both anchors re-stamped — the house-conventions lens the repo authored is
+ * left alone — while the strength stack and global binary are reported, never rewritten: the
  * ticket's principle that only the binary may update silently, and it does so through the
  * printed command, not through this deterministic tool.
  */
@@ -46,8 +56,9 @@ export async function update(target: string): Promise<UpdateReport> {
   }
 
   const version = diagnosis.cli;
-  const materialized = await materializeSkills(root);
-  await initConfig(root, version); // re-stamp the anchor; the repo facts stay kept
+  const materializedSkills = await materializeSkills(root);
+  const materializedLenses = await materializeLenses(root);
+  await initConfig(root, version); // re-stamp both anchors; the repo facts stay kept
 
   const outstanding = diagnosis.stack.deps.filter((dep) => dep.status !== "ok");
   const fixCommand =
@@ -64,8 +75,14 @@ export async function update(target: string): Promise<UpdateReport> {
     skills: {
       from: diagnosis.skills.recorded,
       to: version,
-      dir: materialized.dir,
-      skills: materialized.skills,
+      dir: materializedSkills.dir,
+      skills: materializedSkills.skills,
+    },
+    lenses: {
+      from: diagnosis.lenses.recorded,
+      to: version,
+      dir: materializedLenses.dir,
+      lenses: materializedLenses.lenses,
     },
     stack: { status: diagnosis.stack.status, deps: diagnosis.stack.deps, fixCommand },
   };

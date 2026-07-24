@@ -5,6 +5,7 @@ import { initConfig } from "./config.ts";
 import { DEFAULT_DIALECT, DIALECT_NAMES } from "./dialects.ts";
 import { doctor } from "./doctor.ts";
 import { init, ownVersion } from "./init.ts";
+import { materializeLenses } from "./lenses.ts";
 import { lint } from "./lint.ts";
 import {
   renderCheck,
@@ -13,6 +14,7 @@ import {
   renderDoctor,
   renderHuman,
   renderInit,
+  renderLensesInit,
   renderRisk,
   renderSkillsInit,
   renderStrength,
@@ -28,10 +30,10 @@ import { verify } from "./verify.ts";
 const USAGE = `Usage: speccle <command> [options]
 
 Commands:
-  init [path] [--json]           Record repo facts in .speccle/config.json and materialize
-                                 the skills into .claude/skills/
-  doctor [path] [--json]         Report staleness across the CLI, skills, and strength stack
-  update [path] [--json]         Refresh the skills as a diff; report the stack and binary fixes
+  init [path] [--json]           Record repo facts in .speccle/config.json, materialize the
+                                 skills into .claude/skills/ and the lenses into .speccle/lenses/
+  doctor [path] [--json]         Report staleness across the CLI, skills, lenses, and strength stack
+  update [path] [--json]         Refresh the skills and lenses as a diff; report stack and binary fixes
   lint [path] [--json]           Lint every SPEC.md under path (default: current directory)
   claims [path] [--json]         Join criteria to the test names that claim them — no reports needed
   verify [path] [--json]         Run .speccle/checks/ against the change set: cross-file invariants
@@ -329,21 +331,25 @@ async function runInit(args: string[]): Promise<number> {
   const root = positional[0] ?? ".";
   let config;
   let skills;
+  let lenses;
   try {
-    // Materialize first, then stamp the version onto the config — so the recorded anchor
-    // only ever names skills that actually landed on disk.
+    // Materialize first, then stamp the version onto the config — so the recorded anchors
+    // only ever name the skills and lenses that actually landed on disk.
     skills = await materializeSkills(root);
+    lenses = await materializeLenses(root);
     config = await initConfig(root, await ownVersion());
   } catch (err) {
     console.error(message(err));
     return 2;
   }
   if (json) {
-    console.log(JSON.stringify({ config, skills }, null, 2));
+    console.log(JSON.stringify({ config, skills, lenses }, null, 2));
   } else {
     console.log(renderConfigInit(config));
     console.log("");
     console.log(renderSkillsInit(skills));
+    console.log("");
+    console.log(renderLensesInit(lenses));
   }
   return 0;
 }
