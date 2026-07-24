@@ -98,6 +98,7 @@ written contract: [`docs/convention.md`](docs/convention.md).
 | `implement-feature` | A linted spec → tagged tests → green code, one criterion at a time.                                                                        |
 | `strengthen`        | Mutation + coverage → per-criterion heatmap → every surviving mutant routed.                                                               |
 | `carve-feature`     | Existing code brought under the convention — **without changing it**.                                                                      |
+| `review`            | A panel of **lenses** over a change set → risk-gated **find and fix**, every fix re-checked → an overruleable summary.                     |
 
 <details>
 <summary><strong><code>feature</code></strong> — build or change a slice, end to end</summary>
@@ -144,6 +145,24 @@ Derives the markdown contract from what the code **observably does** — anythin
 that looks like a bug is a finding for you to rule on in the spec summary, never a
 silent fix — then tags the tests that already defend each criterion and writes tests
 for what nothing claims. The code's behaviour is unchanged throughout.
+
+</details>
+
+<details>
+<summary><strong><code>review</code></strong> — the outer loop, over a change set</summary>
+<br>
+
+Speccle's outer loop. Its unit is the **change set** — a branch or the pending change —
+not a slice. It fans a panel of **lenses** (correctness, security, accessibility,
+architecture, performance, test-quality, and your repo's own **house-conventions** lens)
+over the working diff, each an independent subagent. `speccle risk` scores the change and
+decides the **fix authority**: below the review threshold `review` fixes what it finds,
+re-running the checks-gate after every fix and **reverting — never salvaging — any that
+turns it red**; at or above the threshold it reports and stops for a human, and a **risk
+lens** may escalate that line but never lower it. It ends with one overruleable summary of
+every finding, whether it was fixed, and the **remedy** proposed to stop the class
+recurring. The lenses are vendored by `speccle init` into `.speccle/lenses/`; the
+house-conventions lens is yours to author, and a refresh never overwrites it.
 
 </details>
 
@@ -202,12 +221,13 @@ So you can skip this step entirely if every repo you work in provisions its own
 cloning; commit what lands. With the CLI installed (step 1), from the repo root:
 
 ```sh
-speccle init   # → .claude/skills/ + .speccle/config.json, both committed
+speccle init   # → .claude/skills/ + .speccle/lenses/ + .speccle/config.json, all committed
 ```
 
-`init` materializes the skills from the CLI's own tarball, so `speccle@X` names one
-skill↔oracle pairing — nothing to drift. It also records the repo's test facts in
-`.speccle/config.json`. Re-run it any time to refresh the skills as a reviewable diff.
+`init` materializes the skills and the review lenses from the CLI's own tarball, so
+`speccle@X` names one skill↔oracle pairing — nothing to drift. It also records the repo's
+test facts in `.speccle/config.json`. Re-run it any time to refresh them as a reviewable
+diff; your own house-conventions lens is never overwritten.
 
 **User-level** — the plugin, for just you, across all your projects:
 
@@ -238,8 +258,8 @@ files**, so changing them is a diff you review, never something that happens beh
 Two commands drive it, and neither ever touches your global install:
 
 ```sh
-speccle doctor   # what's stale? CLI version, whether the skills match it, stack drift
-speccle update   # refresh the vendored skills forward; print the CLI + stack fix commands
+speccle doctor   # what's stale? CLI version, whether the skills and lenses match it, stack drift
+speccle update   # refresh the vendored skills and lenses forward; print the CLI + stack fix commands
 ```
 
 | Part                      | How                                                                            | What you get                                     |
