@@ -211,7 +211,7 @@ async function provision(
   return { file: writeName, action: "written" };
 }
 
-function installCommandFor(manager: PackageManager, deps: string[]): string {
+export function installCommandFor(manager: PackageManager, deps: string[]): string {
   const subcommand = manager === "npm" ? "install -D" : manager === "bun" ? "add -d" : "add -D";
   return `${manager} ${subcommand} ${deps.join(" ")}`;
 }

@@ -15,9 +15,11 @@ import {
   renderInit,
   renderSkillsInit,
   renderStrength,
+  renderUpdate,
 } from "./render.ts";
 import { materializeSkills } from "./skills.ts";
 import { DEFAULT_COVERAGE_SUMMARY, DEFAULT_MUTATION_REPORT, strength } from "./strength.ts";
+import { update } from "./update.ts";
 
 const USAGE = `Usage: speccle <command> [options]
 
@@ -25,6 +27,7 @@ Commands:
   init [path] [--json]           Record repo facts in .speccle/config.json and materialize
                                  the skills into .claude/skills/
   doctor [path] [--json]         Report staleness across the CLI, skills, and strength stack
+  update [path] [--json]         Refresh the skills as a diff; report the stack and binary fixes
   lint [path] [--json]           Lint every SPEC.md under path (default: current directory)
   claims [path] [--json]         Join criteria to the test names that claim them — no reports needed
   strength [path] [--json]       Oracle-strength heatmap: per-criterion killed ÷ covered
@@ -49,6 +52,7 @@ async function main(argv: string[]): Promise<number> {
   const [command, ...rest] = argv;
   if (command === "init") return runInit(rest);
   if (command === "doctor") return runDoctor(rest);
+  if (command === "update") return runUpdate(rest);
   if (command === "lint") return runLint(rest);
   if (command === "claims") return runClaims(rest);
   if (command === "strength" && rest[0] === "init") return runStrengthInit(rest.slice(1));
@@ -116,6 +120,32 @@ async function runDoctor(args: string[]): Promise<number> {
   }
   console.log(json ? JSON.stringify(report, null, 2) : renderDoctor(report));
   return report.ok ? 0 : 1;
+}
+
+async function runUpdate(args: string[]): Promise<number> {
+  let json = false;
+  const positional: string[] = [];
+  for (const arg of args) {
+    if (arg === "--json") json = true;
+    else if (arg.startsWith("-")) {
+      console.error(`Unknown option: ${arg}\n\n${USAGE}`);
+      return 2;
+    } else positional.push(arg);
+  }
+  if (positional.length > 1) {
+    console.error(`update takes at most one path\n\n${USAGE}`);
+    return 2;
+  }
+
+  let report;
+  try {
+    report = await update(positional[0] ?? ".");
+  } catch (err) {
+    console.error(message(err));
+    return 2;
+  }
+  console.log(json ? JSON.stringify(report, null, 2) : renderUpdate(report));
+  return 0;
 }
 
 async function runLint(args: string[]): Promise<number> {

@@ -4,6 +4,7 @@ import type { ConfigInitReport } from "./config.ts";
 import type { DoctorReport } from "./doctor.ts";
 import type { InitReport } from "./init.ts";
 import type { SkillsInitReport } from "./skills.ts";
+import type { UpdateReport } from "./update.ts";
 
 export function renderConfigInit(report: ConfigInitReport): string {
   const lines = [
@@ -88,6 +89,32 @@ function describeDep(dep: DoctorReport["stack"]["deps"][number]): string {
   return dep.status === "missing"
     ? `missing — preset wants ^${dep.wantedMajor}`
     : `behind — has ${dep.declared}, preset wants ^${dep.wantedMajor}`;
+}
+
+export function renderUpdate(report: UpdateReport): string {
+  const lines: string[] = [];
+
+  if (report.skills.from === report.skills.to) {
+    lines.push(`skills   already at ${report.skills.to} — refreshed in place; review the diff`);
+  } else {
+    lines.push(
+      `skills   ${report.skills.from ?? "unversioned"} → ${report.skills.to} — review & commit the diff`,
+    );
+  }
+
+  if (report.stack.status === "absent") {
+    lines.push("stack    not provisioned — run `speccle strength init`");
+  } else if (report.stack.status === "current") {
+    lines.push("stack    up to date");
+  } else {
+    lines.push("stack    behind the preset — run:");
+    lines.push(`           ${report.stack.fixCommand}`);
+  }
+
+  lines.push(`cli      ${report.cli.version} installed — update the binary with:`);
+  lines.push(`           ${report.cli.command}`);
+
+  return lines.join("\n");
 }
 
 export function renderCheck(report: CheckReport): string {

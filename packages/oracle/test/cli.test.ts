@@ -10,6 +10,7 @@ import type { DoctorReport } from "../src/doctor.ts";
 import type { InitReport } from "../src/init.ts";
 import type { LintReport } from "../src/lint.ts";
 import type { SkillsInitReport } from "../src/skills.ts";
+import type { UpdateReport } from "../src/update.ts";
 import type { StrengthReport } from "../src/strength.ts";
 
 const CLI = resolve(import.meta.dirname, "../src/cli.ts");
@@ -499,6 +500,74 @@ describe("speccle doctor (e2e)", () => {
 
   it("exits 2 on a missing path", () => {
     expect(run("doctor", resolve(DIRTY, "no-such-dir")).status).toBe(2);
+  });
+});
+
+describe("speccle update (e2e)", () => {
+  const roots: string[] = [];
+
+  afterEach(async () => {
+    await Promise.all(roots.splice(0).map((root) => rm(root, { recursive: true, force: true })));
+  });
+
+  async function scaffold(files: Record<string, string>): Promise<string> {
+    const root = await mkdtemp(join(tmpdir(), "speccle-update-e2e-"));
+    roots.push(root);
+    for (const [name, content] of Object.entries(files)) {
+      await mkdir(dirname(join(root, name)), { recursive: true });
+      await writeFile(join(root, name), content);
+    }
+    return root;
+  }
+
+  it("refreshes stale skills forward and reports the version transition, exit 0", async () => {
+    const root = await scaffold({ "package.json": "{}" });
+    run("init", root);
+    const config = JSON.parse(await readFile(join(root, ".speccle/config.json"), "utf8")) as {
+      skillsVersion: string;
+    };
+    await writeFile(
+      join(root, ".speccle/config.json"),
+      JSON.stringify({ ...config, skillsVersion: "0.0.1" }),
+    );
+    const { status, stdout } = run("update", root);
+    expect(status).toBe(0);
+    expect(stdout).toContain(`skills   0.0.1 → ${PKG_VERSION}`);
+    expect(stdout).toContain("npm install -g speccle@latest");
+    const restamped = JSON.parse(await readFile(join(root, ".speccle/config.json"), "utf8")) as {
+      skillsVersion: string;
+    };
+    expect(restamped.skillsVersion).toBe(PKG_VERSION);
+  });
+
+  it("prints the stack fix command when the stack is behind the preset", async () => {
+    const root = await scaffold({
+      "package.json": JSON.stringify({ devDependencies: { "@stryker-mutator/core": "^8.0.0" } }),
+      "stryker.config.json": "{}",
+    });
+    run("init", root);
+    const { status, stdout } = run("update", root);
+    expect(status).toBe(0);
+    expect(stdout).toContain("stack    behind the preset — run:");
+    expect(stdout).toContain("@stryker-mutator/core@^9");
+  });
+
+  it("emits the typed JSON report", async () => {
+    const root = await scaffold({ "package.json": "{}" });
+    run("init", root);
+    const { status, stdout } = run("update", root, "--json");
+    expect(status).toBe(0);
+    const report = JSON.parse(stdout) as UpdateReport;
+    expect(report.cli.command).toBe("npm install -g speccle@latest");
+    expect(report.skills.to).toBe(PKG_VERSION);
+    expect(report.stack.fixCommand).toBeNull();
+  });
+
+  it("exits 2 on a repo that was never initialized", async () => {
+    const root = await scaffold({ "package.json": "{}" });
+    const { status, stderr } = run("update", root);
+    expect(status).toBe(2);
+    expect(stderr).toContain("run `speccle init` first");
   });
 });
 
