@@ -300,6 +300,11 @@ install, so it never self-updates the binary. The skills ride inside the CLI's t
 `speccle@X` is one skill↔oracle pairing; run `update` before bumping the CLI and it just
 re-materializes the skills you already have.
 
+The two install paths carry **the same version number at each release**, so `speccle@0.15.0`
+on npm and `speccle@0.15.0` from the marketplace are the same skills. Between releases the
+plugin's number can be ahead — its cache is keyed by version, so a skill change has to bump
+it right away — and npm's history skips those numbers.
+
 The strength stack stays a config you own — `strength init` never overwrites a
 `stryker.config.json` you've customised — but `doctor` now flags when yours has drifted
 from the current preset (a major behind, a missing devDependency), and `update` prints the

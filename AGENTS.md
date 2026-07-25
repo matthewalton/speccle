@@ -65,7 +65,12 @@ Node ≥ 24 runs TypeScript directly — no build step needed to run the CLI fro
   `plugin.json` and its `.claude-plugin/marketplace.json` mirror move together — because
   the marketplace cache is keyed by version, so shipping changed content under an
   unchanged version serves a stale tree; `pnpm check:plugin-version` guards this in
-  pre-commit. Skill bodies carry **no links out of `packages/plugin`** — no ADR or doc
+  pre-commit. That lets the plugin run ahead of the tarball between releases, but a
+  **release ships both on one version line** — `packages/oracle/package.json` catches up
+  to the plugin, never the reverse
+  ([ADR-0048](docs/adr/0048-the-tarball-and-the-plugin-share-one-version-line.md)); the
+  same guard asserts it at commit time and again from `prepublishOnly`. Skill bodies
+  carry **no links out of `packages/plugin`** — no ADR or doc
   citations ([ADR-0028](docs/adr/0028-shipped-skills-carry-no-repo-citations.md)): an
   installed plugin caches only that directory, and its readers don't have this repo.
   Which ADRs govern each skill is tracked in

@@ -1,6 +1,6 @@
 {
   "name": "speccle",
-  "version": "0.13.0",
+  "version": "0.15.0",
   "description": "Speccle's deterministic tooling: spec lint and the oracle-strength heatmap. No LLM, bar the opt-in CI review driver.",
   "license": "MIT",
   "author": {
@@ -32,7 +32,7 @@
   ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json && node ../../scripts/bundle-skills.mjs",
-    "prepublishOnly": "pnpm build && pnpm test",
+    "prepublishOnly": "node ../../scripts/check-plugin-version.mjs --release && pnpm build && pnpm test",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "coverage": "vitest run --coverage",
