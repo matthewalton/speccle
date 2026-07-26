@@ -90,6 +90,21 @@ test no string name, the criterion id takes its identifier-safe spelling:
 `func test_CHECKOUT_1_taxRounds()` claims `CHECKOUT-1`. Reports always render the
 bracketed form.
 
+With no `--dialect`, the dialect comes from `.speccle/config.json`, resolved **per spec
+folder** — so a mixed-language tree is joined in one pass, each slice under its own dialect
+(the config's longest matching `overrides` path wins). `--dialect` forces one dialect across
+every folder instead. The report names every dialect in play, and each feature the one its
+folder joined under:
+
+```
+ios/ladder/SPEC.md  (swift)
+  LADDER-1  1 test name  A rung raises the climber by one
+web/basket/SPEC.md  (ts-vitest)
+  BASKET-1  1 test name  When an item is added, its line quantity increments by exactly 1
+
+swift, ts-vitest — 2 spec files, 2 criteria, 2 claimed, clean
+```
+
 Names are read statically, so a name built dynamically shows up as unclaimed — the
 failure mode is a false alarm, never a silent pass. `--json` emits the typed
 `ClaimsReport` (see [`src/claims.ts`](src/claims.ts)). Exit codes: `0` every criterion

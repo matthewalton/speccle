@@ -165,7 +165,7 @@ export async function risk(target: string, options: RiskOptions = {}): Promise<R
     fireBaseline(
       "unclaimed-change",
       "changed code lives in a slice with a criterion no test claims",
-      await unclaimedChanges(root, changed, dialect.name),
+      await unclaimedChanges(root, changed, options.dialect),
     );
   }
 
@@ -237,13 +237,17 @@ async function criterionDiffs(
   return { retired, reworded };
 }
 
-/** Unclaimed criterion ids in the governed slices this change touched. */
+/**
+ * Unclaimed criterion ids in the governed slices this change touched. Only an explicit
+ * `--dialect` is passed down: without one, `claims` resolves each slice's own dialect from the
+ * config, so a mixed-language tree is not joined under whichever dialect the repo defaults to.
+ */
 async function unclaimedChanges(
   root: string,
   changed: string[],
-  dialect: string,
+  dialect: string | undefined,
 ): Promise<string[]> {
-  const report = await claims(root, { dialect });
+  const report = await claims(root, { ...(dialect !== undefined && { dialect }) });
   const unclaimed: string[] = [];
   for (const feature of report.features) {
     const folder = dirname(feature.spec);

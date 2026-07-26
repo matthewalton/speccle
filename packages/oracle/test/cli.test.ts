@@ -859,6 +859,13 @@ describe("speccle claims reads the dialect from .speccle/config.json (e2e)", () 
       "final class LadderTests: XCTestCase {\n  func test_LADDER_1_raisesByOne() {}\n}\n",
   };
 
+  const SWIFT_SLICE_UNDER_IOS = {
+    "ios/ladder/SPEC.md":
+      "---\nkey: LADDER\n---\n\n## [LADDER-1] A rung raises the climber by one\n",
+    "ios/ladder/src/LadderTests.swift":
+      "final class LadderTests: XCTestCase {\n  func test_LADDER_1_raisesByOne() {}\n}\n",
+  };
+
   it("joins the swift slice with no --dialect flag when the config declares swift", async () => {
     const root = await scaffold({
       ...SWIFT_SLICE,
@@ -877,5 +884,45 @@ describe("speccle claims reads the dialect from .speccle/config.json (e2e)", () 
     const { status, stdout } = run("claims", root, "--dialect", "ts-vitest");
     expect(status).toBe(1);
     expect(stdout).toContain("no test files matched the ts-vitest dialect");
+  });
+
+  const MIXED_TREE = {
+    ".speccle/config.json": JSON.stringify({
+      dialect: "ts-vitest",
+      suite: "pnpm test",
+      overrides: [{ path: "ios", dialect: "swift", suite: "swift test" }],
+    }),
+    "web/basket/SPEC.md":
+      "---\nkey: BASKET\n---\n\n## [BASKET-1] Adding an item increments its quantity by exactly 1\n",
+    "web/basket/basket.test.ts": 'it("[BASKET-1] adds one", () => {});\n',
+    ...SWIFT_SLICE_UNDER_IOS,
+  };
+
+  it("joins a mixed-language tree in one pass, naming each slice's dialect", async () => {
+    const root = await scaffold(MIXED_TREE);
+    const { status, stdout } = run("claims", root);
+    expect(status).toBe(0);
+    expect(stdout).toContain("ios/ladder/SPEC.md  (swift)");
+    expect(stdout).toContain("web/basket/SPEC.md  (ts-vitest)");
+    expect(stdout).toContain("swift, ts-vitest — 2 spec files, 2 criteria, 2 claimed, clean");
+  });
+
+  it("emits each feature's own dialect and every dialect in play as JSON", async () => {
+    const root = await scaffold(MIXED_TREE);
+    const { status, stdout } = run("claims", root, "--json");
+    expect(status).toBe(0);
+    const report = JSON.parse(stdout) as ClaimsReport;
+    expect(report.dialects).toEqual(["swift", "ts-vitest"]);
+    expect(report.features.map((feature) => feature.dialect)).toEqual(["swift", "ts-vitest"]);
+    expect(report.clean).toBe(true);
+  });
+
+  it("--dialect still forces one dialect across the whole mixed tree", async () => {
+    const root = await scaffold(MIXED_TREE);
+    const { status, stdout } = run("claims", root, "--dialect", "ts-vitest");
+    expect(status).toBe(1);
+    expect(stdout).toContain("unclaimed — no test name carries these tokens");
+    expect(stdout).toContain("LADDER-1");
+    expect(stdout).toContain("ts-vitest — 2 spec files, 2 criteria, 1 claimed");
   });
 });

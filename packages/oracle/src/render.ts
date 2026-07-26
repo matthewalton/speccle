@@ -413,9 +413,12 @@ export function renderClaims(report: ClaimsReport): string {
   if (report.features.length === 0) return "No SPEC.md files found.";
 
   const idWidth = Math.max(...report.features.flatMap((f) => f.criteria.map((c) => c.id.length)));
+  // Only a mixed pass needs to say which dialect read which slice; naming the one dialect
+  // above every spec in the common case is noise the footer already carries.
+  const mixed = report.dialects.length > 1;
   const lines: string[] = [];
   for (const feature of report.features) {
-    lines.push(feature.spec);
+    lines.push(mixed ? `${feature.spec}  (${feature.dialect})` : feature.spec);
     for (const c of feature.criteria) {
       const status = c.claimed ? plural(c.tests.length, "test name") : "unclaimed";
       lines.push(`  ${c.id.padEnd(idWidth)}  ${status.padEnd(13)}  ${c.statement}`);
@@ -423,8 +426,9 @@ export function renderClaims(report: ClaimsReport): string {
     lines.push("");
   }
 
+  const dialects = report.dialects.join(", ");
   if (report.testFiles.length === 0) {
-    lines.push(`no test files matched the ${report.dialect} dialect`);
+    lines.push(`no test files matched the ${dialects} dialect${mixed ? "s" : ""}`);
     lines.push("");
   }
 
@@ -448,7 +452,7 @@ export function renderClaims(report: ClaimsReport): string {
   );
   const criteria = `${total} ${total === 1 ? "criterion" : "criteria"}`;
   const specs = plural(report.features.length, "spec file");
-  const counts = `${report.dialect} — ${specs}, ${criteria}, ${claimed} claimed`;
+  const counts = `${dialects} — ${specs}, ${criteria}, ${claimed} claimed`;
   lines.push(report.clean ? `${counts}, clean` : counts);
   return lines.join("\n");
 }

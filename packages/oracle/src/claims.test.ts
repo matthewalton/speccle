@@ -120,8 +120,16 @@ key: BASKET
 
   it("runs the ts-vitest dialect unless told otherwise, and records which ran", async () => {
     const root = await scaffold({ "features/basket/SPEC.md": SPEC });
-    expect((await claims(root)).dialect).toBe("ts-vitest");
-    expect((await claims(root, { dialect: "swift" })).dialect).toBe("swift");
+    expect((await claims(root)).dialects).toEqual(["ts-vitest"]);
+    expect((await claims(root)).features[0]!.dialect).toBe("ts-vitest");
+    expect((await claims(root, { dialect: "swift" })).dialects).toEqual(["swift"]);
+  });
+
+  it("names the dialect a pass would have run under when the tree has no spec", async () => {
+    const root = await scaffold({ "README.md": "# nothing governed here\n" });
+    const report = await claims(root);
+    expect(report.dialects).toEqual(["ts-vitest"]);
+    expect(report.features).toEqual([]);
   });
 
   it("rejects an unsupported dialect before reading anything", async () => {
@@ -172,6 +180,79 @@ key: BASKET
     const report = await claims(root);
     expect(report.unknownClaims).toEqual([]);
     expect(report.clean).toBe(true);
+  });
+
+  describe("a mixed-language tree, joined under each folder's own dialect", () => {
+    const PLAYER_SPEC = `---
+key: PLAYER
+---
+
+# Player
+
+## [PLAYER-1] Pausing playback holds the current position
+`;
+
+    const MIXED = {
+      ".speccle/config.json": JSON.stringify({
+        dialect: "ts-vitest",
+        suite: "pnpm test",
+        overrides: [{ path: "ios", dialect: "swift", suite: "swift test" }],
+      }),
+      "web/basket/SPEC.md": SPEC,
+      "web/basket/basket.test.ts": `
+        it("[BASKET-1] adds", () => {});
+        it("[BASKET-2] empties", () => {});
+      `,
+      "ios/player/SPEC.md": PLAYER_SPEC,
+      "ios/player/PlayerTests.swift": `
+        @Suite struct PlayerSuite {
+          @Test("[PLAYER-1] pausing holds the position")
+          func pauses() {}
+        }
+      `,
+    };
+
+    it("resolves the override per spec folder, so both slices claim in one pass", async () => {
+      const root = await scaffold(MIXED);
+      const report = await claims(root);
+      expect(report.dialects).toEqual(["swift", "ts-vitest"]);
+      expect(report.testFiles).toEqual([
+        "ios/player/PlayerTests.swift",
+        "web/basket/basket.test.ts",
+      ]);
+      expect(report.features.map((feature) => [feature.spec, feature.dialect])).toEqual([
+        ["ios/player/SPEC.md", "swift"],
+        ["web/basket/SPEC.md", "ts-vitest"],
+      ]);
+      expect(report.unclaimed).toEqual([]);
+      expect(report.clean).toBe(true);
+    });
+
+    it("an explicit dialect forces one across every folder, overriding the config", async () => {
+      const root = await scaffold(MIXED);
+      const report = await claims(root, { dialect: "ts-vitest" });
+      expect(report.dialects).toEqual(["ts-vitest"]);
+      expect(report.features.every((feature) => feature.dialect === "ts-vitest")).toBe(true);
+      expect(report.testFiles).toEqual(["web/basket/basket.test.ts"]);
+      expect(report.unclaimed).toEqual(["PLAYER-1"]);
+    });
+
+    // The override corrects a subtree, not the whole repo: a slice outside it keeps the
+    // repo default, so its tests are still read — and a swift file under it is not a test.
+    it("leaves a slice outside the override on the repo default", async () => {
+      const root = await scaffold({
+        ...MIXED,
+        "web/basket/BasketTests.swift": `
+          final class BasketTests: XCTestCase {
+            func test_BASKET_9_phantom() {}
+          }
+        `,
+      });
+      const report = await claims(root);
+      expect(report.testFiles).not.toContain("web/basket/BasketTests.swift");
+      expect(report.unknownClaims).toEqual([]);
+      expect(report.clean).toBe(true);
+    });
   });
 
   it("finds no test files when the declared dialect is the wrong one", async () => {

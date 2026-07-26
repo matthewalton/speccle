@@ -1,7 +1,7 @@
 import { readFile, stat } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
-import { readConfig } from "./config.ts";
-import { DEFAULT_DIALECT, resolveDialect } from "./dialects.ts";
+import { readConfig, resolveFacts } from "./config.ts";
+import { DEFAULT_DIALECT, resolveDialect, type Dialect } from "./dialects.ts";
 import { discoverSpecs, discoverTests } from "./discover.ts";
 import { compareCriterionIds, parseSpec, readClaimedIds } from "./spec.ts";
 
@@ -24,14 +24,19 @@ export interface FeatureClaims {
   key: string | undefined;
   /** Root-relative path of the feature's SPEC.md. */
   spec: string;
+  /** The test dialect this slice's folder joined under. */
+  dialect: string;
   criteria: CriterionClaims[];
 }
 
 /** The JSON contract of `speccle claims --json`. */
 export interface ClaimsReport {
   root: string;
-  /** The test dialect the join ran under. */
-  dialect: string;
+  /**
+   * The test dialects the join ran under, sorted — one entry unless the repo's config puts
+   * a mixed-language tree in play, in which case each slice's own is on its `FeatureClaims`.
+   */
+  dialects: string[];
   testFiles: string[];
   features: FeatureClaims[];
   /** Well-formed criteria no test name claims. */
@@ -43,17 +48,24 @@ export interface ClaimsReport {
 }
 
 export interface ClaimsOptions {
-  /** Test dialect name. Overrides `.speccle/config.json`; both fall back to `ts-vitest`. */
+  /**
+   * Test dialect name. Forces one dialect across every folder, overriding
+   * `.speccle/config.json` and its per-path overrides; both fall back to `ts-vitest`.
+   */
   dialect?: string;
 }
 
 export async function claims(target: string, options: ClaimsOptions = {}): Promise<ClaimsReport> {
   const root = resolve(target);
   if (!(await isDirectory(root))) throw new Error(`path not found: ${target}`);
-  // An explicit --dialect wins outright; otherwise `.speccle/config.json` is the source
-  // of truth, falling back to the default only when the repo has recorded nothing.
-  const declared = options.dialect ?? (await readConfig(root))?.dialect;
-  const dialect = resolveDialect(declared ?? DEFAULT_DIALECT);
+  // An explicit --dialect wins outright, everywhere; otherwise `.speccle/config.json` is the
+  // source of truth, and its per-path overrides let one pass join a mixed-language tree under
+  // each folder's own dialect (ADR-0040). The default applies only to a repo with no config.
+  const forced = options.dialect === undefined ? undefined : resolveDialect(options.dialect);
+  const config = forced === undefined ? await readConfig(root) : undefined;
+  const dialectAt = (folder: string): Dialect =>
+    forced ??
+    resolveDialect(config === undefined ? DEFAULT_DIALECT : resolveFacts(config, folder).dialect);
 
   const specFiles = await discoverSpecs(root);
   const specs = await Promise.all(
@@ -72,18 +84,23 @@ export async function claims(target: string, options: ClaimsOptions = {}): Promi
   // A slice's tests live in its own folder: only test files under a spec's folder
   // count, so unrelated tooling tests can never claim (or phantom-claim) a criterion.
   const folders = [...new Set(specFiles.map((file) => dirname(file)))];
-  const found = new Set<string>();
-  for (const folder of folders) {
+  const folderDialects = new Map(folders.map((folder) => [folder, dialectAt(folder)]));
+  // Nested spec folders can each discover the same test file, under different dialects. The
+  // deepest folder's dialect reads it — the same most-specific-path rule the config resolves
+  // an override under, so walking the folders shortest-first lets the deepest one win.
+  const fileDialects = new Map<string, Dialect>();
+  for (const folder of [...folders].sort((a, b) => a.length - b.length)) {
+    const folderDialect = folderDialects.get(folder)!;
     const abs = folder === "." ? root : join(root, folder);
-    for (const file of await discoverTests(abs, dialect)) {
-      found.add(folder === "." ? file : `${folder}/${file}`);
+    for (const file of await discoverTests(abs, folderDialect)) {
+      fileDialects.set(folder === "." ? file : `${folder}/${file}`, folderDialect);
     }
   }
-  const testFiles = [...found].sort();
+  const testFiles = [...fileDialects.keys()].sort();
   const claimsById = new Map<string, TestClaim[]>();
   for (const file of testFiles) {
     const source = await readFile(join(root, file), "utf8");
-    for (const { name, spelling } of dialect.readTestNames(source)) {
+    for (const { name, spelling } of fileDialects.get(file)!.readTestNames(source)) {
       for (const id of readClaimedIds(name, spelling)) {
         const entry = claimsById.get(id) ?? [];
         entry.push({ file, name });
@@ -95,6 +112,7 @@ export async function claims(target: string, options: ClaimsOptions = {}): Promi
   const features: FeatureClaims[] = specs.map((spec) => ({
     key: spec.key?.raw,
     spec: spec.file,
+    dialect: folderDialects.get(dirname(spec.file))!.name,
     criteria: [...criteria.entries()]
       .filter(([, value]) => value.spec === spec.file)
       .map(([id, value]) => ({
@@ -114,9 +132,13 @@ export async function claims(target: string, options: ClaimsOptions = {}): Promi
     .map(([id, tests]) => ({ id, tests }))
     .sort((a, b) => compareCriterionIds(a.id, b.id));
 
+  // With no spec at all no folder resolved a dialect, so name the one a pass at the root
+  // would have run under rather than reporting none in play.
+  const inPlay = folders.length === 0 ? [dialectAt(".")] : [...folderDialects.values()];
+
   return {
     root,
-    dialect: dialect.name,
+    dialects: [...new Set(inPlay.map((entry) => entry.name))].sort(),
     testFiles,
     features,
     unclaimed,
