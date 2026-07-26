@@ -1,6 +1,6 @@
-import { spawnSync } from "node:child_process";
 import { readFile, stat } from "node:fs/promises";
 import { join } from "node:path";
+import { gitStdout } from "./git.ts";
 
 /**
  * A predicate over the change set: files whose root-relative path matches `path` and, when
@@ -59,7 +59,7 @@ export function gitChangeSet(root: string): string[] {
   // --untracked-files=all lists new files individually; the default collapses a wholly
   // untracked directory to its name, hiding the files that must be seen.
   const args = ["status", "--porcelain", "--untracked-files=all"];
-  const stdout = git(root, args);
+  const stdout = gitStdout(root, args);
   if (stdout === undefined) {
     throw new Error("could not read a change set from git — run this inside a git repository");
   }
@@ -87,7 +87,7 @@ export interface RangeChangeSet {
  * left it are not attributed to this change; that is the set a pull request shows.
  */
 export function gitRangeChangeSet(root: string, base: string): RangeChangeSet {
-  const mergeBase = git(root, ["merge-base", base, "HEAD"])?.trim();
+  const mergeBase = gitStdout(root, ["merge-base", base, "HEAD"])?.trim();
   if (mergeBase === undefined || mergeBase === "") {
     // The likeliest cause in CI by far: a shallow checkout that fetched no shared history.
     throw new Error(
@@ -95,16 +95,10 @@ export function gitRangeChangeSet(root: string, base: string): RangeChangeSet {
     );
   }
   // A rename reports its destination path only, matching the working tree's "old -> new".
-  const stdout = git(root, ["diff", "--name-only", mergeBase, "HEAD"]);
+  const stdout = gitStdout(root, ["diff", "--name-only", mergeBase, "HEAD"]);
   if (stdout === undefined) throw new Error(`could not diff "${base}" against HEAD`);
   const changed = stdout.split("\n").filter((line) => line !== "");
   return { changed: [...new Set(changed)], baseline: mergeBase };
-}
-
-/** Git's stdout, or undefined when the command could not run or failed. */
-function git(root: string, args: string[]): string | undefined {
-  const result = spawnSync("git", args, { cwd: root, encoding: "utf8" });
-  return result.error === undefined && result.status === 0 ? result.stdout : undefined;
 }
 
 /** Validates a predicate's shape, naming the offending file — a silently broken predicate is worse than none. */

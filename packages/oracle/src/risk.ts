@@ -1,4 +1,3 @@
-import { spawnSync } from "node:child_process";
 import { readFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import {
@@ -15,6 +14,7 @@ import { claims } from "./claims.ts";
 import { readConfig } from "./config.ts";
 import { DEFAULT_DIALECT, resolveDialect, type Dialect } from "./dialects.ts";
 import { discoverSpecs } from "./discover.ts";
+import { gitStdout } from "./git.ts";
 import { parseSpec } from "./spec.ts";
 
 /** Where a repo declares its risk policy (ADR-0041) — judgement, so a single hand-edited file. */
@@ -330,8 +330,7 @@ function assertPolicy(policy: RiskPolicy): void {
 
 /** Content of a path at `ref`, or undefined when git has no baseline for it (new or no commits). */
 function gitBaseline(root: string, file: string, ref: string): string | undefined {
-  const result = spawnSync("git", ["show", `${ref}:./${file}`], { cwd: root, encoding: "utf8" });
-  return result.status === 0 ? result.stdout : undefined;
+  return gitStdout(root, ["show", `${ref}:./${file}`]);
 }
 
 function isSpecPath(file: string): boolean {
