@@ -1,8 +1,8 @@
-import { spawnSync } from "node:child_process";
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
+import { gitAt } from "../test/support/git.ts";
 import { type FiredSignal, reviewThreshold, risk, type RiskReport } from "./risk.ts";
 
 describe("risk", () => {
@@ -370,7 +370,7 @@ describe("risk", () => {
         "checkout/SPEC.md": spec("[CHECKOUT-1] a", "[CHECKOUT-2] b"),
         "checkout/tax.test.ts": claiming("CHECKOUT-1", "CHECKOUT-2"),
       });
-      const git = (...args: string[]) => spawnSync("git", args, { cwd: root, encoding: "utf8" });
+      const git = gitAt(root);
       git("init", "-q", "-b", "main");
       git("config", "user.email", "t@t.t");
       git("config", "user.name", "t");
@@ -425,7 +425,7 @@ describe("risk", () => {
       "checkout/SPEC.md": spec("[CHECKOUT-1] a", "[CHECKOUT-2] b"),
       "checkout/tax.test.ts": claiming("CHECKOUT-1", "CHECKOUT-2"),
     });
-    const git = (...args: string[]) => spawnSync("git", args, { cwd: root, encoding: "utf8" });
+    const git = gitAt(root);
     git("init", "-q");
     git("config", "user.email", "t@t.t");
     git("config", "user.name", "t");

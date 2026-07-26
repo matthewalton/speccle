@@ -1,8 +1,8 @@
-import { spawnSync } from "node:child_process";
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
+import { git } from "../test/support/git.ts";
 import { gitChangeSet, gitRangeChangeSet } from "./changeset.ts";
 
 describe("gitRangeChangeSet", () => {
@@ -23,10 +23,6 @@ describe("gitRangeChangeSet", () => {
     git(root, "add", ".");
     git(root, "commit", "-qm", "init");
     return root;
-  }
-
-  function git(root: string, ...args: string[]) {
-    return spawnSync("git", args, { cwd: root, encoding: "utf8" });
   }
 
   async function write(root: string, file: string, body: string) {

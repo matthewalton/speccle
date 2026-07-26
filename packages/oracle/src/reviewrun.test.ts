@@ -1,8 +1,8 @@
-import { spawnSync } from "node:child_process";
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
+import { gitAt } from "../test/support/git.ts";
 import { LENSES_DIR, TEMPLATE_LENS } from "./lenses.ts";
 import {
   anchorableLines,
@@ -542,7 +542,7 @@ describe("reviewRun", () => {
       "checkout/tax.test.ts",
       'it("[CHECKOUT-1] a", () => {});\nit("[CHECKOUT-2] b", () => {});\n',
     );
-    const git = (...args: string[]) => spawnSync("git", args, { cwd: root, encoding: "utf8" });
+    const git = gitAt(root);
     git("init", "-q", "-b", "main");
     git("config", "user.email", "t@t.t");
     git("config", "user.name", "t");

@@ -3,6 +3,7 @@ import { mkdir, mkdtemp, readFile, rm, utimes, writeFile } from "node:fs/promise
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
+import { gitAt } from "./support/git.ts";
 import type { CheckReport } from "../src/check.ts";
 import type { ClaimsReport } from "../src/claims.ts";
 import type { ConfigInitReport } from "../src/config.ts";
@@ -775,7 +776,7 @@ describe("speccle --base (e2e)", () => {
       await mkdir(dirname(join(root, file)), { recursive: true });
       await writeFile(join(root, file), body);
     };
-    const git = (...args: string[]) => spawnSync("git", args, { cwd: root, encoding: "utf8" });
+    const git = gitAt(root);
     await write("checkout/SPEC.md", "## [CHECKOUT-1] a\n\n## [CHECKOUT-2] b\n");
     await write(
       "checkout/tax.test.ts",
