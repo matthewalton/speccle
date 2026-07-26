@@ -274,14 +274,15 @@ request — comment `@review` to run it again. Re-run `speccle review init` to m
 
 ## Updating
 
-Three moving parts — the CLI, the vendored skills, and the strength stack — and only the
-CLI updates silently. That is deliberate: the skills and the stack become **your repo's
-files**, so changing them is a diff you review, never something that happens behind you.
+Three moving parts — the CLI, the vendored skills, and the strength stack — plus the CI
+review driver if you opted into it, and only the CLI updates silently. That is deliberate:
+the skills and the stack become **your repo's files**, so changing them is a diff you
+review, never something that happens behind you.
 
 Two commands drive it, and neither ever touches your global install:
 
 ```sh
-speccle doctor   # what's stale? CLI version, whether the skills and lenses match it, stack drift
+speccle doctor   # what's stale? CLI version, skills and lenses, the CI driver's pin, stack drift
 speccle update   # refresh the vendored skills and lenses forward; print the CLI + stack fix commands
 ```
 
@@ -292,6 +293,7 @@ speccle update   # refresh the vendored skills and lenses forward; print the CLI
 | **Skills, project-level** | `speccle update` (or re-run `speccle init`)                                    | A diff of `.claude/skills/` to review and commit |
 | **Skills, user-level**    | `/plugin marketplace update` then `/plugin update speccle@speccle-marketplace` | Applies on restart                               |
 | **Strength stack**        | `speccle doctor` names the drift; run the `npm install` `update` prints        | The reconcile command — you run it               |
+| **CI review driver**      | `speccle review init` (only if you opted in); `update` moves an existing pin   | A diff of the workflow to review and commit      |
 
 Bumping the CLI is **two steps, in order**: `npm i -g speccle@latest` for the new binary
 and its bundled skills, **then** `speccle update` to refresh the vendored skills to match.

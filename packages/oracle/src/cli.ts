@@ -42,8 +42,10 @@ const USAGE = `Usage: speccle <command> [options]
 Commands:
   init [path] [--json]           Record repo facts in .speccle/config.json, materialize the
                                  skills into .claude/skills/ and the lenses into .speccle/lenses/
-  doctor [path] [--json]         Report staleness across the CLI, skills, lenses, and strength stack
-  update [path] [--json]         Refresh the skills and lenses as a diff; report stack and binary fixes
+  doctor [path] [--json]         Report staleness across the CLI, skills, lenses, the CI driver's
+                                 pin, and the strength stack
+  update [path] [--json]         Refresh the skills and lenses as a diff, and an already-installed
+                                 CI driver's pin; report stack and binary fixes
   lint [path] [--json]           Lint every SPEC.md under path (default: current directory)
   claims [path] [--json]         Join criteria to the test names that claim them — no reports needed
   verify [path] [--json]         Run .speccle/checks/ against the change set: cross-file invariants

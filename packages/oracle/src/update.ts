@@ -3,6 +3,7 @@ import { initConfig, readConfig } from "./config.ts";
 import { doctor, type DepCheck, type StackStatus } from "./doctor.ts";
 import { detectPackageManager, installCommandFor } from "./init.ts";
 import { materializeLenses, type LensResult } from "./lenses.ts";
+import { scaffoldReviewWorkflow } from "./reviewinit.ts";
 import { materializeSkills, type SkillResult } from "./skills.ts";
 
 /** The global-install one-liner. npm is the portable choice: it ships with Node. */
@@ -32,6 +33,12 @@ export interface UpdateReport {
     dir: string;
     lenses: LensResult[];
   };
+  driver: {
+    /** The version the workflow pinned before this run, or null when there is no workflow. */
+    from: string | null;
+    /** The version it pins now, or null when there was no workflow to refresh. */
+    to: string | null;
+  };
   stack: {
     status: StackStatus;
     deps: DepCheck[];
@@ -47,6 +54,9 @@ export interface UpdateReport {
  * left alone — while the strength stack and global binary are reported, never rewritten: the
  * ticket's principle that only the binary may update silently, and it does so through the
  * printed command, not through this deterministic tool.
+ *
+ * The CI driver moves only if it is already there (#187): the workflow spends a metered API
+ * key per run, so scaffolding one into a repo that never asked would be opting it in silently.
  */
 export async function update(target: string): Promise<UpdateReport> {
   const root = resolve(target);
@@ -59,6 +69,9 @@ export async function update(target: string): Promise<UpdateReport> {
   const materializedSkills = await materializeSkills(root);
   const materializedLenses = await materializeLenses(root);
   await initConfig(root, version); // re-stamp both anchors; the repo facts stay kept
+
+  const hasDriver = diagnosis.driver.status !== "absent";
+  if (hasDriver) await scaffoldReviewWorkflow(root, version);
 
   const outstanding = diagnosis.stack.deps.filter((dep) => dep.status !== "ok");
   const fixCommand =
@@ -84,6 +97,7 @@ export async function update(target: string): Promise<UpdateReport> {
       dir: materializedLenses.dir,
       lenses: materializedLenses.lenses,
     },
+    driver: { from: diagnosis.driver.recorded, to: hasDriver ? version : null },
     stack: { status: diagnosis.stack.status, deps: diagnosis.stack.deps, fixCommand },
   };
 }

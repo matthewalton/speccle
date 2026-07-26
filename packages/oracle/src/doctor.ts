@@ -3,10 +3,20 @@ import { join, resolve } from "node:path";
 import { readConfig } from "./config.ts";
 import { ownVersion, STRENGTH_DEPS, STRYKER_CONFIG_NAMES } from "./init.ts";
 import { LENSES_DIR } from "./lenses.ts";
+import { pinnedVersion, WORKFLOW_FILE } from "./reviewinit.ts";
 import { SKILLS_DIR } from "./skills.ts";
 
-/** How a repo's committed payload — skills or lenses — stands against the CLI's bundled copy. */
+/** How a repo's versioned payload — skills, lenses, driver — stands against this CLI. */
 export type PayloadStatus = "current" | "stale" | "ahead" | "unstamped" | "absent";
+
+/** One versioned payload in the repo, measured against the CLI's own version. */
+export interface PayloadCheck {
+  /** The version the repo records for this payload, or null when it records none. */
+  recorded: string | null;
+  /** The version this CLI would write. */
+  bundled: string;
+  status: PayloadStatus;
+}
 
 /** Whether the strength stack matches the current preset. `absent` = never provisioned. */
 export type StackStatus = "current" | "drift" | "absent";
@@ -27,20 +37,16 @@ export interface DoctorReport {
   root: string;
   /** The installed CLI's version — the `speccle@X` running this command. */
   cli: string;
-  skills: {
-    /** The version recorded in `.speccle/config.json`, or null when unstamped. */
-    recorded: string | null;
-    /** The version this CLI would materialize — its own version. */
-    bundled: string;
-    status: PayloadStatus;
-  };
-  lenses: {
-    /** The version recorded in `.speccle/config.json`, or null when unstamped. */
-    recorded: string | null;
-    /** The version this CLI would vendor — its own version. */
-    bundled: string;
-    status: PayloadStatus;
-  };
+  /** `recorded` is the skills version stamped in `.speccle/config.json`. */
+  skills: PayloadCheck;
+  /** `recorded` is the lenses version stamped in `.speccle/config.json`. */
+  lenses: PayloadCheck;
+  /**
+   * The opt-in CI review driver. Unlike the other two, `recorded` is the `speccle@X` pin read
+   * out of the workflow file itself — the driver is not vendored, so nothing stamps it in
+   * config. `absent` means the repo never opted in, which is a choice, not staleness.
+   */
+  driver: PayloadCheck;
   stack: {
     /** True when a stryker config exists — the marker `strength init` leaves. */
     provisioned: boolean;
@@ -52,10 +58,11 @@ export interface DoctorReport {
 }
 
 /**
- * Reports the truth about the three things that drift in a Speccle consumer — the CLI, the
- * committed skills, and the strength stack — and never mutates a byte (#182, ADR-0046).
- * Offline and deterministic: it compares the repo against the installed CLI, not against
- * the npm registry — "is there a newer release" is `update`'s network job, not this one's.
+ * Reports the truth about everything that drifts in a Speccle consumer — the CLI, the
+ * committed skills and lenses, the CI driver's pin, and the strength stack — and never
+ * mutates a byte (#182, ADR-0046). Offline and deterministic: it compares the repo against
+ * the installed CLI, not against the npm registry — "is there a newer release" is `update`'s
+ * network job, not this one's.
  */
 export async function doctor(target: string): Promise<DoctorReport> {
   const root = resolve(target);
@@ -69,6 +76,10 @@ export async function doctor(target: string): Promise<DoctorReport> {
   const lensesRecorded = config?.lensesVersion ?? null;
   const lensesStatus = derivePayloadStatus(await hasLenses(root), lensesRecorded, cli);
 
+  const workflow = await readMaybe(join(root, WORKFLOW_FILE));
+  const driverPin = workflow === undefined ? null : (pinnedVersion(workflow) ?? null);
+  const driverStatus = derivePayloadStatus(workflow !== undefined, driverPin, cli);
+
   const provisioned = await anyPresent(root, STRYKER_CONFIG_NAMES);
   const declared = await declaredDeps(root);
   const deps = STRENGTH_DEPS.map((spec) => checkDep(spec, declared));
@@ -79,13 +90,18 @@ export async function doctor(target: string): Promise<DoctorReport> {
       : "current";
 
   const current = (status: PayloadStatus): boolean => status === "current" || status === "absent";
-  const ok = current(skillsStatus) && current(lensesStatus) && stackStatus !== "drift";
+  const ok =
+    current(skillsStatus) &&
+    current(lensesStatus) &&
+    current(driverStatus) &&
+    stackStatus !== "drift";
 
   return {
     root,
     cli,
     skills: { recorded: skillsRecorded, bundled: cli, status: skillsStatus },
     lenses: { recorded: lensesRecorded, bundled: cli, status: lensesStatus },
+    driver: { recorded: driverPin, bundled: cli, status: driverStatus },
     stack: { provisioned, deps, status: stackStatus },
     ok,
   };
@@ -147,6 +163,14 @@ async function hasLenses(root: string): Promise<boolean> {
     return entries.some((entry) => entry.endsWith(".md"));
   } catch {
     return false;
+  }
+}
+
+async function readMaybe(path: string): Promise<string | undefined> {
+  try {
+    return await readFile(path, "utf8");
+  } catch {
+    return undefined;
   }
 }
 

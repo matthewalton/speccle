@@ -10,7 +10,7 @@ import type { DoctorReport } from "../src/doctor.ts";
 import type { InitReport } from "../src/init.ts";
 import type { LensesInitReport } from "../src/lenses.ts";
 import type { LintReport } from "../src/lint.ts";
-import type { ReviewInitReport } from "../src/reviewinit.ts";
+import { WORKFLOW_FILE, type ReviewInitReport } from "../src/reviewinit.ts";
 import type { SkillsInitReport } from "../src/skills.ts";
 import type { UpdateReport } from "../src/update.ts";
 import type { StrengthReport } from "../src/strength.ts";
@@ -484,6 +484,30 @@ describe("speccle doctor (e2e)", () => {
     expect(stdout).toContain("out of date");
   });
 
+  it("reports an opt-in driver the repo never installed, without failing the bill of health", async () => {
+    const root = await scaffold({ "package.json": "{}" });
+    expect(run("init", root).status).toBe(0);
+    const { status, stdout } = run("doctor", root);
+    expect(status).toBe(0);
+    expect(stdout).toContain("driver   not installed — opt in with `speccle review init`");
+    expect(stdout).toContain("up to date");
+  });
+
+  it("flags a review workflow pinned behind the CLI as stale, exit 1", async () => {
+    const root = await scaffold({ "package.json": "{}" });
+    run("init", root);
+    run("review", "init", root);
+    const workflow = await readFile(join(root, WORKFLOW_FILE), "utf8");
+    await writeFile(
+      join(root, WORKFLOW_FILE),
+      workflow.replaceAll(`speccle@${PKG_VERSION}`, "speccle@0.0.1"),
+    );
+    const { status, stdout } = run("doctor", root);
+    expect(status).toBe(1);
+    expect(stdout).toContain("driver   stale — the workflow pins 0.0.1");
+    expect(stdout).toContain("out of date");
+  });
+
   it("flags a strength stack behind the preset major as drift, exit 1", async () => {
     const root = await scaffold({
       "package.json": JSON.stringify({ devDependencies: { "@stryker-mutator/core": "^8.0.0" } }),
@@ -510,6 +534,7 @@ describe("speccle doctor (e2e)", () => {
       bundled: PKG_VERSION,
       status: "current",
     });
+    expect(report.driver).toEqual({ recorded: null, bundled: PKG_VERSION, status: "absent" });
     expect(report.stack.status).toBe("absent");
     expect(report.stack.deps.map((dep) => dep.name)).toContain("@stryker-mutator/core");
     expect(report.ok).toBe(true);
@@ -569,6 +594,27 @@ describe("speccle update (e2e)", () => {
     expect(stdout).toContain("@stryker-mutator/core@^9");
   });
 
+  it("moves an installed driver's pin, and leaves an uninstalled one uninstalled", async () => {
+    const root = await scaffold({ "package.json": "{}" });
+    run("init", root);
+
+    const absent = run("update", root);
+    expect(absent.stdout).toContain("driver   not installed");
+    await expect(readFile(join(root, WORKFLOW_FILE), "utf8")).rejects.toThrow();
+
+    run("review", "init", root);
+    const workflow = await readFile(join(root, WORKFLOW_FILE), "utf8");
+    await writeFile(
+      join(root, WORKFLOW_FILE),
+      workflow.replaceAll(`speccle@${PKG_VERSION}`, "speccle@0.0.1"),
+    );
+
+    const { status, stdout } = run("update", root);
+    expect(status).toBe(0);
+    expect(stdout).toContain(`driver   0.0.1 → ${PKG_VERSION}`);
+    expect(await readFile(join(root, WORKFLOW_FILE), "utf8")).toContain(`speccle@${PKG_VERSION}`);
+  });
+
   it("emits the typed JSON report", async () => {
     const root = await scaffold({ "package.json": "{}" });
     run("init", root);
@@ -577,6 +623,7 @@ describe("speccle update (e2e)", () => {
     const report = JSON.parse(stdout) as UpdateReport;
     expect(report.cli.command).toBe("npm install -g speccle@latest");
     expect(report.skills.to).toBe(PKG_VERSION);
+    expect(report.driver).toEqual({ from: null, to: null });
     expect(report.stack.fixCommand).toBeNull();
   });
 

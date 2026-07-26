@@ -4,6 +4,7 @@ import { dirname, join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { doctor } from "./doctor.ts";
 import { ownVersion } from "./init.ts";
+import { scaffoldReviewWorkflow, WORKFLOW_FILE } from "./reviewinit.ts";
 
 const dirs: string[] = [];
 
@@ -112,6 +113,53 @@ describe("doctor: lenses staleness", () => {
     const report = await doctor(root);
     expect(report.skills.status).toBe("stale"); // trailing CLI → out of date
     expect(report.lenses.status).toBe("absent"); // never vendored before lenses existed
+    expect(report.ok).toBe(false);
+  });
+});
+
+describe("doctor: review driver", () => {
+  it("is absent, and not a failure, when the repo never opted in", async () => {
+    const root = await scaffold({
+      [SKILL]: "",
+      ".speccle/config.json": config(await ownVersion()),
+    });
+    const report = await doctor(root);
+    expect(report.driver.status).toBe("absent");
+    expect(report.driver.recorded).toBeNull();
+    // The driver is opt-in and metered — never having one is a choice, not staleness to nag about.
+    expect(report.ok).toBe(true);
+  });
+
+  it("is current when the workflow was written by this CLI", async () => {
+    const root = await scaffold({ "package.json": "{}" });
+    await scaffoldReviewWorkflow(root, await ownVersion());
+    const report = await doctor(root);
+    expect(report.driver.status).toBe("current");
+    expect(report.driver.recorded).toBe(await ownVersion());
+  });
+
+  it("is stale when the workflow's pin trails the CLI", async () => {
+    const root = await scaffold({ "package.json": "{}" });
+    await scaffoldReviewWorkflow(root, "0.0.1");
+    const report = await doctor(root);
+    expect(report.driver.status).toBe("stale");
+    expect(report.driver.recorded).toBe("0.0.1");
+    expect(report.ok).toBe(false);
+  });
+
+  it("is ahead when the workflow's pin outranks the CLI", async () => {
+    const root = await scaffold({ "package.json": "{}" });
+    await scaffoldReviewWorkflow(root, "999.0.0");
+    const report = await doctor(root);
+    expect(report.driver.status).toBe("ahead");
+    expect(report.ok).toBe(false);
+  });
+
+  it("is unstamped when a workflow exists but names no pinned version", async () => {
+    const root = await scaffold({ [WORKFLOW_FILE]: "run: npx speccle review run\n" });
+    const report = await doctor(root);
+    expect(report.driver.status).toBe("unstamped");
+    expect(report.driver.recorded).toBeNull();
     expect(report.ok).toBe(false);
   });
 });

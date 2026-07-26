@@ -1,8 +1,9 @@
-import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { access, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { ownVersion } from "./init.ts";
+import { pinnedVersion, scaffoldReviewWorkflow, WORKFLOW_FILE } from "./reviewinit.ts";
 import { update } from "./update.ts";
 
 const dirs: string[] = [];
@@ -104,6 +105,30 @@ describe("update: lenses", () => {
     expect(await readFile(join(root, ".speccle/lenses/security.md"), "utf8")).not.toBe(
       "stale baseline",
     );
+  });
+});
+
+describe("update: review driver", () => {
+  it("moves an existing workflow's pin forward to the CLI version", async () => {
+    const version = await ownVersion();
+    const root = await scaffold({ "package.json": "{}", ".speccle/config.json": config("0.0.1") });
+    await scaffoldReviewWorkflow(root, "0.0.1");
+
+    const report = await update(root);
+
+    expect(report.driver.from).toBe("0.0.1");
+    expect(report.driver.to).toBe(version);
+    expect(pinnedVersion(await readFile(join(root, WORKFLOW_FILE), "utf8"))).toBe(version);
+  });
+
+  it("never scaffolds a workflow into a repo that has none", async () => {
+    const root = await scaffold({ "package.json": "{}", ".speccle/config.json": config("0.0.1") });
+
+    const report = await update(root);
+
+    // Opting a repo into a driver that spends a metered API key per run must be deliberate.
+    expect(report.driver).toEqual({ from: null, to: null });
+    await expect(access(join(root, WORKFLOW_FILE))).rejects.toThrow();
   });
 });
 

@@ -111,6 +111,7 @@ export function renderDoctor(report: DoctorReport): string {
     "",
     `skills   ${describePayload(report.skills, "materialized")}`,
     `lenses   ${describePayload(report.lenses, "vendored")}`,
+    `driver   ${describeDriver(report.driver)}`,
     `stack    ${describeStack(report.stack)}`,
   ];
   if (report.stack.status === "drift") {
@@ -124,6 +125,7 @@ export function renderDoctor(report: DoctorReport): string {
   const allAbsent =
     report.skills.status === "absent" &&
     report.lenses.status === "absent" &&
+    report.driver.status === "absent" &&
     report.stack.status === "absent";
   if (allAbsent) {
     lines.push("Speccle is not set up here — run `speccle init`");
@@ -147,6 +149,26 @@ function describePayload(payload: DoctorReport["skills"], verb: string): string 
       return "present but unversioned — re-run `speccle init` to record the version";
     case "absent":
       return `not ${verb} — run \`speccle init\``;
+  }
+}
+
+/**
+ * The driver's own arm, because its two ends differ from a vendored payload's: absent means
+ * the repo never opted into a metered CI driver — a choice, not a gap to fix — and every
+ * remedy is `review init`, which is also the only thing that moves the pin.
+ */
+function describeDriver(driver: DoctorReport["driver"]): string {
+  switch (driver.status) {
+    case "current":
+      return `current (${driver.bundled})`;
+    case "stale":
+      return `stale — the workflow pins ${driver.recorded}, this CLI is ${driver.bundled}; re-run \`speccle review init\``;
+    case "ahead":
+      return `ahead — the workflow pins ${driver.recorded}, newer than this CLI (${driver.bundled})`;
+    case "unstamped":
+      return "present but unpinned — re-run `speccle review init` to pin a version";
+    case "absent":
+      return "not installed — opt in with `speccle review init`";
   }
 }
 
@@ -179,6 +201,16 @@ export function renderUpdate(report: UpdateReport): string {
     lines.push(`lenses   already at ${report.lenses.to} — refreshed in place; review the diff`);
   } else {
     lines.push(`lenses   ${report.lenses.from} → ${report.lenses.to} — review & commit the diff`);
+  }
+
+  if (report.driver.to === null) {
+    lines.push("driver   not installed — opt in with `speccle review init`");
+  } else if (report.driver.from === report.driver.to) {
+    lines.push(`driver   already pinned to ${report.driver.to} — rewritten in place`);
+  } else {
+    lines.push(
+      `driver   ${report.driver.from ?? "unpinned"} → ${report.driver.to} — review & commit the diff`,
+    );
   }
 
   if (report.stack.status === "absent") {

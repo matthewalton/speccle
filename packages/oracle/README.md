@@ -4,7 +4,7 @@ The deterministic tooling the skills invoke — one bin:
 
 ```
 speccle init            # record repo facts + vendor the skills into .claude/skills/
-speccle doctor          # report staleness across the CLI, skills, and strength stack
+speccle doctor          # report staleness across the CLI, skills, CI driver, and strength stack
 speccle update          # refresh the vendored skills; print the CLI + stack fix commands
 speccle lint            # enforce the convention over a repo's specs
 speccle claims          # join criteria to the test names that claim them
@@ -20,9 +20,10 @@ speccle strength init   # provision the strength stack into a target
 
 - `init` / `doctor` / `update` — the setup and staleness surface: `init` records the
   repo's test facts in `.speccle/config.json` and vendors the skills into
-  `.claude/skills/`; `doctor` reports whether those skills and the strength stack still
-  match this CLI; `update` refreshes the skills forward and prints the CLI + stack fix
-  commands. See [Install](https://github.com/matthewalton/speccle/blob/main/README.md#install)
+  `.claude/skills/`; `doctor` reports whether those skills, the CI driver's pinned
+  version, and the strength stack still match this CLI; `update` refreshes the skills
+  forward and prints the CLI + stack fix commands. See
+  [Install](https://github.com/matthewalton/speccle/blob/main/README.md#install)
   and [Updating](https://github.com/matthewalton/speccle/blob/main/README.md#updating).
 - `lint` — enforce the [convention](https://github.com/matthewalton/speccle/blob/main/docs/convention.md) over a repo's specs.
 - `claims` — join every criterion to the test names carrying its id, statically. No
@@ -374,6 +375,12 @@ Writes one file — `.github/workflows/speccle-review.yml` — pinned to the ver
 that wrote it. Nothing else is vendored: the driver ships in this tarball and the workflow
 fetches it from npm, so the code doing the reviewing never comes from the branch under
 review. Re-running moves the pin, which is how a repo updates the driver.
+
+`doctor` reports that pin as its `driver` row, so a workflow left behind on an old version
+shows up as stale rather than sitting there unnoticed; a repo that never opted in reads
+`not installed` and is not a failure. `update` moves the pin **only when the workflow is
+already there** — it will not scaffold one, because opting a repo into a driver that spends
+a metered key per run has to be deliberate.
 
 ```sh
 speccle review run --pr <number> [path] [--repo <owner/name>] [--base <ref>]
