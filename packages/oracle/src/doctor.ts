@@ -1,6 +1,7 @@
 import { access, readdir, readFile, stat } from "node:fs/promises";
 import { join, resolve } from "node:path";
-import { readConfig } from "./config.ts";
+import { readConfig, type SpeccleConfig } from "./config.ts";
+import { DEFAULT_DIALECT, resolveDialect } from "./dialects.ts";
 import { ownVersion, STRENGTH_DEPS, STRYKER_CONFIG_NAMES } from "./init.ts";
 import { LENSES_DIR } from "./lenses.ts";
 import { pinnedVersion, WORKFLOW_FILE } from "./reviewinit.ts";
@@ -18,8 +19,11 @@ export interface PayloadCheck {
   status: PayloadStatus;
 }
 
-/** Whether the strength stack matches the current preset. `absent` = never provisioned. */
-export type StackStatus = "current" | "drift" | "absent";
+/**
+ * Whether the strength stack matches the current preset. `absent` = never provisioned;
+ * `unsupported` = no dialect in this repo can be scored, so there is nothing to provision.
+ */
+export type StackStatus = "current" | "drift" | "absent" | "unsupported";
 
 export type DepStatus = "ok" | "behind" | "missing";
 
@@ -48,6 +52,8 @@ export interface DoctorReport {
    */
   driver: PayloadCheck;
   stack: {
+    /** The repo's declared dialect — the one the stack is judged against. */
+    dialect: string;
     /** True when a stryker config exists — the marker `strength init` leaves. */
     provisioned: boolean;
     deps: DepCheck[];
@@ -80,14 +86,17 @@ export async function doctor(target: string): Promise<DoctorReport> {
   const driverPin = workflow === undefined ? null : (pinnedVersion(workflow) ?? null);
   const driverStatus = derivePayloadStatus(workflow !== undefined, driverPin, cli);
 
+  const dialect = config?.dialect ?? DEFAULT_DIALECT;
   const provisioned = await anyPresent(root, STRYKER_CONFIG_NAMES);
   const declared = await declaredDeps(root);
   const deps = STRENGTH_DEPS.map((spec) => checkDep(spec, declared));
-  const stackStatus: StackStatus = !provisioned
-    ? "absent"
-    : deps.some((dep) => dep.status !== "ok")
-      ? "drift"
-      : "current";
+  const stackStatus: StackStatus = !scorable(config, dialect)
+    ? "unsupported"
+    : !provisioned
+      ? "absent"
+      : deps.some((dep) => dep.status !== "ok")
+        ? "drift"
+        : "current";
 
   const current = (status: PayloadStatus): boolean => status === "current" || status === "absent";
   const ok =
@@ -102,9 +111,20 @@ export async function doctor(target: string): Promise<DoctorReport> {
     skills: { recorded: skillsRecorded, bundled: cli, status: skillsStatus },
     lenses: { recorded: lensesRecorded, bundled: cli, status: lensesStatus },
     driver: { recorded: driverPin, bundled: cli, status: driverStatus },
-    stack: { provisioned, deps, status: stackStatus },
+    stack: { dialect, provisioned, deps, status: stackStatus },
     ok,
   };
+}
+
+/**
+ * Whether any dialect in force in this repo can be scored. A mixed tree keeps its stack: an
+ * override may put one subtree on ts-vitest under a swift default (ADR-0040), and that
+ * subtree's heatmap is real. Only a repo with no scorable dialect anywhere has nothing to
+ * provision — reporting that as `absent` would nag it toward a stack it can never run.
+ */
+function scorable(config: SpeccleConfig | undefined, dialect: string): boolean {
+  const inForce = [dialect, ...(config?.overrides ?? []).map((o) => o.dialect ?? dialect)];
+  return inForce.some((name) => resolveDialect(name).supportsStrength);
 }
 
 function derivePayloadStatus(

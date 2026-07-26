@@ -1,6 +1,7 @@
 import type { CheckReport, ReportCheck } from "./check.ts";
 import type { ClaimsReport } from "./claims.ts";
 import type { ConfigInitReport } from "./config.ts";
+import { DEFAULT_DIALECT } from "./dialects.ts";
 import type { DoctorReport } from "./doctor.ts";
 import type { InitReport } from "./init.ts";
 import type { LensesInitReport } from "./lenses.ts";
@@ -122,11 +123,13 @@ export function renderDoctor(report: DoctorReport): string {
     }
   }
   lines.push("");
+  // A repo whose dialect can never carry a stack still counts as bare when nothing else
+  // is installed — `init` is the right nudge, and it is not a stack it is missing.
   const allAbsent =
     report.skills.status === "absent" &&
     report.lenses.status === "absent" &&
     report.driver.status === "absent" &&
-    report.stack.status === "absent";
+    (report.stack.status === "absent" || report.stack.status === "unsupported");
   if (allAbsent) {
     lines.push("Speccle is not set up here — run `speccle init`");
   } else if (report.ok) {
@@ -173,6 +176,9 @@ function describeDriver(driver: DoctorReport["driver"]): string {
 }
 
 function describeStack(stack: DoctorReport["stack"]): string {
+  if (stack.status === "unsupported") {
+    return `not applicable — oracle strength needs the ${DEFAULT_DIALECT} dialect, this repo is ${stack.dialect}`;
+  }
   if (stack.status === "absent") return "not provisioned — run `speccle strength init`";
   if (stack.status === "current") return "current";
   return "drift — the stack is behind the current preset";
@@ -213,7 +219,9 @@ export function renderUpdate(report: UpdateReport): string {
     );
   }
 
-  if (report.stack.status === "absent") {
+  if (report.stack.status === "unsupported") {
+    lines.push(`stack    not applicable — oracle strength needs the ${DEFAULT_DIALECT} dialect`);
+  } else if (report.stack.status === "absent") {
     lines.push("stack    not provisioned — run `speccle strength init`");
   } else if (report.stack.status === "current") {
     lines.push("stack    up to date");

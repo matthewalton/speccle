@@ -347,6 +347,13 @@ Joins three inputs into one number per **acceptance criterion**: the `SPEC.md` f
 criterion by carrying its `[KEY-n]` token anywhere in its full concatenated name, describe
 titles included.
 
+This is the one command bound to a single **test dialect**. The join has to know which
+tests covered each mutant — nothing else can credit a kill to a criterion — and only
+StrykerJS produces that, so `strength` scores a `ts-vitest` repo and no other. On a
+dialect it cannot score, `doctor` reports the stack as `not applicable` rather than
+nagging toward `strength init`. Every other command — `lint`, `claims`, `verify`,
+`risk` — is multi-language regardless.
+
 ```
 features/checkout/SPEC.md
   CHECKOUT-1  ████████████████████  100.0%    14/14  Tax rounds half-up to 2dp per line item

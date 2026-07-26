@@ -31,6 +31,21 @@ function config(skillsVersion?: string, lensesVersion?: string): string {
   });
 }
 
+function swiftConfig(options: {
+  overrides?: { path: string; dialect?: string }[];
+  version?: string;
+}): string {
+  return JSON.stringify({
+    dialect: "swift",
+    suite: "xcodebuild test",
+    ...(options.overrides !== undefined && { overrides: options.overrides }),
+    ...(options.version !== undefined && {
+      skillsVersion: options.version,
+      lensesVersion: options.version,
+    }),
+  });
+}
+
 /** Any file under .claude/skills/<name>/ makes the dir count as materialized. */
 const SKILL = ".claude/skills/feature/SKILL.md";
 /** Any .md under .speccle/lenses/ makes the dir count as vendored. */
@@ -213,6 +228,46 @@ describe("doctor: strength stack", () => {
     expect(core?.status).toBe("behind");
     const vitest = report.stack.deps.find((dep) => dep.name === "vitest");
     expect(vitest?.status).toBe("missing");
+  });
+
+  it("is unsupported when the repo's dialect cannot be scored, however complete the deps", async () => {
+    const root = await scaffold({
+      ".speccle/config.json": swiftConfig({}),
+      "stryker.config.json": "{}",
+      "package.json": JSON.stringify({
+        devDependencies: {
+          vitest: "^4.1.0",
+          "@vitest/coverage-istanbul": "^4.0.0",
+          "@stryker-mutator/core": "^9.6.1",
+          "@stryker-mutator/vitest-runner": "^9.0.0",
+        },
+      }),
+    });
+    const report = await doctor(root);
+    expect(report.stack.status).toBe("unsupported");
+    expect(report.stack.dialect).toBe("swift");
+  });
+
+  it("does not fail the bill of health on a dialect that cannot be scored", async () => {
+    const root = await scaffold({
+      ".speccle/config.json": swiftConfig({ version: await ownVersion() }),
+      [SKILL]: "",
+      [LENS]: "",
+      "package.json": "{}",
+    });
+    const report = await doctor(root);
+    expect(report.stack.status).toBe("unsupported");
+    expect(report.ok).toBe(true);
+  });
+
+  it("keeps the stack applicable when an override puts a subtree on a scorable dialect", async () => {
+    const root = await scaffold({
+      ".speccle/config.json": swiftConfig({ overrides: [{ path: "web", dialect: "ts-vitest" }] }),
+      "package.json": "{}",
+    });
+    const report = await doctor(root);
+    expect(report.stack.status).toBe("absent");
+    expect(report.stack.dialect).toBe("swift");
   });
 
   it("reads a dep declared under dependencies, not only devDependencies", async () => {

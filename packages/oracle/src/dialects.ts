@@ -9,12 +9,18 @@ export interface TestName {
 
 /**
  * The per-language knowledge Speccle carries about a test stack: which files are tests,
- * and how a test's full name is read. A repo declares which dialect it is on, never how
- * that dialect works, so a clean `claims` run means the same thing in every repo
- * (ADR-0038). There is no regex override.
+ * how a test's full name is read, and whether oracle strength can run at all. A repo
+ * declares which dialect it is on, never how that dialect works, so a clean `claims` run
+ * means the same thing in every repo (ADR-0038). There is no regex override.
  */
 export interface Dialect {
   name: string;
+  /**
+   * Whether the oracle join can score this dialect. It needs per-test mutant data, which
+   * only StrykerJS produces, so `strength` stays TypeScript-first — ADR-0008 as amended by
+   * ADR-0038. A dialect without a producer is unsupported visibly, never silently at 0%.
+   */
+  supportsStrength: boolean;
   /** `file` is a posix path relative to the discovery root. */
   isTestFile(file: string): boolean;
   /**
@@ -31,6 +37,7 @@ const TS_TEST_TITLE = /\b(?:describe|it|test)(?:\.[\w.]+)*\s*\(\s*(["'`])((?:\\.
 
 const TS_VITEST: Dialect = {
   name: "ts-vitest",
+  supportsStrength: true,
   isTestFile: (file) => TS_TEST_FILE.test(file),
   readTestNames: (source) =>
     [...source.matchAll(TS_TEST_TITLE)].map((m) => ({ name: m[2]!, spelling: "bracketed" })),
@@ -51,6 +58,7 @@ const SWIFT_ANNOTATED_DECL =
 
 const SWIFT: Dialect = {
   name: "swift",
+  supportsStrength: false,
   isTestFile: (file) =>
     SWIFT_TEST_FILE.test(file) || (file.endsWith(".swift") && file.split("/").includes("Tests")),
   readTestNames(source) {

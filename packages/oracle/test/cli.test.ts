@@ -591,6 +591,16 @@ describe("speccle doctor (e2e)", () => {
     expect(stdout).toContain("missing — preset wants ^4");
   });
 
+  it("reports the stack as not applicable on a dialect it cannot score, exit 0", async () => {
+    const root = await scaffold({ "package.json": "{}", "Package.swift": "" });
+    expect(run("init", root).status).toBe(0);
+    const { status, stdout } = run("doctor", root);
+    expect(status).toBe(0);
+    expect(stdout).toContain("stack    not applicable — oracle strength needs the ts-vitest");
+    expect(stdout).not.toContain("speccle strength init");
+    expect(stdout).toContain("up to date");
+  });
+
   it("emits the typed JSON report", async () => {
     const root = await scaffold({ "package.json": "{}" });
     run("init", root);
