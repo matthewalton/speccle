@@ -2,7 +2,15 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { detectDoubleLoad, init, mutateGlobs, strykerConfig, vitestConfig } from "./init.ts";
+import {
+  detectDoubleLoad,
+  init,
+  mutateGlobs,
+  ownVersion,
+  removeCommandFor,
+  strykerConfig,
+  vitestConfig,
+} from "./init.ts";
 
 const roots: string[] = [];
 
@@ -156,6 +164,47 @@ describe("init", () => {
   it("refuses a root without a package.json", async () => {
     const root = await scaffold({});
     await expect(init(root, { skipInstall: true })).rejects.toThrow(/no package\.json/);
+  });
+
+  it("names a pre-rename speccle-oracle devDependency as superseded, and how to drop it", async () => {
+    const root = await scaffold({
+      "package.json": JSON.stringify({ devDependencies: { "speccle-oracle": "^0.10.0" } }),
+      "pnpm-lock.yaml": "",
+    });
+    const report = await init(root, { skipInstall: true });
+    expect(report.supersededDeps).toEqual(["speccle-oracle"]);
+    expect(report.removeCommand).toBe("pnpm remove speccle-oracle");
+  });
+
+  it("leaves the superseded package.json untouched — it reports, it does not rewrite", async () => {
+    const declared = JSON.stringify({ devDependencies: { "speccle-oracle": "^0.10.0" } });
+    const root = await scaffold({ "package.json": declared });
+    await init(root, { skipInstall: true });
+    expect(await readFile(join(root, "package.json"), "utf8")).toBe(declared);
+  });
+
+  it("still asks for speccle when only the superseded name is declared", async () => {
+    const root = await scaffold({
+      "package.json": JSON.stringify({ devDependencies: { "speccle-oracle": "^0.10.0" } }),
+    });
+    const report = await init(root, { skipInstall: true });
+    expect(report.missingDeps).toContain(`speccle@^${await ownVersion()}`);
+  });
+
+  it("stays quiet when no superseded name is declared", async () => {
+    const root = await scaffold({ "package.json": JSON.stringify({ devDependencies: {} }) });
+    const report = await init(root, { skipInstall: true });
+    expect(report.supersededDeps).toEqual([]);
+    expect(report.removeCommand).toBeNull();
+  });
+});
+
+describe("removeCommandFor", () => {
+  it("uses each manager's own removal verb", () => {
+    expect(removeCommandFor("npm", ["speccle-oracle"])).toBe("npm uninstall speccle-oracle");
+    expect(removeCommandFor("pnpm", ["speccle-oracle"])).toBe("pnpm remove speccle-oracle");
+    expect(removeCommandFor("yarn", ["speccle-oracle"])).toBe("yarn remove speccle-oracle");
+    expect(removeCommandFor("bun", ["speccle-oracle"])).toBe("bun remove speccle-oracle");
   });
 });
 

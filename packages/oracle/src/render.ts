@@ -473,13 +473,30 @@ export function renderInit(report: InitReport): string {
     lines.push('  stryker config: coverageAnalysis "perTest", the json reporter');
     lines.push("  vitest config:  istanbul provider, json-summary reporter");
   }
+  if (report.supersededDeps.length > 0) {
+    lines.push("");
+    lines.push(`superseded devDependency: ${report.supersededDeps.join(", ")}`);
+    lines.push("this CLI publishes as speccle now — the old package is a stale binary beside");
+    lines.push(`the current one. Remove it yourself: ${report.removeCommand}`);
+  }
   if (report.doubleLoad) {
     lines.push("");
-    lines.push("warning: this repo vendors the speccle skills project-level AND the");
-    lines.push("speccle plugin is enabled user-level — two copies of every skill will");
-    lines.push("load. Disable one: /plugin (user-level) or remove .claude/skills/ here.");
+    lines.push(renderDoubleLoad());
   }
   return lines.join("\n");
+}
+
+/**
+ * One wording for both entry points. `speccle init` vendors the skills and `speccle strength
+ * init` provisions the stack; either run is a fair place to discover the double-load, so
+ * neither stays quiet about it (#183).
+ */
+export function renderDoubleLoad(): string {
+  return join(
+    "warning: this repo vendors the speccle skills project-level AND the",
+    "speccle plugin is enabled user-level — two copies of every skill will",
+    "load. Disable one: /plugin (user-level) or remove .claude/skills/ here.",
+  );
 }
 
 export function renderHuman(report: LintReport): string {

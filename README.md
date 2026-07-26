@@ -236,7 +236,7 @@ diff; your own house-conventions lens is never overwritten.
 /plugin install speccle@speccle-marketplace
 ```
 
-Don't do both — two copies of every skill would load; `strength init` warns if it sees
+Don't do both — two copies of every skill would load; `speccle init` warns if it sees
 both.
 
 ### 3. The strength stack — per target repo, only for the heatmap

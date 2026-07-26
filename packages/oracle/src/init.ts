@@ -14,6 +14,11 @@ export const STRENGTH_DEPS = [
   "@stryker-mutator/vitest-runner@^9",
 ];
 
+// Names this CLI has published under before (ADR-0045). A repo provisioned under an old name
+// keeps that package beside the current one, and `node_modules/.bin/` still exposes its stale
+// binary — dead weight the ladder never picks, but weight the repo should know it is carrying.
+export const SUPERSEDED_DEPS = ["speccle-oracle"];
+
 export interface InitFileResult {
   file: string;
   action: "written" | "kept";
@@ -25,6 +30,10 @@ export interface InitReport {
   missingDeps: string[];
   installCommand: string | null;
   installRan: boolean;
+  /** Declared dependencies this CLI has since renamed past — reported, never removed for you. */
+  supersededDeps: string[];
+  /** The command that would drop them, or null when there is nothing superseded. */
+  removeCommand: string | null;
   mutate: string[];
   files: InitFileResult[];
   doubleLoad: boolean;
@@ -115,6 +124,9 @@ export async function init(root: string, options: InitOptions = {}): Promise<Ini
   const missingDeps = wantedDeps.filter((spec) => !declared.has(withoutVersion(spec)));
   const installCommand =
     missingDeps.length > 0 ? installCommandFor(packageManager, missingDeps) : null;
+  const supersededDeps = SUPERSEDED_DEPS.filter((name) => declared.has(name));
+  const removeCommand =
+    supersededDeps.length > 0 ? removeCommandFor(packageManager, supersededDeps) : null;
 
   const files: InitFileResult[] = [
     await provision(
@@ -140,6 +152,8 @@ export async function init(root: string, options: InitOptions = {}): Promise<Ini
     missingDeps,
     installCommand,
     installRan,
+    supersededDeps,
+    removeCommand,
     mutate,
     files,
     doubleLoad,
@@ -213,6 +227,11 @@ async function provision(
 
 export function installCommandFor(manager: PackageManager, deps: string[]): string {
   const subcommand = manager === "npm" ? "install -D" : manager === "bun" ? "add -d" : "add -D";
+  return `${manager} ${subcommand} ${deps.join(" ")}`;
+}
+
+export function removeCommandFor(manager: PackageManager, deps: string[]): string {
+  const subcommand = manager === "npm" ? "uninstall" : "remove";
   return `${manager} ${subcommand} ${deps.join(" ")}`;
 }
 

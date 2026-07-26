@@ -5,7 +5,7 @@ import { claims } from "./claims.ts";
 import { initConfig } from "./config.ts";
 import { DEFAULT_DIALECT, DIALECT_NAMES } from "./dialects.ts";
 import { doctor } from "./doctor.ts";
-import { init, ownVersion } from "./init.ts";
+import { detectDoubleLoad, init, ownVersion } from "./init.ts";
 import { materializeLenses } from "./lenses.ts";
 import { lint } from "./lint.ts";
 import { recallRemedy, recordRemedy, REMEDY_ROUTES, type RemedyRoute } from "./remedy.ts";
@@ -16,6 +16,7 @@ import {
   renderClaims,
   renderConfigInit,
   renderDoctor,
+  renderDoubleLoad,
   renderHuman,
   renderInit,
   renderLensesInit,
@@ -617,24 +618,32 @@ async function runInit(args: string[]): Promise<number> {
   let config;
   let skills;
   let lenses;
+  let doubleLoad;
   try {
     // Materialize first, then stamp the version onto the config — so the recorded anchors
     // only ever name the skills and lenses that actually landed on disk.
     skills = await materializeSkills(root);
     lenses = await materializeLenses(root);
     config = await initConfig(root, await ownVersion());
+    // Asked after materializing: this run is what makes the repo a project-level vendor, so
+    // the double-load it may have just created is exactly what the human needs told (#183).
+    doubleLoad = await detectDoubleLoad(root);
   } catch (err) {
     console.error(message(err));
     return 2;
   }
   if (json) {
-    console.log(JSON.stringify({ config, skills, lenses }, null, 2));
+    console.log(JSON.stringify({ config, skills, lenses, doubleLoad }, null, 2));
   } else {
     console.log(renderConfigInit(config));
     console.log("");
     console.log(renderSkillsInit(skills));
     console.log("");
     console.log(renderLensesInit(lenses));
+    if (doubleLoad) {
+      console.log("");
+      console.log(renderDoubleLoad());
+    }
   }
   return 0;
 }

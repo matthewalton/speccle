@@ -28,6 +28,18 @@ function run(...args: string[]): { status: number | null; stdout: string; stderr
   return spawnSync(process.execPath, [CLI, ...args], { encoding: "utf8" });
 }
 
+/** Same run, under a planted home — the only way to reach the user-level settings the
+ * double-load check reads, since `os.homedir()` takes $HOME on POSIX. */
+function runAtHome(
+  home: string,
+  ...args: string[]
+): { status: number | null; stdout: string; stderr: string } {
+  return spawnSync(process.execPath, [CLI, ...args], {
+    encoding: "utf8",
+    env: { ...process.env, HOME: home },
+  });
+}
+
 describe("speccle lint (e2e)", () => {
   it("reports the toy project clean with exit code 0", () => {
     const { status, stdout } = run("lint", TOY);
@@ -358,6 +370,18 @@ describe("speccle strength init (e2e)", () => {
     expect(status).toBe(2);
     expect(stderr).toContain("--mutate needs a glob");
   });
+
+  it("names a pre-rename speccle-oracle as superseded and how to drop it", async () => {
+    const root = await scaffold();
+    await writeFile(
+      join(root, "package.json"),
+      JSON.stringify({ devDependencies: { "speccle-oracle": "^0.10.0" } }),
+    );
+    const { status, stdout } = run("strength", "init", root, "--skip-install");
+    expect(status).toBe(0);
+    expect(stdout).toContain("superseded devDependency: speccle-oracle");
+    expect(stdout).toContain("npm uninstall speccle-oracle");
+  });
 });
 
 describe("speccle init (e2e)", () => {
@@ -429,6 +453,50 @@ describe("speccle init (e2e)", () => {
 
   it("exits 2 on an unknown option", () => {
     expect(run("init", "--nope").status).toBe(2);
+  });
+
+  async function plantHome(settings?: string): Promise<string> {
+    const home = await mkdtemp(join(tmpdir(), "speccle-home-e2e-"));
+    roots.push(home);
+    if (settings !== undefined) {
+      await mkdir(join(home, ".claude"), { recursive: true });
+      await writeFile(join(home, ".claude/settings.json"), settings);
+    }
+    return home;
+  }
+
+  it("warns that vendoring here doubles up with the enabled user-level plugin", async () => {
+    const root = await scaffold({ "package.json": "{}" });
+    const home = await plantHome(
+      JSON.stringify({ enabledPlugins: { "speccle@speccle-marketplace": true } }),
+    );
+    const { status, stdout } = runAtHome(home, "init", root);
+    expect(status).toBe(0);
+    expect(stdout).toContain("two copies of every skill will");
+    expect(stdout).toContain("/plugin");
+  });
+
+  it("stays quiet about the double-load when no user-level plugin is enabled", async () => {
+    const root = await scaffold({ "package.json": "{}" });
+    const { status, stdout } = runAtHome(await plantHome(), "init", root);
+    expect(status).toBe(0);
+    expect(stdout).not.toContain("two copies of every skill");
+  });
+
+  it("carries the double-load verdict in the JSON report", async () => {
+    const root = await scaffold({ "package.json": "{}" });
+    const home = await plantHome(
+      JSON.stringify({ enabledPlugins: { "speccle@speccle-marketplace": true } }),
+    );
+    const warned = JSON.parse(runAtHome(home, "init", root, "--json").stdout) as {
+      doubleLoad: boolean;
+    };
+    expect(warned.doubleLoad).toBe(true);
+
+    const quiet = JSON.parse(runAtHome(await plantHome(), "init", root, "--json").stdout) as {
+      doubleLoad: boolean;
+    };
+    expect(quiet.doubleLoad).toBe(false);
   });
 });
 

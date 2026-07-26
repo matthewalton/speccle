@@ -432,9 +432,16 @@ instead of a hand-assembled config recipe. In one run it:
   `features/**/*.ts`; override with `--mutate`, repeatable);
 - writes a `vitest.config.ts` with the istanbul provider and `json-summary` reporter.
 
-Init also warns (best-effort, via `~/.claude/settings.json`) when the target vendors
-the speccle skills project-level in `.claude/skills/` while a user-level speccle plugin
-is still enabled — two copies of every skill would load.
+It also reports a `speccle-oracle` devDependency as **superseded** — the name this CLI
+published under before 0.11.0. A repo provisioned back then keeps that package beside the
+current one, exposing a stale binary in `node_modules/.bin/`. Init names the removal
+command and stops there: your `package.json` is yours to change.
+
+Both init commands warn (best-effort, via `~/.claude/settings.json`) when the target
+vendors the speccle skills project-level in `.claude/skills/` while a user-level speccle
+plugin is still enabled — two copies of every skill would load. `speccle init` is the run
+that vendors them, so it warns too rather than leaving the discovery to a `strength init`
+a contract-only user may never run.
 
 An existing Stryker or vitest/vite config is **kept, never overwritten** — init reports
 it and names the fields it must carry itself. The command is idempotent: re-running
