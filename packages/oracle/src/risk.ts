@@ -11,7 +11,7 @@ import {
   type Predicate,
 } from "./changeset.ts";
 import { claims } from "./claims.ts";
-import { readConfig } from "./config.ts";
+import { readConfig, resolveFacts } from "./config.ts";
 import { DEFAULT_DIALECT, resolveDialect, type Dialect } from "./dialects.ts";
 import { discoverSpecs } from "./discover.ts";
 import { gitStdout } from "./git.ts";
@@ -117,7 +117,10 @@ export interface RiskOptions {
    * injectable so the core stays git-free.
    */
   baseline?: (file: string) => string | undefined | Promise<string | undefined>;
-  /** Test dialect. Overrides `.speccle/config.json`; both fall back to the default. */
+  /**
+   * Test dialect name. Forces one dialect across every path, overriding `.speccle/config.json`
+   * and its per-path overrides; both fall back to `ts-vitest`.
+   */
   dialect?: string;
 }
 
@@ -133,8 +136,9 @@ export async function risk(target: string, options: RiskOptions = {}): Promise<R
   // reads from, and the two must agree or the diff is measured against the wrong commit.
   const range = options.base === undefined ? undefined : gitRangeChangeSet(root, options.base);
   const changed = (options.changed ?? range?.changed ?? gitChangeSet(root)).slice().sort();
-  const declared = options.dialect ?? (await readConfig(root))?.dialect;
-  const dialect = resolveDialect(declared ?? DEFAULT_DIALECT);
+  // Resolved here rather than where it is used, so a bogus `--dialect` fails loudly even when
+  // every signal that would have read it is muted.
+  const forced = options.dialect === undefined ? undefined : resolveDialect(options.dialect);
   const baselineRef = range?.baseline ?? "HEAD";
   const baseline = options.baseline ?? ((file: string) => gitBaseline(root, file, baselineRef));
   const read = contentReader(root);
@@ -153,7 +157,7 @@ export async function risk(target: string, options: RiskOptions = {}): Promise<R
     fireBaseline(
       "spec-silent-change",
       "production source changed in a governed slice whose SPEC.md did not",
-      await specSilentChanges(root, changed, dialect),
+      await specSilentChanges(root, changed, forced),
     );
   }
   if (weightOf("criterion-retired") > 0 || weightOf("criterion-reworded") > 0) {
@@ -196,20 +200,33 @@ export async function risk(target: string, options: RiskOptions = {}): Promise<R
   };
 }
 
-/** Governed-slice production source that changed while the slice's SPEC.md stayed silent. */
+/**
+ * Governed-slice production source that changed while the slice's SPEC.md stayed silent.
+ *
+ * Whether a changed file is a test is a per-path question, so with no forced dialect each file
+ * is judged under the one the config resolves at its own path (ADR-0040) — a swift slice's
+ * `PlayerTests.swift` is a test even in a repo that defaults to ts-vitest. Resolved at the file
+ * rather than its spec folder: that also honours an override deeper than the folder, and keeps
+ * an outer slice from misreading a nested slice's tests as production source.
+ */
 async function specSilentChanges(
   root: string,
   changed: string[],
-  dialect: Dialect,
+  forced: Dialect | undefined,
 ): Promise<string[]> {
   const specs = await discoverSpecs(root);
+  const config = forced === undefined ? await readConfig(root) : undefined;
+  const dialectAt = (file: string): Dialect =>
+    forced ??
+    resolveDialect(config === undefined ? DEFAULT_DIALECT : resolveFacts(config, file).dialect);
+
   const silent: string[] = [];
   for (const spec of specs) {
     const folder = dirname(spec);
     if (changed.includes(spec)) continue; // the spec moved with its code — not silent.
     for (const file of changed) {
       if (!underFolder(file, folder)) continue;
-      if (isContractFile(file, folder) || dialect.isTestFile(file)) continue;
+      if (isContractFile(file, folder) || dialectAt(file).isTestFile(file)) continue;
       silent.push(file);
     }
   }

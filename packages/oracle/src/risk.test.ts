@@ -78,6 +78,80 @@ describe("risk", () => {
       expect(find(report, "spec-silent-change")).toBeUndefined();
       expect(report.signals).toEqual([]);
     });
+
+    describe("a mixed-language tree — each changed file judged by its own dialect", () => {
+      const MIXED = {
+        ".speccle/config.json": JSON.stringify({
+          dialect: "ts-vitest",
+          suite: "pnpm test",
+          overrides: [{ path: "ios", dialect: "swift", suite: "swift test" }],
+        }),
+        "ios/player/SPEC.md": spec("[PLAYER-1] pausing playback holds the current position"),
+        "ios/player/PlayerTests.swift": '@Test("[PLAYER-1] pausing holds")\nfunc pauses() {}\n',
+      };
+
+      it("stays quiet when only the overridden slice's test file changed", async () => {
+        const root = await scaffold(MIXED);
+        const report = await risk(root, {
+          changed: ["ios/player/PlayerTests.swift"],
+          baseline: noBaseline,
+        });
+        // Under the repo default it is not a test file, so one dialect for the tree reads a
+        // pure test change as production source and pushes it over the review threshold.
+        expect(find(report, "spec-silent-change")).toBeUndefined();
+        expect(report.signals).toEqual([]);
+        expect(report.humanRequired).toBe(false);
+      });
+
+      it("still fires when that slice's production source changed", async () => {
+        const root = await scaffold({ ...MIXED, "ios/player/Player.swift": "struct Player {}\n" });
+        const report = await risk(root, {
+          changed: ["ios/player/Player.swift", "ios/player/PlayerTests.swift"],
+          baseline: noBaseline,
+        });
+        expect(find(report, "spec-silent-change")).toMatchObject({
+          evidence: ["ios/player/Player.swift"],
+        });
+      });
+
+      it("keeps a slice outside the override on the repo default", async () => {
+        const root = await scaffold({
+          ...MIXED,
+          "web/basket/SPEC.md": spec("[BASKET-1] adding an item increments its quantity by one"),
+          "web/basket/BasketTests.swift": "final class BasketTests: XCTestCase {}\n",
+        });
+        const report = await risk(root, {
+          changed: ["web/basket/BasketTests.swift"],
+          baseline: noBaseline,
+        });
+        expect(find(report, "spec-silent-change")).toMatchObject({
+          evidence: ["web/basket/BasketTests.swift"],
+        });
+      });
+
+      it("an explicit dialect forces one across every path, overriding the config", async () => {
+        const root = await scaffold(MIXED);
+        const report = await risk(root, {
+          changed: ["ios/player/PlayerTests.swift"],
+          baseline: noBaseline,
+          dialect: "ts-vitest",
+        });
+        expect(find(report, "spec-silent-change")).toMatchObject({
+          evidence: ["ios/player/PlayerTests.swift"],
+        });
+      });
+
+      // Both dialect-reading signals are muted, so nothing downstream would resolve the name:
+      // a silently-ignored dialect is the quiet failure writing it down exists to prevent.
+      it("rejects an unsupported dialect even with every signal that reads it muted", async () => {
+        const root = await scaffold(MIXED, {
+          weights: { "spec-silent-change": 0, "unclaimed-change": 0 },
+        });
+        await expect(
+          risk(root, { changed: [], baseline: noBaseline, dialect: "kotlin" }),
+        ).rejects.toThrow("unknown test dialect: kotlin");
+      });
+    });
   });
 
   describe("criterion-retired / criterion-reworded — a changed SPEC.md against its baseline", () => {

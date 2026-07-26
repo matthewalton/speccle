@@ -214,6 +214,11 @@ edits this file, and a malformed one is a hard error rather than a silently-igno
 a quietly dropped signal is exactly the invisible reduction of supervision the score exists to
 prevent.
 
+Whether a changed file is production source or a test is a per-path question, and
+`spec-silent-change` answers it from `.speccle/config.json`, resolved **at each changed file's
+own path** — so in a mixed tree an `ios/` slice's `PlayerTests.swift` reads as a test even
+where the repo defaults to `ts-vitest`. `--dialect` forces one dialect across every path instead.
+
 `--base` moves both the change set and the criterion baseline to the merge base. That pairing
 is load-bearing: on a branch, HEAD already contains the change, so diffing a changed `SPEC.md`
 against HEAD would compare it with itself and no criterion would ever read as retired or
