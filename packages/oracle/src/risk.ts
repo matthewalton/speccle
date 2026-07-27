@@ -358,9 +358,12 @@ function isSpecPath(file: string): boolean {
   return file === "SPEC.md" || file.endsWith("/SPEC.md");
 }
 
+// AGENTS.md is the pre-ADR-0049 name for CLAUDE.md and still counts: a repo that has
+// not conformed yet would otherwise see every edit to it reported as a silent change.
 function isContractFile(file: string, folder: string): boolean {
   const base = file.slice(file.lastIndexOf("/") + 1);
-  if (base === "SPEC.md" || base === "CONTEXT.md" || base === "AGENTS.md") return true;
+  if (base === "SPEC.md" || base === "CONTEXT.md") return true;
+  if (base === "CLAUDE.md" || base === "AGENTS.md") return true;
   return file.startsWith(folder === "." ? "decisions/" : `${folder}/decisions/`);
 }
 

@@ -7,7 +7,7 @@ allowed-tools: Read(/${CLAUDE_PLUGIN_ROOT}/skills/*/references/**)
 # carve-feature
 
 Take a region of code that already works and make it a governed feature folder: the
-markdown contract — `SPEC.md`, `CONTEXT.md`, `AGENTS.md`, `decisions/` — derived from
+markdown contract — `SPEC.md`, `CONTEXT.md`, `CLAUDE.md`, `decisions/` — derived from
 its observed behaviour, and every criterion claimed by a tagged test. The code's
 behaviour does not change — a carve is a change of governance, not of code.
 
@@ -75,7 +75,7 @@ not by you.
 
 Follow the convention exactly — the drafting pitfalls `spec-feature` restates
 (one clause per statement, ids are names not order, the body is free) all apply
-unchanged. `SPEC.md`, `CONTEXT.md`, and `AGENTS.md` are the floor, even for a small
+unchanged. `SPEC.md`, `CONTEXT.md`, and `CLAUDE.md` are the floor, even for a small
 carve; `decisions/` appears with the first cross-criterion choice the code turns out
 to embody.
 
@@ -86,8 +86,11 @@ interchangeable names is canonical.
 It is a glossary only: a choice the code embodies that spans criteria (a keying
 strategy, a rounding policy) is an ADR in `decisions/`, recording what the code does
 and whatever "why" survives.
-In `AGENTS.md`, state how to work the slice — run its tests, find the contract — and
-nothing about behaviour.
+`CLAUDE.md` gets what the carve is uniquely placed to see: the **boundary** — the files
+outside the folder this code reaches into, which the imports you just read show
+directly — plus any trap the code embodies (a fixture that must not be regenerated, an
+injection point), and the criterion token. Leave out anything that would be true of
+every slice in the repo; that belongs in the root `CLAUDE.md`.
 
 ## 4. Lint until clean
 
@@ -136,7 +139,7 @@ change request: amend, re-lint, announce again.
 ## 6. Claim every criterion, changing nothing
 
 The carve's whole discipline in one check: when this phase ends, the diff shows test
-files and the markdown contract — `SPEC.md`, `CONTEXT.md`, `AGENTS.md`, `decisions/` —
+files and the markdown contract — `SPEC.md`, `CONTEXT.md`, `CLAUDE.md`, `decisions/` —
 **nothing else**.
 
 - **Tag the existing tests.** A test claims a criterion when the `[KEY-n]` token
@@ -164,7 +167,7 @@ Claim criteria in document order, suite green at every criterion boundary.
 Done means all five, verified rather than assumed:
 
 1. The feature folder is named for the feature and holds the markdown contract —
-   `SPEC.md`, `CONTEXT.md`, `AGENTS.md` — with all code and tests in `src/`.
+   `SPEC.md`, `CONTEXT.md`, `CLAUDE.md` — with all code and tests in `src/`.
 2. `<oracle> lint <feature-folder>` exits `0`.
 3. Every criterion id appears in at least one full test name — run the suite with a
    JSON reporter and check each id against the concatenated names.

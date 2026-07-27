@@ -107,6 +107,12 @@ look at the spec. That is a compound criterion that lint let through, and findin
 now is worth more than the detour costs. Amending the spec mid-implement is
 `spec-feature`'s §2 in miniature: next never-used ids, re-lint, announce the change.
 
+**When an edit lands outside the feature folder, record it in the slice's `CLAUDE.md`**
+under the boundary list — the file touched and which slice owns it. That list is the
+one part of the contract nothing else derives, and it goes stale silently: the next
+agent finds the model but not the schema entry it has to register. Add the line as you
+make the edit, not at the end.
+
 ### Tagging tests
 
 A test claims a criterion when the `[KEY-n]` token appears in its **full concatenated
@@ -132,7 +138,7 @@ thought the naïve implementation would miss them.
 Done means all four, verified rather than assumed:
 
 1. The feature folder is named for the feature and has the convention's shape:
-   `SPEC.md`, `CONTEXT.md`, `AGENTS.md` at the root, code and tests in `src/`.
+   `SPEC.md`, `CONTEXT.md`, `CLAUDE.md` at the root, code and tests in `src/`.
 2. `<oracle> lint <feature-folder>` exits `0`.
 3. `<oracle> claims <feature-folder>` exits `0` — every criterion claimed, and no
    test still claiming a retired id. An id nobody claims is an unimplemented

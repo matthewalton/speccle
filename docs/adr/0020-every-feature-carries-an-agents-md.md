@@ -1,6 +1,7 @@
 # 0020 — Every feature carries an AGENTS.md
 
-- Status: accepted
+- Status: superseded by
+  [ADR-0049](0049-a-slices-agent-file-is-claude-md-and-carries-only-what-that-slice-needs.md)
 - Date: 2026-07-11
 
 ## Context

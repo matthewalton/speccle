@@ -30,7 +30,7 @@ everything a feature needs, side by side:
 checkout/              ← named for the feature, never a catch-all like src/
   SPEC.md              ← acceptance criteria, each with a stable [CHECKOUT-n] id
   CONTEXT.md           ← the feature's language — a glossary
-  AGENTS.md            ← how an agent works the slice
+  CLAUDE.md            ← what an agent needs that the folder cannot show
   decisions/           ← the feature's ADRs — choices that span criteria
   src/
     checkout.ts
@@ -345,5 +345,5 @@ pnpm lint
 ```
 
 Project terminology lives in [`CONTEXT.md`](CONTEXT.md); design decisions in
-[`docs/adr`](docs/adr). Working as an agent? Start with [`AGENTS.md`](AGENTS.md);
+[`docs/adr`](docs/adr). Working as an agent? Start with [`CLAUDE.md`](CLAUDE.md);
 commit format is in [`.github/CONTRIBUTING.md`](.github/CONTRIBUTING.md).

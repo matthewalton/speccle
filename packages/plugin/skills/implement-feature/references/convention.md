@@ -20,7 +20,7 @@ Every feature folder has the same shape:
 scanner/
 ├── SPEC.md          ← the acceptance criteria
 ├── CONTEXT.md       ← the feature's language (a glossary, nothing else)
-├── AGENTS.md        ← how an agent works the slice
+├── CLAUDE.md        ← what an agent needs that the folder cannot show
 ├── decisions/       ← the feature's ADRs, one file per decision
 │   └── 0001-<slug>.md
 └── src/
@@ -45,7 +45,7 @@ genuinely one cohesive feature that simply carries many files. Tests stay beside
 code they defend at whatever depth it sits.
 
 Everything about the feature lives inside the subtree. An agent landing in the folder
-needs nothing else to understand it — and `AGENTS.md` is where it starts reading.
+needs nothing else to understand it — and `CLAUDE.md` is where it starts reading.
 
 ## SPEC.md
 
@@ -100,18 +100,54 @@ A glossary only. Decisions never live here — they are ADRs in `decisions/`
 boundary: about a word → `CONTEXT.md`; about one behaviour → that criterion's body in
 `SPEC.md`; a choice spanning criteria → `decisions/`.
 
-## AGENTS.md (per feature)
+## CLAUDE.md (per feature)
 
-The slice's agent-facing entry point, following the cross-tool convention of the same
-name. It orients in one screenful, stating only what the folder cannot show:
+The slice's agent-facing entry point (ADR-0049),
+loaded automatically when an agent reads a file in the folder. It orients in well under
+a screenful and carries four things, in this order:
 
-- what the slice does — a sentence or two
-- how to run its tests (and any other commands the slice needs)
-- where the contract lives: `SPEC.md` for the criteria, `CONTEXT.md` for the language,
-  `decisions/` for the choices — and that tests claim criteria by `[KEY-n]` token
+```markdown
+# Checkout
 
-Facts about _working_ the slice belong here; facts about the feature's _behaviour_
-belong in `SPEC.md`. Duplicating either in the other is drift waiting to happen.
+Takes a basket to a paid order.
+
+**Edits outside this folder** — a change here usually touches:
+
+- `pricing/src/tax.ts` — the rate table (pricing owns it)
+- `orders/src/schema.ts` — the `Order.checkout` relation
+
+**Traps**
+
+- `test/fixtures/legacy-basket.json` was written by the v1 schema — never regenerate it.
+- Clocks are injected; tests never read the wall clock.
+
+Criteria token: `[CHECKOUT-n]`
+```
+
+1. **Identity** — one line: what the slice is.
+2. **Boundary** — the files outside the folder a change here must touch, and which
+   slice owns each. Nothing else in the contract records this, and an agent that misses
+   it ships a change that only half-lands.
+3. **Traps** — fixtures, injection points and prohibitions, but only where they differ
+   from the repo's default.
+4. **Key** — the criterion token, which the folder cannot show.
+
+One test governs everything else:
+
+> If a line would be true of every slice in the repo, it belongs in the root
+> `CLAUDE.md`, not here.
+
+That is what keeps the file from becoming boilerplate. Commands appear only where they
+genuinely differ per slice: in a workspace where each package has its own test command,
+they qualify; in a single-target build where one invocation runs everything, they belong
+at the root and stating them per slice is pure duplication.
+
+Behaviour stays in `SPEC.md`, language in `CONTEXT.md`, rationale in `decisions/` —
+naming those roles in every slice's `CLAUDE.md` is the same boilerplate by another
+route. An inventory of `src/` belongs nowhere: the folder already shows it.
+
+A repo that keeps an `AGENTS.md` at its root for other tools should leave it there; this
+rule governs feature folders only.
 
 ## decisions/ (per feature)
 

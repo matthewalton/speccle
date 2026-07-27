@@ -56,7 +56,13 @@ today, and the bundled copy is the authority:
 - **The folder is named for the feature.** An unnamed catch-all (`src/`, `lib/`)
   flags, even for a project's only feature.
 - **The markdown contract is complete at the root**: `SPEC.md`, `CONTEXT.md`,
-  `AGENTS.md`; `decisions/` whenever the feature has a decision to hold.
+  `CLAUDE.md`; `decisions/` whenever the feature has a decision to hold. A slice still
+  carrying `AGENTS.md` is drift — the file was renamed by ADR-0049.
+- **The slice's `CLAUDE.md` says nothing that is true of every slice.** Compare the
+  file against its siblings: a section repeated near-verbatim across slices — build
+  commands a single-target repo runs the same way everywhere, the roles of `SPEC.md`
+  and `CONTEXT.md`, an inventory of `src/` — is boilerplate that belongs in the root
+  `CLAUDE.md` or nowhere.
 - **All code and tests sit under `src/`**, tests beside the code they defend, and the
   root holds the markdown contract and nothing else. `src/` may nest into subfolders —
   legal nesting is not drift. What flags is an **over-full flat directory**: `src/`
@@ -99,9 +105,15 @@ Per slice, in this order:
   crowded feature, regroup it anyway — the subfolders you draw are the natural split
   lines — and carry "consider splitting into siblings via a `feature` amend" into the
   spec summary as a finding. That better fix is the human's to make, not conform's.
-- **Generate a missing `AGENTS.md`** from what the folder shows: what the slice does
-  in a sentence or two, how to run its tests, where the contract lives. Facts about
-  working the slice, never about its behaviour.
+- **Rename `AGENTS.md` to `CLAUDE.md`** with `git mv` so the history follows, then trim
+  it to the four parts the convention now asks for. Content that would be true of every
+  slice does not move to the root automatically — check whether the root `CLAUDE.md`
+  already says it, add it there once if not, and carry "root `CLAUDE.md` gained the
+  build commands" into the spec summary.
+- **Generate a missing `CLAUDE.md`** from what the folder shows: identity in one line,
+  the edits a change here forces outside the folder (the imports show them), per-slice
+  traps, the criterion token. Never its behaviour, and never a line its siblings would
+  repeat.
 - **Split decisions content out of `CONTEXT.md`** into `decisions/0001-<slug>.md`
   onward, same form as any ADR. The original wording becomes the Decision; a "why"
   that was never recorded is stated as unrecorded, not invented.

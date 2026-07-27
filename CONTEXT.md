@@ -9,7 +9,7 @@ It is a glossary only — no implementation detail, no usage.
 
 **Feature**:
 A directory named for the feature, owning one vertical slice: the markdown contract at
-its root — `SPEC.md`, `CONTEXT.md`, `AGENTS.md`, `decisions/` — and the code and tests
+its root — `SPEC.md`, `CONTEXT.md`, `CLAUDE.md`, `decisions/` — and the code and tests
 that satisfy it in `src/`
 ([ADR-0019](docs/adr/0019-a-feature-folder-is-named-and-has-a-fixed-shape.md)). The
 unit acceptance criteria attach to.
@@ -52,12 +52,13 @@ synonyms — and nothing else. About a word → here; about one behaviour → th
 criterion's body; a choice spanning criteria → the feature's `decisions/`.
 _Avoid_: docs, notes, wiki page.
 
-**Feature AGENTS.md**:
-The slice's agent-facing entry point, following the cross-tool convention of that name:
-what the slice does, how to run its tests, where the contract lives
-([ADR-0020](docs/adr/0020-every-feature-carries-an-agents-md.md)). Facts about working
-the slice, never about its behaviour.
-_Avoid_: readme (for this file), runbook.
+**Feature CLAUDE.md**:
+The slice's agent-facing entry point: identity, the boundary — the edits a change here
+forces outside the folder — the slice's traps, and its criterion token
+([ADR-0049](docs/adr/0049-a-slices-agent-file-is-claude-md-and-carries-only-what-that-slice-needs.md)).
+Carries only what is specific to this slice; anything true of every slice belongs in the
+root `CLAUDE.md`.
+_Avoid_: readme (for this file), runbook, AGENTS.md (the pre-ADR-0049 name).
 
 **Feature decision**:
 A choice spanning a feature's criteria, recorded as a numbered ADR file in the

@@ -1,12 +1,12 @@
 ---
 name: spec-feature
-description: Draft or amend a feature's markdown contract — SPEC.md, CONTEXT.md, AGENTS.md, decisions/ — from a plan or any raw input, lint it clean with the oracle (product-voiced When/Then statements included), and hand back the criteria, without writing any tests or code. Use when the user wants a spec drafted or amended but not yet implemented, wants acceptance criteria written for a behaviour, or says "spec this", "draft the criteria", "add a criterion to this slice".
+description: Draft or amend a feature's markdown contract — SPEC.md, CONTEXT.md, CLAUDE.md, decisions/ — from a plan or any raw input, lint it clean with the oracle (product-voiced When/Then statements included), and hand back the criteria, without writing any tests or code. Use when the user wants a spec drafted or amended but not yet implemented, wants acceptance criteria written for a behaviour, or says "spec this", "draft the criteria", "add a criterion to this slice".
 allowed-tools: Read(/${CLAUDE_PLUGIN_ROOT}/skills/*/references/**)
 ---
 
 # spec-feature
 
-Produce the markdown contract — `SPEC.md`, `CONTEXT.md`, `AGENTS.md`, `decisions/` —
+Produce the markdown contract — `SPEC.md`, `CONTEXT.md`, `CLAUDE.md`, `decisions/` —
 for one feature, and lint it clean. Stage 2 of the `feature` pipeline, and complete
 on its own when the user wants a spec without an implementation. This skill writes
 markdown only — tests and code are `implement-feature`'s job.
@@ -46,7 +46,7 @@ the criteria; the human already owns them.
 ## 2. Draft (new) or amend the contract
 
 **New route** — scaffold the convention's shape: `SPEC.md`, `CONTEXT.md`, and
-`AGENTS.md` at the feature root, `decisions/` when the first cross-criterion choice
+`CLAUDE.md` at the feature root, `decisions/` when the first cross-criterion choice
 lands. The parts worth restating because they are where drafts go wrong:
 
 - **Statements speak product, When/Then by default.** "When X, Y" — the trigger,
@@ -72,11 +72,13 @@ lands. The parts worth restating because they are where drafts go wrong:
 - **`SPEC.md`'s intro prose carries the product intent** — what the feature is for
   and its scope, a paragraph, not a line. There is no separate product document; this
   is where a future reader learns why the slice exists.
-- **`AGENTS.md` states how to work the slice**, not what it does: how to run its
-  tests, and where the contract lives. Behaviour stays in `SPEC.md` — duplicating it
-  here is drift waiting to happen.
+- **`CLAUDE.md` carries only what this slice needs** — identity in one line, the edits
+  a change here forces outside the folder, per-slice traps, the criterion token. Test
+  every line against: _would this be true of every slice in the repo?_ If yes it
+  belongs in the root `CLAUDE.md`, not here. Behaviour stays in `SPEC.md`, and naming
+  the contract's own shape is the boilerplate the test exists to catch.
 
-`SPEC.md`, `CONTEXT.md`, and `AGENTS.md` are the floor, even for a tiny feature;
+`SPEC.md`, `CONTEXT.md`, and `CLAUDE.md` are the floor, even for a tiny feature;
 `decisions/` appears with the first decision.
 
 **Amend route** — the contract already exists; change it in place, never re-scaffold:
