@@ -197,6 +197,12 @@ describe("renderSummary", () => {
     evidence: ["CHECKOUT-2"],
   };
 
+  it("signs both ends, because the identity it posts under is not one it can set", () => {
+    const summary = renderSummary({ ...base, verdict: verdict() });
+    expect(summary.startsWith("## ![Speccle](https://img.shields.io/badge/")).toBe(true);
+    expect(summary).toContain("<sub>[Speccle](https://github.com/matthewalton/speccle) · abcdef1");
+  });
+
   it("opens with the verdict, and the gate's evidence with it when a human is required", () => {
     const summary = renderSummary({
       ...base,

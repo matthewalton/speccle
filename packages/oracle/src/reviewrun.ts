@@ -461,6 +461,17 @@ interface SummaryInput {
   anchorsRejected?: boolean;
 }
 
+const SPECCLE_URL = "https://github.com/matthewalton/speccle";
+
+/**
+ * The comment posts with `GITHUB_TOKEN`, so GitHub bills it to `github-actions[bot]` whatever the
+ * body says — the body is the only place an identity can live. The badge is a plain image rather
+ * than a committed logo because the repo's marks are SVG, and GitHub serves raw SVG as
+ * `text/plain`, which its image proxy will not render. Alt text is the identity too: a blocked or
+ * unreachable image degrades to exactly the heading this replaced.
+ */
+const HEADER = `## ![Speccle](https://img.shields.io/badge/Speccle-8250df?style=flat-square) review`;
+
 /**
  * The review body. Two questions decide whether a reader reads any further — did it pass, and
  * where do I look — so both are answered in the banner, above everything else. What matters on
@@ -468,7 +479,7 @@ interface SummaryInput {
  * `<details>`, except when the gate fired: then the evidence is the point, and it opens.
  */
 export function renderSummary(input: SummaryInput): string {
-  const lines = ["## Speccle review", "", ...banner(input), ""];
+  const lines = [HEADER, "", ...banner(input), ""];
   lines.push(...lensTable(input), ...unplacedList(input), ...riskDetail(input));
 
   // Announce every cap: silence would read as full coverage of a change set that was trimmed.
@@ -486,7 +497,7 @@ export function renderSummary(input: SummaryInput): string {
   lines.push(
     `Fixes come back through the local \`review\` skill, which re-runs the checks-gate and reverts what goes red.`,
     "",
-    `<sub>${input.headSha.slice(0, 7)} · comment \`@review\` to run again</sub>`,
+    `<sub>[Speccle](${SPECCLE_URL}) · ${input.headSha.slice(0, 7)} · comment \`@review\` to run again</sub>`,
     REVIEW_MARKER,
   );
   return lines.join("\n");
