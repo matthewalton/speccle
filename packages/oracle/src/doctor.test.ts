@@ -171,7 +171,7 @@ describe("doctor: review driver", () => {
   });
 
   it("is unstamped when a workflow exists but names no pinned version", async () => {
-    const root = await scaffold({ [WORKFLOW_FILE]: "run: npx speccle review run\n" });
+    const root = await scaffold({ [WORKFLOW_FILE]: "run: npm i -g speccle\n" });
     const report = await doctor(root);
     expect(report.driver.status).toBe("unstamped");
     expect(report.driver.recorded).toBeNull();

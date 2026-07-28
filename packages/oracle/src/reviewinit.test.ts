@@ -28,8 +28,23 @@ describe("scaffoldReviewWorkflow", () => {
     const workflow = await read(root);
     expect(pinnedVersion(workflow)).toBe("1.2.3");
     // Both steps run the pinned copy: the reviewing code must not come from the reviewed head.
-    expect(workflow).toContain("npx -y speccle@1.2.3 review run");
-    expect(workflow).toContain("npx -y speccle@1.2.3 risk --base");
+    expect(workflow).toContain("npm i -g speccle@1.2.3");
+    expect(workflow).toContain("speccle review run");
+    expect(workflow).toContain("speccle risk --base");
+  });
+
+  // `npx` is `npm exec`, which validates the reviewed repo's `devEngines.packageManager` first
+  // and refuses to run at all under a pnpm/yarn/bun pin — the failure that took the driver out
+  // entirely. Nothing here may reach for it again.
+  it("never invokes the driver through npx, which a package-manager pin would refuse", async () => {
+    const root = await tempRoot();
+    await scaffoldReviewWorkflow(root, "1.2.3");
+    // Comments stripped: the prose beside the install step names `npx` to say why it is not
+    // used, and only what the runner executes is the claim here.
+    const steps = (await read(root))
+      .split("\n")
+      .filter((line) => !line.trimStart().startsWith("#"));
+    expect(steps.join("\n")).not.toContain("npx");
   });
 
   it("moves the pin on a re-run, which is how a repo updates the driver", async () => {
@@ -119,10 +134,10 @@ describe("scaffoldReviewWorkflow", () => {
 
 describe("pinnedVersion", () => {
   it("finds the pinned version", () => {
-    expect(pinnedVersion("run: npx -y speccle@0.14.0 review run --pr 1")).toBe("0.14.0");
+    expect(pinnedVersion("run: npm i -g speccle@0.14.0")).toBe("0.14.0");
   });
 
   it("is undefined when nothing is pinned", () => {
-    expect(pinnedVersion("run: npx speccle review run")).toBeUndefined();
+    expect(pinnedVersion("run: npm i -g speccle")).toBeUndefined();
   });
 });

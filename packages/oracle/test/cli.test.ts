@@ -733,7 +733,7 @@ describe("speccle review (e2e)", () => {
     expect(status).toBe(0);
     expect(stdout).toContain(`pinned to speccle@${PKG_VERSION}`);
     const workflow = await readFile(join(root, ".github/workflows/speccle-review.yml"), "utf8");
-    expect(workflow).toContain(`npx -y speccle@${PKG_VERSION} review run`);
+    expect(workflow).toContain(`npm i -g speccle@${PKG_VERSION}`);
   });
 
   it("emits the typed JSON report", async () => {

@@ -132,6 +132,14 @@ jobs:
         with:
           node-version: 24
 
+      # A global install, not \`npx\`. \`npx\` is \`npm exec\`, which validates *this* repo's
+      # \`devEngines.packageManager\` before it fetches anything — so a repo pinning pnpm, yarn or
+      # bun fails the run with an EBADDEVENGINES error naming Speccle, which never declared it
+      # (\`onFail: download\` does not rescue a name mismatch). \`npm i -g\` is exempt, and resolves
+      # the package once instead of on both steps below.
+      - name: Install Speccle
+        run: npm i -g speccle@${pin}
+
       # \`origin/\` prefixes the base ref because checkout leaves it as a remote-tracking ref;
       # a bare branch name would not resolve.
       - name: Review the change set
@@ -139,7 +147,7 @@ jobs:
           ${API_KEY_SECRET}: \${{ secrets.${API_KEY_SECRET} }}
           GITHUB_TOKEN: \${{ secrets.GITHUB_TOKEN }}
         run: >-
-          npx -y speccle@${pin} review run
+          speccle review run
           --pr \${{ steps.pr.outputs.number }}
           --base origin/\${{ steps.pr.outputs.base }}
           \${{ github.event_name == 'issue_comment' && '--force' || '' }}
@@ -148,7 +156,7 @@ jobs:
       # the failing check. Whether that blocks the merge is branch protection — GitHub's, and
       # this repo's call to make, not Speccle's. It runs last so the findings post either way.
       - name: Risk gate
-        run: npx -y speccle@${pin} risk --base origin/\${{ steps.pr.outputs.base }}
+        run: speccle risk --base origin/\${{ steps.pr.outputs.base }}
 `;
 }
 
