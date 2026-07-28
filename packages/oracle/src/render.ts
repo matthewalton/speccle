@@ -106,6 +106,38 @@ export function renderReviewRun(report: ReviewRunReport): string {
   return lines.join("\n");
 }
 
+export function renderReviewFindings(report: ReviewFindingsReport): string {
+  if (report.outcome === "no-review") {
+    return join(
+      `${report.repo}#${report.pr} — no Speccle review posted on this pull request`,
+      "run the lens panel locally instead",
+    );
+  }
+
+  const lines = [
+    `${report.repo}#${report.pr} — ${plural(report.findings.length, "finding")} from the review at ${(report.reviewedSha ?? "").slice(0, 7)}`,
+  ];
+  if (report.stale) {
+    lines.push(
+      `stale — the head has moved to ${report.headSha.slice(0, 7)} since; a finding may name a line that is gone`,
+    );
+  }
+  lines.push("");
+  for (const finding of report.findings) {
+    const partial = finding.partial ? "  (no fix or remedy — unplaced in the summary)" : "";
+    lines.push(
+      `${finding.severity}  ${finding.path}:${String(finding.line)}  ${finding.lens}${partial}`,
+    );
+    lines.push(`  ${finding.what}`);
+  }
+  if (report.findings.length > 0) lines.push("");
+  if (report.skippedComments > 0) {
+    lines.push(`${plural(report.skippedComments, "comment")} on the review no lens wrote`);
+  }
+  lines.push(`base ${report.base} — measure risk and calibration against it`);
+  return lines.join("\n");
+}
+
 export function renderDoctor(report: DoctorReport): string {
   const lines = [
     `speccle ${report.cli}`,
@@ -260,6 +292,7 @@ function describeReport(check: ReportCheck): string {
 import type { CalibrationReport, RecordReport } from "./calibration.ts";
 import type { LintReport } from "./lint.ts";
 import type { RemedyRecallReport, RemedyRecordReport } from "./remedy.ts";
+import type { ReviewFindingsReport } from "./reviewfindings.ts";
 import { API_KEY_SECRET, type ReviewInitReport } from "./reviewinit.ts";
 import type { ReviewRunReport } from "./reviewrun.ts";
 import type { RiskReport } from "./risk.ts";

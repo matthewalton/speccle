@@ -3,18 +3,17 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { gitAt } from "../test/support/git.ts";
+import type { Finding } from "./finding.ts";
+import { type FetchLike, REVIEW_MARKER } from "./github.ts";
 import { LENSES_DIR, TEMPLATE_LENS } from "./lenses.ts";
 import {
   anchorableLines,
   type ChangedFile,
-  type Finding,
   findingsFrom,
-  type FetchLike,
   lensPrompt,
   normalise,
   panel,
   renderSummary,
-  REVIEW_MARKER,
   reviewRun,
 } from "./reviewrun.ts";
 

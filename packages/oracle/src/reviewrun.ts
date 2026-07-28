@@ -1,21 +1,36 @@
 import { readdir, readFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { messageOf } from "./changeset.ts";
+import { commentBody, type Finding } from "./finding.ts";
+import {
+  asArray,
+  asNumber,
+  asRecord,
+  asString,
+  asUnknown,
+  errorText,
+  type FetchLike,
+  type GithubClient,
+  githubClient,
+  pullRequest,
+  resolveRepo,
+  resolveToken,
+  REVIEW_MARKER,
+} from "./github.ts";
 import { LENSES_DIR, TEMPLATE_LENS } from "./lenses.ts";
 import { REMEDY_ROUTES } from "./remedy.ts";
 import { risk, type RiskReport } from "./risk.ts";
 
 /**
  * The CI driver's runner: the one module in this package that calls a model (ADR-0047). Every
- * other command here is deterministic, and the boundary is worth keeping visible — nothing
- * outside this module imports an API.
+ * other command here is deterministic, and the boundary is worth keeping visible — the Anthropic
+ * API is reached from here and nowhere else, and nothing imports this module to reach it. What
+ * `review findings` shares with this is the GitHub seam and the comment format, which is why
+ * both live outside it.
  *
  * It finds and comments. It never edits the tree, never commits, and never pushes: a fix has to
- * pass the checks-gate and be revertible, which is the local driver's job, not CI's.
+ * pass the checks-gate and be revertible, which is the local driver's job, not CI's (ADR-0051).
  */
-
-/** Marks a review as this driver's, so a second run can recognise its own work. */
-export const REVIEW_MARKER = "<!-- speccle-review -->";
 
 /** The lens that decides fix authority rather than reporting findings — never part of the panel. */
 const RISK_LENS = "risk.md";
@@ -31,7 +46,6 @@ const DEFAULT_MODEL = "claude-sonnet-5";
 
 const ANTHROPIC_MESSAGES_URL = "https://api.anthropic.com/v1/messages";
 const ANTHROPIC_VERSION = "2023-06-01";
-const GITHUB_API = "https://api.github.com";
 
 /**
  * Caps on the diff handed to a lens. A generated lockfile teaches a lens nothing and would
@@ -41,8 +55,6 @@ const GITHUB_API = "https://api.github.com";
 const MAX_FILE_PATCH_BYTES = 24_000;
 const MAX_TOTAL_PATCH_BYTES = 160_000;
 const MAX_FILE_PAGES = 10;
-
-export type FetchLike = (url: string, init?: RequestInit) => Promise<Response>;
 
 export interface ReviewRunOptions {
   /** The pull request to review. */
@@ -60,20 +72,6 @@ export interface ReviewRunOptions {
   githubToken?: string;
   /** Injected in tests; defaults to the global. */
   fetch?: FetchLike;
-}
-
-/** One thing a lens reported, before anchoring decides whether it can be an inline comment. */
-export interface Finding {
-  lens: string;
-  path: string;
-  line: number;
-  side: "LEFT" | "RIGHT";
-  severity: string;
-  what: string;
-  why: string;
-  fix: string;
-  /** The prevention route the lens proposes — the same routes the remedy record holds. */
-  remedy: string;
 }
 
 /** A finding placed on a line GitHub will accept a comment on. */
@@ -121,14 +119,8 @@ export async function reviewRun(
 ): Promise<ReviewRunReport> {
   const root = resolve(target);
   const doFetch = options.fetch ?? ((url, init) => fetch(url, init));
-  const repo = options.repo ?? process.env.GITHUB_REPOSITORY;
-  if (repo === undefined || repo === "") {
-    throw new Error("no repository — pass --repo <owner/name> or set GITHUB_REPOSITORY");
-  }
-  const token = options.githubToken ?? process.env.GITHUB_TOKEN;
-  if (token === undefined || token === "") {
-    throw new Error("no GitHub token — set GITHUB_TOKEN (Actions provides it as a secret)");
-  }
+  const repo = resolveRepo(root, options.repo);
+  const token = resolveToken(options.githubToken);
   const apiKey = options.apiKey ?? process.env.ANTHROPIC_API_KEY;
   if (apiKey === undefined || apiKey === "") {
     throw new Error(
@@ -442,14 +434,6 @@ export function anchorableLines(patch: string): { left: Set<number>; right: Set<
   return { left, right };
 }
 
-function commentBody(finding: Finding): string {
-  const lines = [`**${finding.severity}** — ${finding.what}`];
-  if (finding.why !== "") lines.push("", finding.why);
-  if (finding.fix !== "") lines.push("", `**Fix**: ${finding.fix}`);
-  lines.push("", `_${finding.lens} · proposed remedy: ${finding.remedy}_`);
-  return lines.join("\n");
-}
-
 interface SummaryInput {
   verdict: RiskReport | null;
   base: string;
@@ -509,9 +493,11 @@ export function renderSummary(input: SummaryInput): string {
         : "**Unplaced findings** — these could not anchor to a line in the diff, so they are here rather than lost:",
       "",
     );
+    // The severity rides along because this bullet is the whole record of a finding no inline
+    // comment could carry — `review findings` reads it back, and untriaged is unactionable.
     for (const finding of input.unplaced) {
       lines.push(
-        `- \`${finding.path}:${String(finding.line)}\` (${finding.lens}) — ${finding.what}`,
+        `- \`${finding.path}:${String(finding.line)}\` (${finding.lens} · ${finding.severity}) — ${finding.what}`,
       );
     }
     lines.push("");
@@ -544,53 +530,6 @@ async function riskVerdict(root: string, base: string): Promise<RiskReport | nul
   } catch {
     return null;
   }
-}
-
-interface GithubClient {
-  get: (path: string) => Promise<unknown>;
-  post: (path: string, body: unknown) => Promise<{ ok: boolean; status: number; text: string }>;
-}
-
-function githubClient(doFetch: FetchLike, token: string): GithubClient {
-  const headers = {
-    accept: "application/vnd.github+json",
-    authorization: `Bearer ${token}`,
-    "x-github-api-version": "2022-11-28",
-    "user-agent": "speccle-review",
-  };
-  return {
-    get: async (path) => {
-      const response = await doFetch(`${GITHUB_API}${path}`, { headers });
-      if (!response.ok) {
-        throw new Error(
-          `GitHub API ${String(response.status)} on ${path}: ${await errorText(response)}`,
-        );
-      }
-      return asUnknown(await response.json());
-    },
-    post: async (path, body) => {
-      const response = await doFetch(`${GITHUB_API}${path}`, {
-        method: "POST",
-        headers: { ...headers, "content-type": "application/json" },
-        body: JSON.stringify(body),
-      });
-      return { ok: response.ok, status: response.status, text: await errorText(response) };
-    },
-  };
-}
-
-async function pullRequest(
-  github: GithubClient,
-  repo: string,
-  pr: number,
-): Promise<{ base: string; headSha: string }> {
-  const body = asRecord(await github.get(`/repos/${repo}/pulls/${String(pr)}`));
-  const base = asString(asRecord(body?.base)?.ref);
-  const headSha = asString(asRecord(body?.head)?.sha);
-  if (base === undefined || headSha === undefined) {
-    throw new Error(`could not read the base ref and head sha of ${repo}#${String(pr)}`);
-  }
-  return { base, headSha };
 }
 
 /** Whether this driver already reviewed the PR — recognised by the marker it leaves. */
@@ -682,36 +621,4 @@ async function postReview(
   if (!retry.ok) {
     throw new Error(`GitHub API ${String(retry.status)} posting the review: ${retry.text}`);
   }
-}
-
-async function errorText(response: Response): Promise<string> {
-  try {
-    return (await response.text()).slice(0, 500);
-  } catch {
-    return "<no body>";
-  }
-}
-
-// The API payloads are untrusted input, so they are narrowed rather than asserted into shape.
-
-function asUnknown(value: unknown): unknown {
-  return value;
-}
-
-function asRecord(value: unknown): Record<string, unknown> | undefined {
-  return typeof value === "object" && value !== null && !Array.isArray(value)
-    ? (value as Record<string, unknown>)
-    : undefined;
-}
-
-function asArray(value: unknown): unknown[] | undefined {
-  return Array.isArray(value) ? value : undefined;
-}
-
-function asString(value: unknown): string | undefined {
-  return typeof value === "string" ? value : undefined;
-}
-
-function asNumber(value: unknown): number | undefined {
-  return typeof value === "number" && Number.isFinite(value) ? value : undefined;
 }

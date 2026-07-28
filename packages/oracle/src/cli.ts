@@ -22,6 +22,7 @@ import {
   renderLensesInit,
   renderRemedyRecall,
   renderRemedyRecord,
+  renderReviewFindings,
   renderReviewInit,
   renderReviewRun,
   renderRisk,
@@ -30,6 +31,7 @@ import {
   renderUpdate,
   renderVerify,
 } from "./render.ts";
+import { reviewFindings } from "./reviewfindings.ts";
 import { scaffoldReviewWorkflow } from "./reviewinit.ts";
 import { reviewRun } from "./reviewrun.ts";
 import { risk } from "./risk.ts";
@@ -58,6 +60,8 @@ Commands:
   review init [path] [--json]    Scaffold the opt-in CI driver: a GitHub Actions workflow, pinned
   review run [path]              Review a pull request with the lens panel and post one review.
                                  The one command here that calls a model — needs a metered key
+  review findings [path]         Read back the findings the CI driver posted on a pull request,
+                                 so the local driver fixes those instead of re-running the panel
   strength [path] [--json]       Oracle-strength heatmap: per-criterion killed ÷ covered
   strength init [path] [--json]  Provision the strength stack: devDependencies + configs
   --version, -v                  Print the installed CLI version
@@ -102,6 +106,11 @@ review run options:
   --dry-run                    Report what would be posted, and post nothing
   Reads ANTHROPIC_API_KEY and GITHUB_TOKEN from the environment
 
+review findings options:
+  --pr <number>                The pull request whose review to read (required)
+  --repo <owner/name>          Defaults to GITHUB_REPOSITORY, then the \`origin\` remote
+  Calls no model. Reads GITHUB_TOKEN, or falls back to \`gh auth token\`
+
 strength options:
   --check             Report whether the reports are fresh, stale, or missing — never runs them
   --mutation <file>   Stryker JSON report   (default: ${DEFAULT_MUTATION_REPORT})
@@ -141,8 +150,9 @@ async function main(argv: string[]): Promise<number> {
   }
   if (command === "review" && rest[0] === "init") return runReviewInit(rest.slice(1));
   if (command === "review" && rest[0] === "run") return runReviewRun(rest.slice(1));
+  if (command === "review" && rest[0] === "findings") return runReviewFindings(rest.slice(1));
   if (command === "review") {
-    console.error(`review needs a subcommand: init or run\n\n${USAGE}`);
+    console.error(`review needs a subcommand: init, run, or findings\n\n${USAGE}`);
     return 2;
   }
   if (command === "strength" && rest[0] === "init") return runStrengthInit(rest.slice(1));
@@ -753,6 +763,59 @@ async function runReviewRun(args: string[]): Promise<number> {
   }
   console.log(json ? JSON.stringify(report, null, 2) : renderReviewRun(report));
   // Posting findings is not a failure: the risk gate is the check, and it runs as its own step.
+  return 0;
+}
+
+async function runReviewFindings(args: string[]): Promise<number> {
+  let json = false;
+  let pr: number | undefined;
+  let repo: string | undefined;
+  const positional: string[] = [];
+
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i]!;
+    if (arg === "--json") json = true;
+    else if (arg === "--pr" || arg === "--repo") {
+      const value = args[++i];
+      if (value === undefined) {
+        console.error(`${arg} needs a value\n\n${USAGE}`);
+        return 2;
+      }
+      if (arg === "--repo") repo = value;
+      else {
+        const number = Number(value);
+        if (!Number.isInteger(number) || number <= 0) {
+          console.error(`--pr needs a pull request number\n\n${USAGE}`);
+          return 2;
+        }
+        pr = number;
+      }
+    } else if (arg.startsWith("-")) {
+      console.error(`Unknown option: ${arg}\n\n${USAGE}`);
+      return 2;
+    } else positional.push(arg);
+  }
+  if (positional.length > 1) {
+    console.error(`review findings takes at most one path\n\n${USAGE}`);
+    return 2;
+  }
+  if (pr === undefined) {
+    console.error(`review findings needs --pr\n\n${USAGE}`);
+    return 2;
+  }
+
+  let report;
+  try {
+    report = await reviewFindings(positional[0] ?? ".", {
+      pr,
+      ...(repo !== undefined && { repo }),
+    });
+  } catch (err) {
+    console.error(message(err));
+    return 2;
+  }
+  console.log(json ? JSON.stringify(report, null, 2) : renderReviewFindings(report));
+  // Findings are what this command is for, so reporting them is success. The gate is `risk`.
   return 0;
 }
 

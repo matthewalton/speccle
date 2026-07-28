@@ -409,8 +409,9 @@ separate concern.
 ## review
 
 The outer loop has two drivers. The **local driver** is the `review` skill: it fans the
-lenses as subagents in a session and needs no key. The **CI driver** is these two commands,
-and it is **opt-in**, because it needs a metered `ANTHROPIC_API_KEY`.
+lenses as subagents in a session and needs no key. The **CI driver** is `init` and `run`
+below, and it is **opt-in**, because it needs a metered `ANTHROPIC_API_KEY`. `findings` is
+how the first reads what the second posted.
 
 ```sh
 speccle review init [path] [--json]
@@ -454,6 +455,29 @@ step so the **status check stays deterministic** — it survives a bad API day. 
 failing check blocks the merge is branch protection: GitHub's setting, the repo's call.
 
 This is the one command here that calls a model.
+
+```sh
+speccle review findings --pr <number> [path] [--repo <owner/name>] [--json]
+```
+
+Reads back the review the CI driver posted, so the local driver fixes the findings CI already
+paid for instead of running a second panel that can reach a different answer on the same
+commit. It **calls no model** — it reads the review, recognised by the same marker `run`
+stamps on it, and parses each inline comment back into the finding it was rendered from.
+
+- Returns the **latest** review the driver posted; a rerun's findings replace the ones it
+  supersedes.
+- Reports `base` — the ref the change set was measured against — so `risk` and
+  `calibrate record` measure the same change set the review did.
+- Reports `stale` when the head has moved since the review, because a finding may then name a
+  line that no longer exists.
+- A finding the review could not anchor to a line comes back marked `partial`: the summary
+  body is its whole record, so it carries no fix or remedy, and saying so beats returning
+  empty fields.
+- A comment on the review that no lens wrote — a human's reply — is left alone and counted.
+- Resolves the repository from `--repo`, then `GITHUB_REPOSITORY`, then the `origin` remote;
+  and the token from `GITHUB_TOKEN`, then `gh auth token`. The last rung of each is what a
+  human standing in a clone needs, and CI never reaches it.
 
 ## strength init
 

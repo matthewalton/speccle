@@ -751,13 +751,19 @@ describe("speccle review (e2e)", () => {
   it("exits 2 with the subcommands when given none", () => {
     const { status, stderr } = run("review");
     expect(status).toBe(2);
-    expect(stderr).toContain("review needs a subcommand: init or run");
+    expect(stderr).toContain("review needs a subcommand: init, run, or findings");
   });
 
   it("exits 2 when review run has no --pr", () => {
     const { status, stderr } = run("review", "run");
     expect(status).toBe(2);
     expect(stderr).toContain("review run needs --pr");
+  });
+
+  it("exits 2 when review findings has no --pr", () => {
+    const { status, stderr } = run("review", "findings");
+    expect(status).toBe(2);
+    expect(stderr).toContain("review findings needs --pr");
   });
 
   it("exits 2 on a --pr that is not a pull request number", () => {
