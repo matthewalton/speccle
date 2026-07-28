@@ -1,7 +1,7 @@
 import { access, mkdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import { DEFAULT_DIALECT, DIALECT_NAMES } from "./dialects.ts";
-import { detectPackageManager } from "./init.ts";
+import { DEFAULT_DIALECT, DIALECT_NAMES, resolveDialect } from "./dialects.ts";
+import { detectPackageManager } from "./packagemanager.ts";
 
 /** Where Speccle reads a repo's facts (ADR-0040). */
 export const CONFIG_DIR = ".speccle";
@@ -93,6 +93,17 @@ export function resolveFacts(config: SpeccleConfig, path: string): ResolvedFacts
     if (override.suite !== undefined) suite = override.suite;
   }
   return { dialect, suite };
+}
+
+/**
+ * Whether any dialect in force in this repo can be scored. A mixed tree keeps its stack: an
+ * override may put one subtree on ts-vitest under a swift default (ADR-0040), and that
+ * subtree's heatmap is real. Only a repo with no scorable dialect anywhere has nothing to
+ * provision — and provisioning it there would install a stack it can never run.
+ */
+export function scorable(config: SpeccleConfig | undefined, dialect: string): boolean {
+  const inForce = [dialect, ...(config?.overrides ?? []).map((o) => o.dialect ?? dialect)];
+  return inForce.some((name) => resolveDialect(name).supportsStrength);
 }
 
 /** Speccle's first guess at a repo's facts — written down, then corrected by hand. */

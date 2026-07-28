@@ -2,9 +2,15 @@ import { spawnSync } from "node:child_process";
 import { access, readFile, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
+import { readConfig, resolveFacts, scorable } from "./config.ts";
+import { DEFAULT_DIALECT } from "./dialects.ts";
 import { discoverSpecs } from "./discover.ts";
-
-export type PackageManager = "pnpm" | "npm" | "yarn" | "bun";
+import {
+  detectPackageManager,
+  installCommandFor,
+  removeCommandFor,
+  type PackageManager,
+} from "./packagemanager.ts";
 
 // The one stack the oracle join is proven on (ADR-0008), pinned to those majors.
 export const STRENGTH_DEPS = [
@@ -43,14 +49,6 @@ export interface InitOptions {
   mutate?: string[];
   skipInstall?: boolean;
 }
-
-const LOCKFILES: [string, PackageManager][] = [
-  ["pnpm-lock.yaml", "pnpm"],
-  ["package-lock.json", "npm"],
-  ["yarn.lock", "yarn"],
-  ["bun.lock", "bun"],
-  ["bun.lockb", "bun"],
-];
 
 export const STRYKER_CONFIG_NAMES = ["stryker.config", "stryker.conf"].flatMap((base) =>
   ["json", "js", "mjs", "cjs"].map((ext) => `${base}.${ext}`),
@@ -112,6 +110,7 @@ export async function mutateGlobs(root: string): Promise<string[]> {
 }
 
 export async function init(root: string, options: InitOptions = {}): Promise<InitReport> {
+  await assertScorable(root);
   const packageJson = await readPackageJson(root);
   const packageManager = await detectPackageManager(root);
   const mutate = options.mutate?.length ? options.mutate : await mutateGlobs(root);
@@ -160,6 +159,23 @@ export async function init(root: string, options: InitOptions = {}): Promise<Ini
   };
 }
 
+/**
+ * The stack this command provisions is Stryker + vitest, and only a scorable dialect can run
+ * it (ADR-0008 as amended by ADR-0038). Refusing is the point: the deps would install, the
+ * configs would be written, and `strength` would still never score the repo — so the failure
+ * has to land here, where it names the dialect, rather than as an empty heatmap later.
+ */
+async function assertScorable(root: string): Promise<void> {
+  const config = await readConfig(root);
+  const dialect = config ? resolveFacts(config, ".").dialect : DEFAULT_DIALECT;
+  if (scorable(config, dialect)) return;
+  throw new Error(
+    `strength init provisions the TypeScript stack (Stryker + vitest), which the "${dialect}" ` +
+      `dialect cannot run — oracle strength needs per-test mutant attribution, and only ` +
+      `StrykerJS produces it today. Nothing was installed or written.`,
+  );
+}
+
 // The materialized copies must be the one source of truth: a target that vendors the
 // skills project-level should not also load the user-level plugin. Best-effort — the
 // settings shape is Claude Code's, not ours; absence of the file means no warning.
@@ -205,13 +221,6 @@ async function readPackageJson(root: string): Promise<PackageJson> {
   return JSON.parse(raw) as PackageJson;
 }
 
-export async function detectPackageManager(root: string): Promise<PackageManager> {
-  for (const [lockfile, manager] of LOCKFILES) {
-    if (await exists(join(root, lockfile))) return manager;
-  }
-  return "npm";
-}
-
 async function provision(
   root: string,
   existingNames: string[],
@@ -223,16 +232,6 @@ async function provision(
   }
   await writeFile(join(root, writeName), content());
   return { file: writeName, action: "written" };
-}
-
-export function installCommandFor(manager: PackageManager, deps: string[]): string {
-  const subcommand = manager === "npm" ? "install -D" : manager === "bun" ? "add -d" : "add -D";
-  return `${manager} ${subcommand} ${deps.join(" ")}`;
-}
-
-export function removeCommandFor(manager: PackageManager, deps: string[]): string {
-  const subcommand = manager === "npm" ? "uninstall" : "remove";
-  return `${manager} ${subcommand} ${deps.join(" ")}`;
 }
 
 function runInstall(root: string, command: string): void {

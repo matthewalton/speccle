@@ -1,7 +1,7 @@
 import { access, readdir, readFile, stat } from "node:fs/promises";
 import { join, resolve } from "node:path";
-import { readConfig, type SpeccleConfig } from "./config.ts";
-import { DEFAULT_DIALECT, resolveDialect } from "./dialects.ts";
+import { readConfig, scorable } from "./config.ts";
+import { DEFAULT_DIALECT } from "./dialects.ts";
 import { ownVersion, STRENGTH_DEPS, STRYKER_CONFIG_NAMES } from "./init.ts";
 import { LENSES_DIR } from "./lenses.ts";
 import { pinnedVersion, WORKFLOW_FILE } from "./reviewinit.ts";
@@ -114,17 +114,6 @@ export async function doctor(target: string): Promise<DoctorReport> {
     stack: { dialect, provisioned, deps, status: stackStatus },
     ok,
   };
-}
-
-/**
- * Whether any dialect in force in this repo can be scored. A mixed tree keeps its stack: an
- * override may put one subtree on ts-vitest under a swift default (ADR-0040), and that
- * subtree's heatmap is real. Only a repo with no scorable dialect anywhere has nothing to
- * provision — reporting that as `absent` would nag it toward a stack it can never run.
- */
-function scorable(config: SpeccleConfig | undefined, dialect: string): boolean {
-  const inForce = [dialect, ...(config?.overrides ?? []).map((o) => o.dialect ?? dialect)];
-  return inForce.some((name) => resolveDialect(name).supportsStrength);
 }
 
 function derivePayloadStatus(

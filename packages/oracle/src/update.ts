@@ -1,8 +1,8 @@
 import { resolve } from "node:path";
 import { initConfig, readConfig } from "./config.ts";
 import { doctor, type DepCheck, type StackStatus } from "./doctor.ts";
-import { detectPackageManager, installCommandFor } from "./init.ts";
 import { materializeLenses, type LensResult } from "./lenses.ts";
+import { detectPackageManager, installCommandFor } from "./packagemanager.ts";
 import { scaffoldReviewWorkflow } from "./reviewinit.ts";
 import { materializeSkills, type SkillResult } from "./skills.ts";
 

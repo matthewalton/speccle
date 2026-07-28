@@ -7,10 +7,10 @@ import {
   init,
   mutateGlobs,
   ownVersion,
-  removeCommandFor,
   strykerConfig,
   vitestConfig,
 } from "./init.ts";
+import { removeCommandFor } from "./packagemanager.ts";
 
 const roots: string[] = [];
 
@@ -94,6 +94,38 @@ describe("init", () => {
     };
     expect(written.coverageAnalysis).toBe("perTest");
     expect(written.packageManager).toBe("npm");
+  });
+
+  it("refuses a repo whose only dialect cannot be scored, writing and installing nothing", async () => {
+    const root = await scaffold({ "package.json": "{}" });
+    await mkdir(join(root, ".speccle"), { recursive: true });
+    await writeFile(
+      join(root, ".speccle/config.json"),
+      JSON.stringify({ dialect: "swift", suite: "swift test" }),
+    );
+
+    await expect(init(root, { skipInstall: true })).rejects.toThrow(/"swift" dialect cannot run/);
+    await expect(readFile(join(root, "stryker.config.json"), "utf8")).rejects.toThrow();
+    await expect(readFile(join(root, "vitest.config.ts"), "utf8")).rejects.toThrow();
+  });
+
+  it("provisions a mixed tree: one scorable override under an unscorable default is enough", async () => {
+    const root = await scaffold({ "package.json": "{}" });
+    await mkdir(join(root, ".speccle"), { recursive: true });
+    await writeFile(
+      join(root, ".speccle/config.json"),
+      JSON.stringify({
+        dialect: "swift",
+        suite: "swift test",
+        overrides: [{ path: "web", dialect: "ts-vitest" }],
+      }),
+    );
+
+    const report = await init(root, { skipInstall: true });
+    expect(report.files).toEqual([
+      { file: "stryker.config.json", action: "written" },
+      { file: "vitest.config.ts", action: "written" },
+    ]);
   });
 
   it("detects the package manager from the lockfile", async () => {
