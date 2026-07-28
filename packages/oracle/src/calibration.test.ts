@@ -2,6 +2,7 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
+import { gitAt } from "../test/support/git.ts";
 import {
   CALIBRATION_FILE,
   calibrationReport,
@@ -110,6 +111,70 @@ describe("calibration", () => {
       await expect(
         recordCalibration("/no/such/dir", { neededHuman: false, foundReal: false }),
       ).rejects.toThrow("path not found");
+    });
+
+    it("names the base it measured, and leaves it out for the working tree", async () => {
+      const root = await scaffold({
+        "checkout/SPEC.md": spec("[CHECKOUT-1] a"),
+        "checkout/tax.test.ts": claiming("CHECKOUT-1"),
+      });
+      const git = gitAt(root);
+      git("init", "-q", "-b", "main");
+      git("config", "user.email", "t@t.t");
+      git("config", "user.name", "t");
+      git("add", ".");
+      git("commit", "-qm", "the slice");
+      git("checkout", "-qb", "feature");
+      await write(root, "checkout/tax.ts", "export const t = 1;");
+      git("add", ".");
+      git("commit", "-qm", "source, spec silent");
+
+      const ranged = await recordCalibration(
+        root,
+        { neededHuman: false, foundReal: true },
+        { base: "main", now: fixedClock },
+      );
+      expect(ranged.entry.base).toBe("main");
+      expect(ranged.entry.signals).toEqual(["spec-silent-change"]);
+
+      // The tree is clean, so the working-tree measurement is a different change set entirely —
+      // and the entry says so by carrying no base, rather than reading as the same one.
+      const tree = await recordCalibration(root, { neededHuman: false, foundReal: true });
+      expect(tree.entry.base).toBeUndefined();
+      expect(tree.entry.signals).toEqual([]);
+    });
+
+    it("refuses to record when the change set has moved under the gated floor", async () => {
+      const root = await scaffold({
+        "checkout/SPEC.md": spec("[CHECKOUT-1] a"),
+        "checkout/tax.test.ts": claiming("CHECKOUT-1"),
+        "checkout/tax.ts": "export const t = 1;",
+      });
+      // The review gated on 0 — a doc-only change — but a fix has since touched the slice's
+      // source, so re-measuring now fires spec-silent-change and scores 3.
+      const moved = recordCalibration(
+        root,
+        { neededHuman: false, foundReal: true, floor: 0 },
+        { changed: ["checkout/tax.ts"], baseline: noBaseline, now: fixedClock },
+      );
+      await expect(moved).rejects.toThrow("scores 3, but the review gated on 0");
+      await expect(readFile(join(root, CALIBRATION_FILE), "utf8")).rejects.toThrow();
+    });
+
+    it("records when the gated floor still matches what it measures", async () => {
+      const root = await scaffold({
+        "checkout/SPEC.md": spec("[CHECKOUT-1] a"),
+        "checkout/tax.test.ts": claiming("CHECKOUT-1"),
+        "checkout/tax.ts": "export const t = 1;",
+      });
+      const report = await recordCalibration(
+        root,
+        { neededHuman: true, foundReal: true, floor: 3 },
+        { changed: ["checkout/tax.ts"], baseline: noBaseline, now: fixedClock },
+      );
+      expect(report.entry).toMatchObject({ score: 3, signals: ["spec-silent-change"] });
+      // Asserted, never recorded: the entry carries the computed floor, not the caller's number.
+      expect(report.entry).not.toHaveProperty("floor");
     });
   });
 

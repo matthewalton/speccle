@@ -65,7 +65,7 @@ Commands:
 claims / risk options:
   --dialect <name>    Test dialect: ${DIALECT_NAMES.join(", ")} (default: ${DEFAULT_DIALECT})
 
-verify / risk options:
+verify / risk / calibrate record options:
   --base <ref>        Read the change set from the commits between <ref> and HEAD, instead of the
                       working tree's pending change — what a CI driver needs, where the tree is
                       clean. Measured from the merge base, so it needs their shared history
@@ -76,6 +76,8 @@ calibrate record options:
   --needed-human <true|false>  Did this change actually need a human? (required — the honest verdict)
   --found-real <true|false>    Did the review find something real? (required)
   --escalated                  A risk lens escalated beyond the deterministic floor
+  --floor <score>              The floor the review gated on; refuses to write when re-measuring
+                               disagrees, rather than recording a change nobody reviewed
   --note <text>                Free-text context for the entry
   --dialect <name>             Test dialect: ${DIALECT_NAMES.join(", ")} (default: ${DEFAULT_DIALECT})
 
@@ -264,6 +266,8 @@ async function runRisk(args: string[]): Promise<number> {
 async function runCalibrateRecord(args: string[]): Promise<number> {
   let json = false;
   let dialect: string | undefined;
+  let base: string | undefined;
+  let floor: number | undefined;
   let neededHuman: boolean | undefined;
   let foundReal: boolean | undefined;
   let escalated = false;
@@ -282,13 +286,21 @@ async function runCalibrateRecord(args: string[]): Promise<number> {
       }
       if (arg === "--needed-human") neededHuman = value === "true";
       else foundReal = value === "true";
-    } else if (arg === "--note" || arg === "--dialect") {
+    } else if (arg === "--floor") {
+      const value = Number(args[++i]);
+      if (!Number.isFinite(value)) {
+        console.error(`--floor needs the risk score the review gated on\n\n${USAGE}`);
+        return 2;
+      }
+      floor = value;
+    } else if (arg === "--note" || arg === "--dialect" || arg === "--base") {
       const value = args[++i];
       if (value === undefined) {
         console.error(`${arg} needs a value\n\n${USAGE}`);
         return 2;
       }
       if (arg === "--note") note = value;
+      else if (arg === "--base") base = value;
       else dialect = value;
     } else if (arg.startsWith("-")) {
       console.error(`Unknown option: ${arg}\n\n${USAGE}`);
@@ -310,8 +322,14 @@ async function runCalibrateRecord(args: string[]): Promise<number> {
   try {
     report = await recordCalibration(
       positional[0] ?? ".",
-      { neededHuman, foundReal, escalated, ...(note !== undefined && { note }) },
-      { ...(dialect !== undefined && { dialect }) },
+      {
+        neededHuman,
+        foundReal,
+        escalated,
+        ...(floor !== undefined && { floor }),
+        ...(note !== undefined && { note }),
+      },
+      { ...(dialect !== undefined && { dialect }), ...(base !== undefined && { base }) },
     );
   } catch (err) {
     console.error(message(err));

@@ -233,7 +233,8 @@ command usable as a status check.
 
 ```sh
 speccle calibrate record [path] --needed-human <true|false> --found-real <true|false>
-                                [--escalated] [--note <text>] [--dialect <name>] [--json]
+                                [--base <ref>] [--floor <score>] [--escalated]
+                                [--note <text>] [--dialect <name>] [--json]
 speccle calibrate report [path] [--json]
 ```
 
@@ -247,10 +248,27 @@ it were the human's produces exactly the dishonest data a threshold must not ris
 
 ```
 recorded .speccle/calibration.jsonl — 1 entry
-  score 6 vs threshold 3 — floor required a human
+  score 6 vs threshold 3 — floor required a human — measured on the working tree
   verdict: needed a human, found something real
   signals: spec-silent-change, unclaimed-change
 ```
+
+`--base` and `--floor` keep the entry bound to the change that was actually reviewed. The floor
+is measured **when `record` runs**, so a review that fixes what it found — or that reviewed a
+committed branch, which a clean working tree does not contain — would otherwise score a different
+change set and file the human's verdict against signals that never fired on it. `--base <ref>`
+measures the same committed range the review gated on, and the entry names it. `--floor <score>`
+asserts the score the review gated on: it is checked, never recorded, so it cannot fabricate a
+floor — it can only refuse one that has moved.
+
+```
+this change set scores 3, but the review gated on 2 — the change set has moved since, so this
+entry would describe a change nobody reviewed. Name the reviewed change set with a base ref,
+or record it before applying fixes
+```
+
+Refusing is the point. A wrong entry is not weak evidence, it is false evidence, and `report`
+cannot tell afterwards — so the record stays one entry short rather than one entry wrong.
 
 `report` reads the record back and answers three questions arithmetically: which signals fired
 but never on a change that mattered, which fired on every change that genuinely needed a human,

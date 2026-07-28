@@ -833,15 +833,50 @@ describe("speccle --base (e2e)", () => {
     expect(stdout).toContain("1 check, 1 breach");
   });
 
+  it("calibrate record scores the committed range and stamps the base into the entry", async () => {
+    const root = await branched();
+    const verdict = ["--needed-human", "true", "--found-real", "true"];
+
+    const { status, stdout } = run("calibrate", "record", root, ...verdict, "--base", "main");
+    expect(status).toBe(0);
+    expect(stdout).toContain("measured against main");
+
+    const [entry] = (await readFile(join(root, ".speccle/calibration.jsonl"), "utf8"))
+      .trimEnd()
+      .split("\n")
+      .map((line) => JSON.parse(line) as Record<string, unknown>);
+    expect(entry).toMatchObject({ base: "main", score: 4, signals: ["criterion-retired"] });
+  });
+
+  it("calibrate record refuses, and writes nothing, when the gated floor no longer holds", async () => {
+    const root = await branched();
+    const { status, stderr } = run(
+      "calibrate",
+      "record",
+      root,
+      "--needed-human",
+      "false",
+      "--found-real",
+      "true",
+      "--floor",
+      "4", // gated on the committed range; without --base this measures the clean tree, so 0.
+    );
+    expect(status).toBe(2);
+    expect(stderr).toContain("scores 0, but the review gated on 4");
+    await expect(readFile(join(root, ".speccle/calibration.jsonl"), "utf8")).rejects.toThrow();
+  });
+
   it("exits 2 with a fetch-more-history message when the base is not there", async () => {
     const { status, stderr } = run("risk", await branched(), "--base", "no-such-branch");
     expect(status).toBe(2);
     expect(stderr).toContain("no merge base");
   });
 
-  it("exits 2 when --base has no value", () => {
+  it("exits 2 when --base has no value, and when --floor has no score", () => {
     expect(run("risk", "--base").status).toBe(2);
     expect(run("verify", "--base").status).toBe(2);
+    expect(run("calibrate", "record", "--base").status).toBe(2);
+    expect(run("calibrate", "record", "--floor").status).toBe(2);
   });
 });
 

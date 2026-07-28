@@ -36,12 +36,18 @@ If none resolves, point the user at the install steps in Speccle's README and st
 
 ## 2. The change set
 
-Everything here runs over the same change set: the working tree's pending change against
-its last commit. Read it once — `git status --porcelain --untracked-files=all` for the
+Everything here runs over the same change set — by default the working tree's pending change
+against its last commit. Read it once — `git status --porcelain --untracked-files=all` for the
 files, `git diff HEAD` for the lines — and hand the changed files and their diff to every
 lens. A finding must anchor to a **changed line**; a lens does not audit the whole repo.
 
-If the working tree is clean, there is nothing to review — say so and stop.
+When the change under review is already **committed** — a branch, or a PR — the working tree
+is clean and holds none of it. Name it with a base ref instead: `git diff --name-only
+<base>...HEAD` for the files, `git diff <base>...HEAD` for the lines. **Settle that ref now**
+and use the same one everywhere below, §3 and §8 alike. Two sections that measure different
+change sets are how a review ends up recording a change nobody reviewed.
+
+If neither yields a change set, there is nothing to review — say so and stop.
 
 ## 3. Risk — the authority gate, before any fixing
 
@@ -49,7 +55,7 @@ Fix authority is not a global setting; it depends on the change. Decide it first
 it decides whether the panel may fix at all.
 
 ```sh
-<oracle> risk <path> --json
+<oracle> risk <path> --json [--base <ref>]     # --base only for a committed change set (§2)
 ```
 
 This returns the deterministic **floor**: `score`, `threshold`, `humanRequired`, and the
@@ -67,7 +73,8 @@ the risk lens set `requireHuman`, or `score + raiseFloorBy ≥ threshold`.
   **fixes nothing**; a human is required.
 
 Both the computed floor and any escalation must be legible in the summary — a risk verdict
-with no visible reasoning is not auditable.
+with no visible reasoning is not auditable. Keep the `score` this returns: §8 records against
+it, and it is the only moment the floor is measured on the change as it was reviewed.
 
 ## 4. The lens panel — fan out over the diff
 
@@ -182,7 +189,8 @@ answer is the honest verdict — _did this change actually need a human?_ That a
 human's, and the record is worthless without it, so never invent it:
 
 ```sh
-<oracle> calibrate record <path> --found-real <true|false> --needed-human <true|false> [--escalated]
+<oracle> calibrate record <path> --found-real <true|false> --needed-human <true|false> \
+  --floor <the score §3 computed> [--base <the ref §2 settled>] [--escalated]
 ```
 
 - `--found-real` — true when any lens returned a real finding this run; you know this.
@@ -190,6 +198,18 @@ human's, and the record is worthless without it, so never invent it:
 - `--needed-human` — the human's honest call, whatever the floor said. With a human here to
   answer, ask once and record it; with none, print the command for them to run and stop. A
   threshold that rose on a guessed verdict is worse than one that never rose.
+- `--base` / `--floor` — **the two that bind the entry to the change you actually reviewed.**
+  `calibrate record` measures the floor itself, here, now — it has no memory of §3. By §8 the
+  tree has moved: §5's fixes are in it, and a committed change set was never in it at all. So
+  pass the same `--base` §2 settled on, so it measures the same change set, and `--floor` so it
+  refuses if it did not.
+
+**If it refuses, it is right and you are wrong.** The message names both scores: the change set
+in front of it is not the one the panel reviewed. Do not retry without `--floor`, do not relax it
+to the new score, and do not edit the record by hand — every one of those writes an entry whose
+signals never fired on the change its verdict describes, and `calibrate report` cannot tell the
+difference afterwards. Say so in the close, hand the human the command, and leave the record
+short one honest entry rather than long one false one.
 
 Then read the record back and fold its proposals into the close:
 

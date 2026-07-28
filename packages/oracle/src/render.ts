@@ -328,9 +328,10 @@ export function renderCalibrateRecord(report: RecordReport): string {
   const verdict = `${entry.verdict.neededHuman ? "needed a human" : "no human needed"}, ${
     entry.verdict.foundReal ? "found something real" : "found nothing real"
   }`;
+  const measured = entry.base === undefined ? "on the working tree" : `against ${entry.base}`;
   const lines = [
     `recorded ${report.file} — ${plural(report.count, "entry", "entries")}`,
-    `  ${floor}${gate}${escalated}`,
+    `  ${floor}${gate}${escalated} — measured ${measured}`,
     `  verdict: ${verdict}`,
   ];
   if (entry.signals.length > 0) lines.push(`  signals: ${entry.signals.join(", ")}`);

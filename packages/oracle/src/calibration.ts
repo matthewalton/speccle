@@ -22,6 +22,12 @@ export interface HumanVerdict {
 export interface CalibrationEntry {
   /** ISO-8601 stamp; ordering and "surface often enough", never part of the arithmetic. */
   at: string;
+  /**
+   * The ref the change set was measured against; absent when it was the working tree's pending
+   * change. An entry that does not say what it scored cannot be checked against the review it
+   * claims to describe, and an unfalsifiable entry is no evidence for a threshold move.
+   */
+  base?: string;
   /** The deterministic floor score at review time (ADR-0041). */
   score: number;
   /** The review threshold in force when this change was reviewed. */
@@ -41,6 +47,12 @@ export interface CalibrationEntry {
 export interface RecordInput extends HumanVerdict {
   escalated?: boolean;
   note?: string;
+  /**
+   * The floor score the review actually gated on. Asserted, never recorded: the entry still
+   * carries the computed score, and a disagreement refuses the write instead of resolving it
+   * either way. So this cannot fabricate a floor — it can only catch one that has moved.
+   */
+  floor?: number;
 }
 
 export interface RecordOptions extends RiskOptions {
@@ -62,6 +74,11 @@ export interface RecordReport {
  * Appends one calibration entry: `risk` computes the deterministic floor (score, signals,
  * threshold, humanRequired) over the change set, the caller supplies the honest human verdict.
  * The floor and the verdict are recorded side by side and never conflated.
+ *
+ * The floor is measured here, now — so a caller that reviewed one change set and records after
+ * the tree has moved would bind the verdict to signals that never fired. `base` names the
+ * reviewed change set so the measurement is reproducible, and `input.floor` refuses the write
+ * when it is not.
  */
 export async function recordCalibration(
   target: string,
@@ -73,10 +90,20 @@ export async function recordCalibration(
 
   const { now, ...riskOptions } = options;
   const assessment = await risk(root, riskOptions);
+  if (input.floor !== undefined && input.floor !== assessment.score) {
+    // Refusing beats recording: an entry bound to a change set nobody reviewed is not weak
+    // evidence for a threshold move, it is false evidence, and the report cannot tell (ADR-0042).
+    throw new Error(
+      `this change set scores ${assessment.score}, but the review gated on ${input.floor} — ` +
+        `the change set has moved since, so this entry would describe a change nobody reviewed. ` +
+        `Name the reviewed change set with a base ref, or record it before applying fixes`,
+    );
+  }
   const stamp = (now ?? (() => new Date().toISOString()))();
 
   const entry: CalibrationEntry = {
     at: stamp,
+    ...(assessment.base !== undefined && { base: assessment.base }),
     score: assessment.score,
     threshold: assessment.threshold,
     humanRequired: assessment.humanRequired,
