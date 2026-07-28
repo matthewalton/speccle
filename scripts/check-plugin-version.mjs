@@ -1,5 +1,5 @@
-// Guards the plugin's version against its own content, and the two published artifacts
-// against each other. The marketplace cache dir is keyed by version
+// Guards the two published artifacts' versions against the content they carry, and against
+// each other. The marketplace cache dir is keyed by version
 // (cache/speccle-marketplace/speccle/<version>/), so shipping changed content under an
 // unchanged version serves a stale tree to everyone who already installed — the
 // 0.7.0 → 0.7.1 burn.
@@ -12,8 +12,9 @@
 //               tree — there is nothing staged at publish — and asserts all three
 //               manifests agree before a tarball can be built.
 //
-// The shared version line is ADR-0048: between releases the plugin runs ahead (its cache
-// forces an immediate bump), and a release closes the gap in the oracle's direction.
+// The shared version line is ADR-0048; ADR-0050 closed the window where the plugin could run
+// ahead of it. The lines are equal at every commit, and shipped content moves both — because
+// a rule enforced only at publish is not enforced while the work is being done.
 
 import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
@@ -22,7 +23,20 @@ import path from "node:path";
 const PLUGIN_MANIFEST = "packages/plugin/.claude-plugin/plugin.json";
 const MARKETPLACE_MANIFEST = ".claude-plugin/marketplace.json";
 const ORACLE_MANIFEST = "packages/oracle/package.json";
-const PLUGIN_DIR = "packages/plugin/";
+
+// What reaches a consumer, and so what a version number has to name (ADR-0050). The tarball's
+// `files` are dist + skills + lenses: src compiles to dist, packages/plugin/skills is copied
+// in at build time, and lenses ship verbatim. Tests, fixtures, docs, and scripts ship to
+// no one.
+const SHIPPED = [
+  { prefix: "packages/plugin/", carriedBy: "the marketplace tree, and the tarball's skills/" },
+  { prefix: "packages/oracle/lenses/", carriedBy: "the tarball's lenses/" },
+  {
+    prefix: "packages/oracle/src/",
+    carriedBy: "the tarball's dist/",
+    excludes: (file) => file.endsWith(".test.ts"), // the build excludes them
+  },
+];
 
 const REPO_ROOT = path.resolve(import.meta.dirname, "..");
 const isRelease = process.argv.includes("--release");
@@ -72,6 +86,27 @@ function checkMirror(plugin, market) {
   }
 }
 
+/** Every staged file that a published artifact carries, with what carries it. */
+function shippedAmong(files) {
+  const hits = [];
+  for (const file of files) {
+    const rule = SHIPPED.find(
+      (candidate) => file.startsWith(candidate.prefix) && candidate.excludes?.(file) !== true,
+    );
+    if (rule !== undefined) hits.push({ file, carriedBy: rule.carriedBy });
+  }
+  return hits;
+}
+
+/** The first few triggering files, so the demand arrives with its reason attached. */
+function evidence(shipped) {
+  const shown = shipped.slice(0, 3).map((hit) => `${hit.file} → ${hit.carriedBy}`);
+  const rest = shipped.length - shown.length;
+  return (
+    shown.map((line) => `\n      ${line}`).join("") + (rest > 0 ? `\n      …and ${rest} more` : "")
+  );
+}
+
 if (isRelease) {
   const read = (file) => {
     try {
@@ -86,8 +121,9 @@ if (isRelease) {
   const oracle = read(ORACLE_MANIFEST);
   checkMirror(plugin, read(MARKETPLACE_MANIFEST));
 
-  // Invariant C, at the moment it matters — the tarball may not publish behind the skills
-  // it carries. The plugin runs ahead between releases by design; a release catches up.
+  // The tarball may not publish under a number the skills it carries do not share. Since
+  // ADR-0050 this can only fail on a tree edited outside a commit, but it stays: publish is
+  // the last gate, and the one whose failure is unrecoverable.
   if (plugin && oracle && plugin.version !== oracle.version) {
     problems.push(
       `Release mismatch: ${ORACLE_MANIFEST} is ${oracle.version}, ${PLUGIN_MANIFEST} is ` +
@@ -98,46 +134,44 @@ if (isRelease) {
 } else {
   const stagedFiles = git(["diff", "--cached", "--name-only"]).split("\n").filter(Boolean);
 
-  const touchesPluginDir = stagedFiles.some((file) => file.startsWith(PLUGIN_DIR));
-  const touchesMarketplace = stagedFiles.includes(MARKETPLACE_MANIFEST);
-  const touchesOracleManifest = stagedFiles.includes(ORACLE_MANIFEST);
+  const shipped = shippedAmong(stagedFiles);
+  const touchesManifest = [PLUGIN_MANIFEST, MARKETPLACE_MANIFEST, ORACLE_MANIFEST].some((file) =>
+    stagedFiles.includes(file),
+  );
 
-  // A no-op unless the commit touches a version-bearing manifest. A latent mismatch
-  // predating this commit shouldn't block an unrelated change.
-  if (touchesPluginDir || touchesMarketplace || touchesOracleManifest) {
+  // A no-op unless the commit ships something or moves a version. A latent mismatch predating
+  // this commit shouldn't block an unrelated change.
+  if (shipped.length > 0 || touchesManifest) {
     const stagedPlugin = parse(show("", PLUGIN_MANIFEST), PLUGIN_MANIFEST);
+    const stagedOracle = parse(show("", ORACLE_MANIFEST), ORACLE_MANIFEST);
 
-    // Invariant A — the two manifests always move together.
-    if (touchesPluginDir || touchesMarketplace) {
-      checkMirror(stagedPlugin, parse(show("", MARKETPLACE_MANIFEST), MARKETPLACE_MANIFEST));
+    // Invariant A — the plugin manifest and its marketplace mirror always move together.
+    checkMirror(stagedPlugin, parse(show("", MARKETPLACE_MANIFEST), MARKETPLACE_MANIFEST));
+
+    // Invariant B — one version line, at every commit and not just at a release (ADR-0050).
+    if (stagedPlugin && stagedOracle && stagedPlugin.version !== stagedOracle.version) {
+      problems.push(
+        `Version lines disagree: ${ORACLE_MANIFEST} is ${stagedOracle.version}, ` +
+          `${PLUGIN_MANIFEST} is ${stagedPlugin.version}. The two artifacts share one ` +
+          `version line — move them together, and the marketplace mirror with them.`,
+      );
     }
 
-    // Invariant B — changed plugin content must carry a fresh version. Skipped when there
-    // is no prior version to compare against (first commit, or a newly-added plugin).
-    if (touchesPluginDir && stagedPlugin) {
-      const headPlugin = parse(show("HEAD", PLUGIN_MANIFEST), PLUGIN_MANIFEST);
-      if (headPlugin && headPlugin.version === stagedPlugin.version) {
-        problems.push(
-          `packages/plugin/ changed but ${PLUGIN_MANIFEST} is still ${stagedPlugin.version}. ` +
-            `The marketplace cache is keyed by version — bump it (and the marketplace ` +
-            `mirror) so installs don't serve a stale tree.`,
-        );
-      }
-    }
-
-    // Invariant C — the oracle's version only moves at a release, and a release moves both
-    // lines. Bumping it alone would publish the skills under a number the plugin doesn't
-    // share. An untouched version is fine: that is the plugin running ahead, by design.
-    if (touchesOracleManifest && stagedPlugin) {
-      const stagedOracle = parse(show("", ORACLE_MANIFEST), ORACLE_MANIFEST);
-      const headOracle = parse(show("HEAD", ORACLE_MANIFEST), ORACLE_MANIFEST);
-      const bumped = stagedOracle && headOracle && stagedOracle.version !== headOracle.version;
-      if (bumped && stagedOracle.version !== stagedPlugin.version) {
-        problems.push(
-          `${ORACLE_MANIFEST} bumps to ${stagedOracle.version} but ${PLUGIN_MANIFEST} is ` +
-            `${stagedPlugin.version}. A release ships both on one version line — move them ` +
-            `together (and the marketplace mirror with them).`,
-        );
+    // Invariant C — shipped content carries a version nothing has published yet. Skipped when
+    // there is no prior version to compare against (first commit, or a newly-added manifest).
+    if (shipped.length > 0) {
+      for (const [manifest, staged] of [
+        [PLUGIN_MANIFEST, stagedPlugin],
+        [ORACLE_MANIFEST, stagedOracle],
+      ]) {
+        const head = parse(show("HEAD", manifest), manifest);
+        if (head && staged && head.version === staged.version) {
+          problems.push(
+            `This commit ships content but ${manifest} is still ${staged.version}:` +
+              `${evidence(shipped)}\n    Bump it — a consumer already holds ${staged.version}, ` +
+              `and neither cache nor registry will hand them a second one.`,
+          );
+        }
       }
     }
   }

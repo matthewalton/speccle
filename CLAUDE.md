@@ -61,15 +61,8 @@ Node ≥ 24 runs TypeScript directly — no build step needed to run the CLI fro
   A skill may only _order_ the agent to read a doc that is bundled beside it under
   `skills/<name>/references/`. Those reference files are **generated** — edit the source
   under `docs/` and run `pnpm sync:plugin-refs`; `pnpm check:plugin-refs` guards them in
-  pre-commit. Any change under `packages/plugin/` must **bump the plugin version** —
-  `plugin.json` and its `.claude-plugin/marketplace.json` mirror move together — because
-  the marketplace cache is keyed by version, so shipping changed content under an
-  unchanged version serves a stale tree; `pnpm check:plugin-version` guards this in
-  pre-commit. That lets the plugin run ahead of the tarball between releases, but a
-  **release ships both on one version line** — `packages/oracle/package.json` catches up
-  to the plugin, never the reverse
-  ([ADR-0048](docs/adr/0048-the-tarball-and-the-plugin-share-one-version-line.md)); the
-  same guard asserts it at commit time and again from `prepublishOnly`. Skill bodies
+  pre-commit. Any change here is shipped content, so it moves **both** version lines — see
+  [Versioning](#versioning). Skill bodies
   carry **no links out of `packages/plugin`** — no ADR or doc
   citations ([ADR-0028](docs/adr/0028-shipped-skills-carry-no-repo-citations.md)): an
   installed plugin caches only that directory, and its readers don't have this repo.
@@ -96,6 +89,34 @@ Node ≥ 24 runs TypeScript directly — no build step needed to run the CLI fro
 
   The rest of Speccle's source stays off the convention: don't add `SPEC.md`, criterion
   ids, or tagged tests anywhere else under `packages/`.
+
+## Versioning
+
+Two artifacts publish — the `speccle` npm tarball and the marketplace plugin — and they
+carry **one version line, equal at every commit**
+([ADR-0048](docs/adr/0048-the-tarball-and-the-plugin-share-one-version-line.md),
+[ADR-0050](docs/adr/0050-shipped-content-moves-both-version-lines-in-the-same-commit.md)).
+
+**Any commit that changes shipped content bumps all three manifests together**, in that same
+commit:
+
+| Manifest                                     | What it numbers         |
+| -------------------------------------------- | ----------------------- |
+| `packages/oracle/package.json`               | the npm tarball         |
+| `packages/plugin/.claude-plugin/plugin.json` | the marketplace plugin  |
+| `.claude-plugin/marketplace.json`            | the mirror of the above |
+
+**Shipped content** is what reaches a consumer: `packages/plugin/` (its skills are copied
+into the tarball at build time), `packages/oracle/lenses/`, and `packages/oracle/src/` —
+except `*.test.ts`, which the build excludes. Tests, fixtures, `docs/`, `scripts/`, and
+repo-level prose ship to no one and bump nothing.
+
+Bumping only one line is the mistake this rule exists to stop: the marketplace cache is
+keyed by version, so unchanged numbers serve a stale tree, while npm's duplicate rejection
+only ever complains at publish — long after the number stopped meaning what it says. `pnpm
+check:plugin-version` enforces it pre-commit and names the shipped files that triggered it;
+`prepublishOnly` re-asserts it on the working tree before a tarball can be built. A
+`chore(release)` commit is not a catch-up — the lines are already equal when it is written.
 
 ## Style
 
