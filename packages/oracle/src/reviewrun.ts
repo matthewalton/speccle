@@ -178,7 +178,15 @@ export async function reviewRun(
 
   const verdict = await riskVerdict(root, base);
   const { comments, unplaced } = normalise(findings, files);
-  const shared = { verdict, base, ran, skippedLenses, skippedFiles, headSha: pull.headSha };
+  const shared = {
+    verdict,
+    base,
+    ran,
+    skippedLenses,
+    skippedFiles,
+    findings,
+    headSha: pull.headSha,
+  };
   const summary = renderSummary({ ...shared, unplaced });
   // The fallback body has to name every finding, not just the unplaced ones: an anchored finding
   // exists only in its inline comment, and those are exactly what a rejected review loses.
@@ -226,7 +234,11 @@ export async function panel(root: string): Promise<{ lenses: Lens[]; skipped: Sk
     }
     const body = await readFile(join(dir, name), "utf8");
     if (name === TEMPLATE_LENS && body.includes(TEMPLATE_MARKER)) {
-      skipped.push({ name, reason: "still the shipped template — this repo has not authored it" });
+      // No em dash: both renderers join a skip to its reason with one, and two reads as a typo.
+      skipped.push({
+        name,
+        reason: "still the shipped template, which this repo has not authored",
+      });
       continue;
     }
     lenses.push({ name, body });
@@ -440,6 +452,8 @@ interface SummaryInput {
   ran: { name: string; findings: number }[];
   skippedLenses: Skip[];
   skippedFiles: Skip[];
+  /** Every finding the panel reported, anchored or not — what the banner and the table count. */
+  findings: Finding[];
   /** Findings the body has to carry itself, because no inline comment will. */
   unplaced: Finding[];
   headSha: string;
@@ -448,70 +462,25 @@ interface SummaryInput {
 }
 
 /**
- * The review body. The risk verdict leads, because it is the one thing here that is
- * deterministic and the thing that decides whether a human is required.
+ * The review body. Two questions decide whether a reader reads any further — did it pass, and
+ * where do I look — so both are answered in the banner, above everything else. What matters on
+ * the third read and not the first (the score's evidence, what was skipped and why) sits behind
+ * `<details>`, except when the gate fired: then the evidence is the point, and it opens.
  */
 export function renderSummary(input: SummaryInput): string {
-  const lines = ["## Speccle review", ""];
-
-  const verdict = input.verdict;
-  if (verdict === null) {
-    lines.push(`**Risk** — not computed: no shared history with \`${input.base}\`.`, "");
-  } else {
-    const gate = verdict.humanRequired
-      ? `at or above the review threshold — **a human is required**`
-      : `below the review threshold`;
-    lines.push(`**Risk** — score ${verdict.score} vs threshold ${verdict.threshold}, ${gate}.`, "");
-    for (const signal of verdict.signals) {
-      lines.push(
-        `- \`${signal.id}\` +${signal.weight} — ${signal.reason}: ${signal.evidence.join(", ")}`,
-      );
-    }
-    if (verdict.signals.length > 0) lines.push("");
-    lines.push(
-      "This score is a floor. Escalating it is free; only a human lowers it, and only on calibration evidence.",
-      "",
-    );
-  }
-
-  const total = input.ran.reduce((sum, lens) => sum + lens.findings, 0);
-  lines.push(
-    total === 0
-      ? `**Findings** — none, across ${String(input.ran.length)} lenses.`
-      : `**Findings** — ${String(total)} across ${String(input.ran.length)} lenses, inline below.`,
-    "",
-  );
-  for (const lens of input.ran) {
-    lines.push(`- \`${lens.name}\` — ${String(lens.findings)}`);
-  }
-  lines.push("");
-
-  if (input.unplaced.length > 0) {
-    lines.push(
-      input.anchorsRejected === true
-        ? "**Findings in full** — GitHub rejected the inline anchors on this review, so every finding is here instead:"
-        : "**Unplaced findings** — these could not anchor to a line in the diff, so they are here rather than lost:",
-      "",
-    );
-    // The severity rides along because this bullet is the whole record of a finding no inline
-    // comment could carry — `review findings` reads it back, and untriaged is unactionable.
-    for (const finding of input.unplaced) {
-      lines.push(
-        `- \`${finding.path}:${String(finding.line)}\` (${finding.lens} · ${finding.severity}) — ${finding.what}`,
-      );
-    }
-    lines.push("");
-  }
+  const lines = ["## Speccle review", "", ...banner(input), ""];
+  lines.push(...lensTable(input), ...unplacedList(input), ...riskDetail(input));
 
   // Announce every cap: silence would read as full coverage of a change set that was trimmed.
+  // The count rides in the <summary>, which stays visible however the block is collapsed.
   for (const [label, skips] of [
     ["Lenses skipped", input.skippedLenses],
     ["Files not reviewed", input.skippedFiles],
   ] as const) {
     if (skips.length === 0) continue;
-    lines.push(`**${label}**`, "");
+    lines.push("<details>", `<summary>${label} (${String(skips.length)})</summary>`, "");
     for (const skip of skips) lines.push(`- \`${skip.name}\` — ${skip.reason}`);
-    lines.push("");
+    lines.push("", "</details>", "");
   }
 
   lines.push(
@@ -521,6 +490,157 @@ export function renderSummary(input: SummaryInput): string {
     REVIEW_MARKER,
   );
   return lines.join("\n");
+}
+
+/**
+ * The verdict, in one line a reader cannot miss. The alert level is the loudest signal on the
+ * page, so it tracks the two things that stop a merge: the gate firing, and a blocker.
+ */
+function banner(input: SummaryInput): string[] {
+  const verdict = input.verdict;
+  const blocking =
+    verdict?.humanRequired === true ||
+    input.findings.some((finding) => finding.severity === "blocker");
+  const alert = blocking ? "CAUTION" : input.findings.length > 0 ? "WARNING" : "TIP";
+
+  const found =
+    input.findings.length === 0
+      ? `**No findings** across ${plural(input.ran.length, "lens", "lenses")}`
+      : `**${plural(input.findings.length, "finding")}** — ${tally(input.findings)}`;
+
+  const gate =
+    verdict === null
+      ? `risk not computed`
+      : `risk \`${bar(verdict.score, verdict.threshold)}\` **${String(verdict.score)} of ${String(verdict.threshold)}**, ${
+          verdict.humanRequired ? "**a human is required**" : "below the review threshold"
+        }`;
+
+  return [`> [!${alert}]`, `> ${found} · ${gate}.`];
+}
+
+/** Only the lenses that fired get a row; the rest collapse to one line, which is the point. */
+function lensTable(input: SummaryInput): string[] {
+  const byLens = new Map<string, Finding[]>();
+  for (const finding of input.findings) {
+    byLens.set(finding.lens, [...(byLens.get(finding.lens) ?? []), finding]);
+  }
+
+  const lines: string[] = [];
+  const fired = input.ran.filter((lens) => lens.findings > 0);
+  if (fired.length > 0) {
+    lines.push("| Lens | Findings |", "| --- | --- |");
+    for (const lens of fired) {
+      lines.push(`| \`${lens.name}\` | ${tally(byLens.get(lens.name) ?? [])} |`);
+    }
+    lines.push("");
+  }
+
+  const clean = input.ran.filter((lens) => lens.findings === 0);
+  if (clean.length > 0) {
+    const names = clean.map((lens) => `\`${lens.name}\``).join(", ");
+    lines.push(`<sub>${plural(clean.length, "lens", "lenses")} clean: ${names}</sub>`, "");
+  }
+  return lines;
+}
+
+/** Findings no inline comment will carry — actionable, so they stay above the fold. */
+function unplacedList(input: SummaryInput): string[] {
+  if (input.unplaced.length === 0) return [];
+  const lines = [
+    input.anchorsRejected === true
+      ? "**Findings in full** — GitHub rejected the inline anchors on this review, so every finding is here instead:"
+      : "**Unplaced findings** — these could not anchor to a line in the diff, so they are here rather than lost:",
+    "",
+  ];
+  // The severity rides along because this bullet is the whole record of a finding no inline
+  // comment could carry — `review findings` reads it back, and untriaged is unactionable. Its
+  // exact shape is that parser's contract: change it there in the same breath, or lose findings.
+  for (const finding of input.unplaced) {
+    lines.push(
+      `- \`${finding.path}:${String(finding.line)}\` (${finding.lens} · ${finding.severity}) — ${finding.what}`,
+    );
+  }
+  lines.push("");
+  return lines;
+}
+
+/** The score's evidence: collapsed while it is trivia, open the moment it decides something. */
+function riskDetail(input: SummaryInput): string[] {
+  const verdict = input.verdict;
+  if (verdict === null) {
+    return [`Risk — not computed: no shared history with \`${input.base}\`.`, ""];
+  }
+
+  const lines = [
+    verdict.humanRequired ? "<details open>" : "<details>",
+    `<summary>Risk ${String(verdict.score)} of ${String(verdict.threshold)} — ${plural(verdict.signals.length, "signal")}</summary>`,
+    "",
+  ];
+  if (verdict.signals.length > 0) {
+    lines.push("| Signal | Weight | Evidence |", "| --- | --- | --- |");
+    for (const signal of verdict.signals) {
+      const evidence = cell(`${signal.reason}: ${signal.evidence.join(", ")}`);
+      lines.push(`| \`${signal.id}\` | +${String(signal.weight)} | ${evidence} |`);
+    }
+    lines.push("");
+  }
+  lines.push(
+    "This score is a floor. Escalating it is free; only a human lowers it, and only on calibration evidence.",
+    "",
+    "</details>",
+    "",
+  );
+  return lines;
+}
+
+/** The rungs as glyphs, so a severity is scannable before it is read. */
+const SEVERITY_GLYPHS: Record<string, string> = {
+  blocker: "🔴",
+  major: "🟠",
+  minor: "🔵",
+  nit: "⚪",
+};
+
+/** A lens can report off its own ladder; the count still has to render, and stay distinguishable. */
+const OFF_LADDER_GLYPH = "⚫";
+
+/** `🔴 1 blocker · 🟠 2 major` — worst first, whatever order the findings arrived in. */
+function tally(findings: Finding[]): string {
+  const counts = new Map<string, number>();
+  for (const finding of findings) {
+    counts.set(finding.severity, (counts.get(finding.severity) ?? 0) + 1);
+  }
+  const rank = (severity: string): number => {
+    const at = SEVERITIES.indexOf(severity as (typeof SEVERITIES)[number]);
+    return at === -1 ? SEVERITIES.length : at;
+  };
+  return [...counts.entries()]
+    .sort(([a], [b]) => rank(a) - rank(b) || a.localeCompare(b))
+    .map(([severity, count]) => {
+      const glyph = SEVERITY_GLYPHS[severity] ?? OFF_LADDER_GLYPH;
+      return `${glyph} ${String(count)} ${severity}`;
+    })
+    .join(" · ");
+}
+
+/**
+ * How close the score sits to the gate, at a glance. The track is the threshold, not the score,
+ * so the gauge is the same width across every review of a repo and a full bar always means the
+ * same thing: it fired. How far past the gate a score went is the number's job, not the bar's.
+ */
+function bar(score: number, threshold: number): string {
+  const track = Math.min(Math.max(threshold, 1), 10);
+  const filled = Math.min(Math.max(score, 0), track);
+  return "▓".repeat(filled) + "░".repeat(track - filled);
+}
+
+/** A repo authors its own signal messages, and a stray `|` would split the row it lands in. */
+function cell(text: string): string {
+  return text.replaceAll("|", "\\|");
+}
+
+function plural(count: number, one: string, many = `${one}s`): string {
+  return `${String(count)} ${count === 1 ? one : many}`;
 }
 
 /** The deterministic verdict, or null when git cannot measure the range (a shallow clone). */

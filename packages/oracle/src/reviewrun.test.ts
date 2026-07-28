@@ -6,6 +6,7 @@ import { gitAt } from "../test/support/git.ts";
 import type { Finding } from "./finding.ts";
 import { type FetchLike, REVIEW_MARKER } from "./github.ts";
 import { LENSES_DIR, TEMPLATE_LENS } from "./lenses.ts";
+import { unplacedFindings } from "./reviewfindings.ts";
 import {
   anchorableLines,
   type ChangedFile,
@@ -16,6 +17,7 @@ import {
   renderSummary,
   reviewRun,
 } from "./reviewrun.ts";
+import type { RiskReport } from "./risk.ts";
 
 /** A patch with a context line, a replacement, and an addition — every anchor case in one. */
 const PATCH = [
@@ -172,53 +174,137 @@ describe("renderSummary", () => {
     ran: [{ name: "correctness.md", findings: 1 }],
     skippedLenses: [],
     skippedFiles: [],
+    findings: [finding()],
     unplaced: [],
     headSha: "abcdef1234567890",
   };
 
-  it("leads with the risk verdict and its evidence", () => {
+  const verdict = (over: Partial<RiskReport> = {}): RiskReport => ({
+    root: "/r",
+    changed: ["checkout/SPEC.md"],
+    signals: [],
+    score: 0,
+    threshold: 3,
+    humanRequired: false,
+    ...over,
+  });
+
+  const retired = {
+    id: "criterion-retired",
+    weight: 4,
+    source: "baseline" as const,
+    reason: "a criterion was retired",
+    evidence: ["CHECKOUT-2"],
+  };
+
+  it("opens with the verdict, and the gate's evidence with it when a human is required", () => {
     const summary = renderSummary({
       ...base,
-      verdict: {
-        root: "/r",
-        changed: ["checkout/SPEC.md"],
-        signals: [
-          {
-            id: "criterion-retired",
-            weight: 4,
-            source: "baseline",
-            reason: "a criterion was retired",
-            evidence: ["CHECKOUT-2"],
-          },
-        ],
-        score: 4,
-        threshold: 3,
-        humanRequired: true,
-      },
+      verdict: verdict({ signals: [retired], score: 4, humanRequired: true }),
     });
-    expect(summary).toContain("**Risk** — score 4 vs threshold 3");
+    expect(summary).toContain("> [!CAUTION]");
+    expect(summary).toContain("**4 of 3**");
     expect(summary).toContain("a human is required");
-    expect(summary).toContain("`criterion-retired` +4");
+    // The evidence for a gate that fired is the point of the comment, not a footnote.
+    expect(summary).toContain("<details open>");
+    expect(summary).toContain("| `criterion-retired` | +4 |");
     expect(summary).toContain("CHECKOUT-2");
     expect(summary.trimEnd().endsWith(REVIEW_MARKER)).toBe(true);
   });
 
+  it("reads as clean at a glance when nothing fired", () => {
+    const summary = renderSummary({
+      ...base,
+      verdict: verdict(),
+      ran: [{ name: "correctness.md", findings: 0 }],
+      findings: [],
+    });
+    expect(summary).toContain("> [!TIP]");
+    expect(summary).toContain("**No findings** across 1 lens");
+    expect(summary).toContain("below the review threshold");
+    expect(summary).not.toContain("<details open>");
+  });
+
+  it("raises the banner for a blocker even when the risk gate stayed shut", () => {
+    const summary = renderSummary({
+      ...base,
+      verdict: verdict(),
+      findings: [finding({ severity: "blocker" })],
+    });
+    expect(summary).toContain("> [!CAUTION]");
+    expect(summary).toContain("🔴 1 blocker");
+  });
+
+  it("gives a row only to the lenses that fired, and one line to the rest", () => {
+    const summary = renderSummary({
+      ...base,
+      verdict: verdict(),
+      ran: [
+        { name: "accessibility.md", findings: 0 },
+        { name: "architecture.md", findings: 2 },
+        { name: "security.md", findings: 0 },
+      ],
+      findings: [
+        finding({ lens: "architecture.md", severity: "minor" }),
+        finding({ lens: "architecture.md", severity: "major" }),
+      ],
+    });
+    expect(summary).toContain("| `architecture.md` | 🟠 1 major · 🔵 1 minor |");
+    expect(summary).not.toContain("| `security.md` |");
+    expect(summary).toContain("<sub>2 lenses clean: `accessibility.md`, `security.md`</sub>");
+  });
+
+  it("counts a severity the ladder does not name rather than dropping it", () => {
+    const summary = renderSummary({
+      ...base,
+      verdict: verdict(),
+      findings: [finding({ severity: "blocker" }), finding({ severity: "spicy" })],
+    });
+    expect(summary).toContain("🔴 1 blocker · ⚫ 1 spicy");
+  });
+
+  it("fills the risk bar as the score approaches the gate, and keeps one width past it", () => {
+    const below = renderSummary({ ...base, verdict: verdict({ score: 2 }) });
+    expect(below).toContain("`▓▓░`");
+    const fired = renderSummary({
+      ...base,
+      verdict: verdict({ score: 9, humanRequired: true }),
+    });
+    expect(fired).toContain("`▓▓▓`");
+  });
+
   it("says so plainly when the verdict could not be computed", () => {
     const summary = renderSummary({ ...base, verdict: null });
+    expect(summary).toContain("risk not computed");
     expect(summary).toContain("not computed: no shared history with `origin/main`");
   });
 
-  it("names every cap, so a trimmed change set never reads as full coverage", () => {
+  it("names every cap and its count, so a trimmed change set never reads as full coverage", () => {
     const summary = renderSummary({
       ...base,
       verdict: null,
       skippedLenses: [{ name: TEMPLATE_LENS, reason: "still the shipped template" }],
-      skippedFiles: [{ name: "pnpm-lock.yaml", reason: "patch over 24000 bytes" }],
+      skippedFiles: [
+        { name: "pnpm-lock.yaml", reason: "patch over 24000 bytes" },
+        { name: "logo.png", reason: "no textual patch" },
+      ],
     });
-    expect(summary).toContain("Lenses skipped");
+    // The count sits in the <summary>, which a collapsed block still shows.
+    expect(summary).toContain("<summary>Lenses skipped (1)</summary>");
     expect(summary).toContain(TEMPLATE_LENS);
-    expect(summary).toContain("Files not reviewed");
+    expect(summary).toContain("<summary>Files not reviewed (2)</summary>");
     expect(summary).toContain("pnpm-lock.yaml");
+  });
+
+  it("keeps a signal's own `|` inside its cell instead of splitting the row", () => {
+    const summary = renderSummary({
+      ...base,
+      verdict: verdict({
+        signals: [{ ...retired, id: "house-rule", reason: "touched src|test" }],
+        score: 4,
+      }),
+    });
+    expect(summary).toContain("| `house-rule` | +4 | touched src\\|test: CHECKOUT-2 |");
   });
 
   it("lists unplaced findings in full rather than dropping them", () => {
@@ -226,6 +312,28 @@ describe("renderSummary", () => {
     expect(summary).toContain("Unplaced findings");
     expect(summary).toContain("`src/a.ts:99`");
     expect(summary).toContain("b is off by one");
+  });
+
+  // The summary bullet is the whole record of a finding no inline comment carries, and the local
+  // driver recovers it by parsing this body. A reshaped summary that stopped round-tripping would
+  // lose those findings silently, so the two are pinned to each other here.
+  it("writes unplaced findings in the shape the local driver reads back", () => {
+    const unplaced = finding({ line: 99, lens: "security.md", severity: "blocker" });
+    const summary = renderSummary({ ...base, verdict: verdict(), unplaced: [unplaced] });
+    expect(unplacedFindings(summary)).toEqual([
+      {
+        lens: "security.md",
+        path: "src/a.ts",
+        line: 99,
+        side: "RIGHT",
+        severity: "blocker",
+        what: "b is off by one",
+        why: "",
+        fix: "",
+        remedy: "",
+        partial: true,
+      },
+    ]);
   });
 });
 
@@ -259,7 +367,7 @@ describe("panel", () => {
     });
     const { lenses, skipped } = await panel(root);
     expect(lenses).toEqual([]);
-    expect(skipped[0]?.reason).toContain("has not authored it");
+    expect(skipped[0]?.reason).toContain("has not authored");
   });
 
   it("runs a house-conventions lens the repo has authored", async () => {
