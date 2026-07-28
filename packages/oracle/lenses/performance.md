@@ -30,7 +30,7 @@ give:
 - `path:line` — the changed line it anchors to
 - **severity** — major (cost grows with production-scale input) · minor (fixed overhead) ·
   nit
-- **what** — the cost in one line
+- **what** — the cost, in one plain sentence
 - **why** — how it scales: "one query per line item, so a 500-item order is 500 round-trips"
 - **fix** — the batch, index, memo, structure, or bound that flattens it
 - **route** — `criterion` (a performance budget worth asserting) · `check` · `lens` · `none`
@@ -38,3 +38,18 @@ give:
 Reach for scaling arguments, not micro-optimizations — a quadratic loop matters, a saved
 allocation rarely does. Do not trade clarity for speed on a cold path; say when a cost is
 fine. An empty report is a valid result.
+
+### Write it for a reader who did not write the change
+
+- **Verify before you write.** Trace the path and name the input that reaches it, then say what
+  actually happens — throws, returns the wrong value, passes silently. If you cannot, you have a
+  hunch; hold it. A finding that mis-describes the failure is worse than none: it is confidently
+  wrong, and the reader pays for it twice.
+- **Consequence first.** Open with what breaks, in plain words; the mechanism is the next
+  sentence, not the first. Not "the parameter defaults to empty, permitting callers to…" but
+  "every existing caller now throws — the new parameter defaults to empty, so…".
+- **Length follows severity.** A `nit` or `minor` is a sentence or two; only the top of the
+  ladder earns a paragraph. Long prose on a small finding tells the reader you disagree with the
+  severity you gave it.
+- **Cut the asides** — the parenthetical about a neighbouring type, the language trivia, the
+  hedge. Each is a clause the reader decodes instead of learning what broke.

@@ -139,7 +139,7 @@ describe("findingsFrom", () => {
 
   it("defaults the soft fields rather than dropping an otherwise usable finding", () => {
     const found = findingsFrom(toolUse({ path: "a.ts", line: 1, what: "w" }), "l.md");
-    expect(found[0]).toMatchObject({ side: "RIGHT", severity: "medium", remedy: "none" });
+    expect(found[0]).toMatchObject({ side: "RIGHT", severity: "minor", remedy: "none" });
   });
 
   it("ignores prose and any other tool", () => {

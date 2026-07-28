@@ -85,6 +85,14 @@ to changed lines only, in the shape the lens describes: `path:line`, severity, w
 the fix, and a remedy route. A lens that finds nothing returns an empty list — the common,
 valid result. Collect every finding across the panel.
 
+Every lens carries the same bar for the prose it returns, and hold each subagent to it: the
+reader did not write this change. **Verify the claim against the code path before writing it** —
+name the input that reaches the line and what actually happens there. Then **lead with the
+consequence in plain words**, mechanism in the sentence after, and keep the length proportional
+to the severity. A finding that mis-describes the failure is worse than no finding: it is
+confidently wrong, and it spends the reader's attention to return nothing. Send a finding back
+rather than passing on a claim you cannot trace to a line and an input.
+
 ## 5. Fix — only with authority, and never without the checks-gate
 
 If §3 said a human is required, **fix nothing**; go to §6 and report.
@@ -151,6 +159,12 @@ Render one screen, in product voice. The human rules by reading it, not by being
    human** (a human was required, so nothing was fixed).
 3. **The proposed remedy** per finding (§6).
 4. **The checks-gate now** — green or red, named.
+
+The summary is the only view most readers get, so it holds the same bar §4 set: each finding
+opens with what breaks in plain words, and the mechanism follows. A `nit` or `minor` gets a
+sentence or two — length here reads as importance, and prose that outruns its severity tells the
+reader the wrong thing. Rewrite a lens's prose that misses this rather than passing it through:
+the panel's job is finished only when a reader who did not write the change can act on it.
 
 There is no approval gate. Below the threshold the fixes already landed and the human
 reverts what the summary makes them regret; at or above it nothing was fixed and the findings

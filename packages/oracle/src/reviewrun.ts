@@ -23,6 +23,9 @@ const RISK_LENS = "risk.md";
 /** An unauthored house-conventions lens carries this; running it would report nothing. */
 const TEMPLATE_MARKER = "speccle:lens-template";
 
+/** The ladder the lenses themselves name — a driver that offered its own would contradict the brief. */
+const SEVERITIES = ["blocker", "major", "minor", "nit"] as const;
+
 /** Per-PR cost is why this driver is opt-in, so the default is the cheaper capable model. */
 const DEFAULT_MODEL = "claude-sonnet-5";
 
@@ -279,7 +282,12 @@ const SYSTEM_PROMPT = `You are one lens in a code review panel. The lens below i
 adopt its stance, look only for what it names, and report at its bar. Every finding must anchor to
 a line the change set actually touched — you are reviewing a change, not auditing a repository.
 Report nothing rather than padding: an empty list is the common, correct result. Report through the
-report_findings tool.`;
+report_findings tool.
+
+Your reader did not write this change and is meeting the code for the first time. Trace each claim
+against the code path before you write it — a finding that mis-describes the failure is worse than
+none, because it is confidently wrong. Then lead with the consequence in plain words and leave the
+mechanism to the sentence after, and keep the prose proportional to the severity you gave it.`;
 
 export function lensPrompt(lens: Lens, diff: string): string {
   return `# Your lens
@@ -316,9 +324,21 @@ function reportTool(): unknown {
                 enum: ["RIGHT", "LEFT"],
                 description: "RIGHT for the changed file as it now reads; LEFT for a removed line.",
               },
-              severity: { type: "string", enum: ["high", "medium", "low"] },
-              what: { type: "string", description: "The finding, in one sentence." },
-              why: { type: "string", description: "Why it matters here." },
+              severity: {
+                type: "string",
+                enum: [...SEVERITIES],
+                description: "The lens's ladder. Use the rungs the lens names and no others.",
+              },
+              what: {
+                type: "string",
+                description:
+                  "What breaks, in one plain sentence someone who did not write the change can act on. Lead with the consequence, never the mechanism.",
+              },
+              why: {
+                type: "string",
+                description:
+                  "When it breaks: the input, state, or caller that triggers it, and what actually happens then — throws, returns the wrong value, passes silently. A nit or minor gets a sentence or two; only a blocker or major earns a paragraph.",
+              },
               fix: { type: "string", description: "The one correct fix, in a line." },
               remedy: {
                 type: "string",
@@ -363,7 +383,7 @@ function asFinding(raw: unknown, lens: string): Finding | undefined {
     path,
     line,
     side: record.side === "LEFT" ? "LEFT" : "RIGHT",
-    severity: asString(record.severity) ?? "medium",
+    severity: asString(record.severity) ?? "minor",
     what,
     why: asString(record.why) ?? "",
     fix: asString(record.fix) ?? "",

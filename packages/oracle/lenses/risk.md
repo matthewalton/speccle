@@ -32,8 +32,9 @@ Emit one decision:
   deterministic verdict standing
 - **raiseFloorBy** — a non-negative number added to the score, or `0`. Never negative.
 - **reasons** — for every escalation, the specific change and the consequence that justifies
-  it, anchored to `path:line`. An escalation with no legible reason is not auditable and does
-  not count.
+  it, anchored to `path:line`. Write it for someone who did not make the change: the
+  consequence in plain words first, the mechanism after. An escalation with no legible reason
+  is not auditable and does not count.
 
 Rules that bind you:
 
