@@ -8,9 +8,10 @@ allowed-tools: Read(/${CLAUDE_PLUGIN_ROOT}/skills/*/references/**)
 
 Turn a feature request — in whatever form it arrives — into a plan the rest of the
 pipeline can execute unattended: the **route**, the **feature folder**, the **feature
-key**, the scope, and every open decision settled and written down. This is stage 1
-of the `feature` pipeline and its one human gate; it is also useful alone — a plan is
-a cheap thing to be wrong about out loud.
+key**, the scope, and every open decision settled and written down. This is the first
+stage of the `feature` pipeline and its one human gate — it shares its session with
+`spec-feature`, which lands the per-behaviour decisions this skill settles. It is also
+useful alone: a plan is a cheap thing to be wrong about out loud.
 
 The folder shape and key rules this skill plans against are fixed by the convention,
 bundled beside this skill. Read `${CLAUDE_SKILL_DIR}/references/convention.md` before
@@ -117,8 +118,9 @@ out), and each key decision — how it was settled (from the input, agreed, or
 defaulted) and where it was captured. No jargon the reader has to decode; the summary
 is the thing the human approves, so it must be readable in one pass.
 
-In the `feature` pipeline the summary becomes the approval gate — the orchestrator
-owns those mechanics. Standalone, hand it back and stop: the plan is the deliverable.
+In the `feature` pipeline the summary becomes the approval gate — `feature` owns those
+mechanics, and the spec is drafted in this same session once the gate passes.
+Standalone, hand it back and stop: the plan is the deliverable.
 
 This skill drafts no criteria and writes no code — its only files are the decision
 records above. A plan that turns out wrong at the spec or implement stage is revised

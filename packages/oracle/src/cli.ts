@@ -8,6 +8,7 @@ import { doctor } from "./doctor.ts";
 import { detectDoubleLoad, init, ownVersion } from "./init.ts";
 import { materializeLenses } from "./lenses.ts";
 import { lint } from "./lint.ts";
+import { next } from "./next.ts";
 import { recallRemedy, recordRemedy, REMEDY_ROUTES, type RemedyRoute } from "./remedy.ts";
 import {
   renderCalibrateRecord,
@@ -20,6 +21,7 @@ import {
   renderHuman,
   renderInit,
   renderLensesInit,
+  renderNext,
   renderRemedyRecall,
   renderRemedyRecord,
   renderReviewFindings,
@@ -51,6 +53,8 @@ Commands:
                                  CI driver's pin; report stack and binary fixes
   lint [path] [--json]           Lint every SPEC.md under path (default: current directory)
   claims [path] [--json]         Join criteria to the test names that claim them — no reports needed
+  next [path] [--json]           Derive the pipeline's stage from the folder: which slice, which
+                                 criterion. Runs no test suite, and never routes to plan or review
   verify [path] [--json]         Run .speccle/checks/ against the change set: cross-file invariants
   risk [path] [--json]           Score the change set from spec-aware signals; gate on the review threshold
   calibrate record [path]        Append a calibration entry: the risk floor + your honest verdict
@@ -66,7 +70,7 @@ Commands:
   strength init [path] [--json]  Provision the strength stack: devDependencies + configs
   --version, -v                  Print the installed CLI version
 
-claims / risk options:
+claims / next / risk options:
   --dialect <name>    Test dialect: ${DIALECT_NAMES.join(", ")} (default: ${DEFAULT_DIALECT})
 
 verify / risk / calibrate record options:
@@ -134,6 +138,7 @@ async function main(argv: string[]): Promise<number> {
   if (command === "update") return runUpdate(rest);
   if (command === "lint") return runLint(rest);
   if (command === "claims") return runClaims(rest);
+  if (command === "next") return runNext(rest);
   if (command === "verify") return runVerify(rest);
   if (command === "risk") return runRisk(rest);
   if (command === "calibrate" && rest[0] === "record") return runCalibrateRecord(rest.slice(1));
@@ -194,6 +199,43 @@ async function runClaims(args: string[]): Promise<number> {
   }
   console.log(json ? JSON.stringify(report, null, 2) : renderClaims(report));
   return report.clean ? 0 : 1;
+}
+
+async function runNext(args: string[]): Promise<number> {
+  let json = false;
+  let dialect: string | undefined;
+  const positional: string[] = [];
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i]!;
+    if (arg === "--json") json = true;
+    else if (arg === "--dialect") {
+      const value = args[++i];
+      if (value === undefined) {
+        console.error(`--dialect needs a dialect name\n\n${USAGE}`);
+        return 2;
+      }
+      dialect = value;
+    } else if (arg.startsWith("-")) {
+      console.error(`Unknown option: ${arg}\n\n${USAGE}`);
+      return 2;
+    } else positional.push(arg);
+  }
+  if (positional.length > 1) {
+    console.error(`next takes at most one path\n\n${USAGE}`);
+    return 2;
+  }
+
+  let report;
+  try {
+    report = await next(positional[0] ?? ".", { ...(dialect !== undefined && { dialect }) });
+  } catch (err) {
+    console.error(message(err));
+    return 2;
+  }
+  console.log(json ? JSON.stringify(report, null, 2) : renderNext(report));
+  // A stage is what this command is for, so reporting one is success. Work remaining is not a
+  // failure — every skill that shells out here would read a non-zero exit as one.
+  return 0;
 }
 
 async function runVerify(args: string[]): Promise<number> {

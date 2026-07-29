@@ -76,6 +76,30 @@ key: BASKET
     expect(report.clean).toBe(false);
   });
 
+  it("reports each criterion's document order, which an amendment divorces from its id", async () => {
+    const root = await scaffold({
+      "features/basket/SPEC.md": `---
+key: BASKET
+---
+
+# Basket
+
+## [BASKET-3] A newly added item sits at the head of the basket
+
+## [BASKET-1] Adding an item increments its quantity by exactly 1
+
+## [BASKET-2] Removing the last item leaves the basket empty
+`,
+    });
+    const report = await claims(root);
+    // The criteria list stays sorted by id; the order field is what carries the document's.
+    expect(report.features[0]!.criteria.map((c) => [c.id, c.order])).toEqual([
+      ["BASKET-1", 2],
+      ["BASKET-2", 3],
+      ["BASKET-3", 1],
+    ]);
+  });
+
   it("is clean when every criterion is claimed and no claim is unknown", async () => {
     const root = await scaffold({
       "features/basket/SPEC.md": SPEC,

@@ -1,16 +1,15 @@
 ---
 name: feature
-description: Build or change a feature end to end — plan it with the human (settling the open decisions and capturing each one in the slice's docs), gate once on plan approval, then run spec and implement in their own subagent sessions, close with the deterministic checks-gate (lint, claims, tests), and commit on green without asking. Use when the user wants to build, implement, or spec a feature, extend or amend an existing one, hands over a ticket or prose description to turn into a slice, or says "speccle this", "implement this feature", "add this to the checkout feature".
+description: Build or change a feature one session at a time — ask the slice's folder what stage the work is at, then run that one stage: plan and spec it with the human, or implement exactly one criterion and commit it on a green gate. Use when the user wants to build, implement, or spec a feature, extend or amend an existing one, hands over a ticket or prose description to turn into a slice, wants to carry on with a slice already underway, or says "speccle this", "implement this feature", "add this to the checkout feature", "carry on with the basket slice".
 allowed-tools: Read(/${CLAUDE_PLUGIN_ROOT}/skills/*/references/**)
 ---
 
 # feature
 
-The pipeline: **plan → gate → spec → implement → checks → commit**. Planning is a
-dialogue in this session; spec and implement each run in their own subagent session;
-the checks are deterministic oracle commands; the commit is automatic. The pipeline
-has exactly **one human gate** — plan approval — and it sits before anything is
-built. Everything after it runs unattended.
+**One invocation runs one stage.** This skill is a router, not a pipeline: it asks the
+feature folder what stage the work is at, runs that one stage, and ends by naming the
+command for the next session. It carries no state between sessions and stores none —
+the folder is the record, and a fresh session reads it cold.
 
 Invoke each sibling skill under whatever namespace this skill itself runs in —
 `speccle:plan-feature` when installed as the plugin, bare `plan-feature` when the
@@ -20,84 +19,101 @@ Speccle's words are fixed and mandatory: "criterion id", not "tag"; "amend", not
 "edit" or "update"; "checks-gate", not "review step"; "spec summary", not "approval
 gate".
 
-## 1. Plan — in this session, with the human
+## 1. Ask the folder where the work is
 
-Invoke `plan-feature` with the Skill tool, in this session — never in a subagent:
-planning is a dialogue, and a subagent cannot talk to the human. It explores, routes
-(**new** / **amend** / **carve**), settles the open key decisions one question at a
-time, captures each settled decision into the slice's docs the moment it lands, and
-ends with the plan summary.
+**Step 1 on every invocation, before anything else.** Resolve the oracle as every
+Speccle skill does — the repo's own `<repo-root>/node_modules/.bin/speccle` first (a
+devDependency is never on `PATH`, so test for the file), else `speccle` on `PATH`, else
+`node <speccle-repo>/packages/oracle/src/cli.ts`; if none resolves, point at the
+README's install steps and stop. Then:
 
-If the route is **carve**, stop here: hand the user to `carve-feature` — the
-behaviour already runs, and governing it is a different job. A mixed request is a
-carve followed by a `feature` run in amend mode, never one pass.
+```sh
+<oracle> next <project-root> --json
+```
 
-## 2. The gate — plan approval
+It derives the stage from the folder and never guesses: `stage` and `slice` name the one
+thing to do when exactly one slice is in flight, `criterion` names which criterion an
+implement session takes, `tracerOwed` says whether anything is built yet, `inFlight`
+lists the slices with work left, and `done` says every slice is finished. It calls no
+model, runs no test suite, and never routes to plan or to review — those two calls are
+this skill's, below.
 
-The plan summary is the pipeline's one approval. Where plan mode is available, enter
-plan mode and present the summary as the plan — approving it launches everything
-after. Where it is not, show the summary in chat and wait for the go-ahead.
+Do not derive the stage by reading the folder yourself, and never write a progress file.
+A file claiming `spec: done` about a spec that does not lint is worse than no file: the
+folder already answers the question, and it cannot go stale.
 
-- **Approval starts the machine.** If any decision was captured only in the summary
-  because writes were forbidden during planning (the session was already in plan
-  mode), write those docs now, before the spec stage — the subagents read the folder,
-  not this conversation.
-- **An unattended run cannot approve.** Do not hang: continue with the plan as
-  announced, every open decision defaulted to its recommendation and flagged — in the
-  plan summary and again at the end. A defaulted decision is never silent.
+## 2. Route on what it said
 
-## 3. Spec — a subagent, off the plan
+| `next` reports                         | The human named                     | This session                                                      |
+| -------------------------------------- | ----------------------------------- | ----------------------------------------------------------------- |
+| no slice at all, or every slice `done` | a feature or a change               | §3 — plan and spec it                                             |
+| no slice at all, or every slice `done` | nothing                             | ask what to build, then §3. If slices just finished, say so first |
+| one slice in flight                    | nothing, or that slice              | §4 — resume it at the stage `next` named                          |
+| one slice in flight                    | behaviour its spec does not promise | name what is in flight and ask: finish it, or plan the new work   |
+| several in flight                      | one of them                         | §4 on that one                                                    |
+| several in flight                      | nothing                             | ask which — list them with the stage `next` gave each             |
 
-Launch a subagent whose prompt carries the full hand-off: the route, the feature
-folder, the key, the scope, each settled decision (agreed or defaulted), and any
-per-behaviour choice the plan noted for a criterion body. Instruct it to invoke
-`spec-feature` with that input and to return the criteria — ids and statements,
-retirements included — once the folder lints clean.
+**Finish before starting.** A slice in flight is the default answer. Two slices half-built
+cost more than one built twice, so route to new work only when the human says so.
 
-The subagent never saw the planning dialogue. Everything it needs must be in the
-prompt or on disk — that is the design, not a limitation: if the hand-off feels too
-thin to spec from, the plan was too thin, and the fix is a better plan, not a fatter
-prompt.
+## 3. Plan and spec — this session, with the human
 
-Show the returned criteria to the human as an FYI — reading five headings is cheap
-insurance before implementation spends real effort on a wrong spec. Do not wait for
-approval; an interjection is a change request (re-enter the stage it names), silence
-is consent.
+Plan and spec share one session, and it is the pipeline's **one human gate**. They share
+it because planning settles choices about a single behaviour that get no file of their
+own — they are carried in the plan for a criterion's body, so they must be spent before
+the session ends.
 
-## 4. Implement — a subagent, off the spec
+1. **Plan.** Invoke `plan-feature` with the Skill tool, here in this session — never in a
+   subagent: planning is a dialogue and a subagent cannot talk to the human. It explores,
+   routes (**new** / **amend** / **carve**), settles the open key decisions one question at
+   a time, captures each into the slice's docs as it lands, and ends with the plan summary.
 
-Launch a second subagent: the prompt names the feature folder, the route (tracer on
-**new**, none on **amend**), and any retired ids whose tests must go. Instruct it to
-invoke `implement-feature`. It works from the linted spec and the slice's docs — the
-folder is the brief — and returns which criteria went green plus anything it changed
-in the spec along the way.
+2. **The gate.** The plan summary is the one approval. Where plan mode is available, enter
+   plan mode and present the summary as the plan. Where it is not, show it in chat and wait.
+   - **Approval starts the machine.** Any decision captured only in the summary because
+     writes were forbidden gets written now, before the spec — later sessions read the
+     folder, not this conversation.
+   - **An unattended run cannot approve.** Do not hang: continue with the plan as announced,
+     every open decision defaulted to its recommendation and flagged, in the summary and
+     again at the end. A defaulted decision is never silent.
 
-## 5. The checks-gate — deterministic, no judgement
+3. **Spec.** Invoke `spec-feature`, in this session too. It drafts or amends the contract
+   and lints it clean. Show the returned criteria to the human as an FYI — reading five
+   headings is cheap insurance before implementation spends real effort on a wrong spec. Do
+   not wait for approval; an interjection is a change request, silence is consent.
 
-Run in this session, resolving the oracle as every Speccle skill does — the repo's own
-`<repo-root>/node_modules/.bin/speccle` first (a devDependency is never on
-`PATH`, so test for the file), else `speccle` on `PATH`, else
-`node <speccle-repo>/packages/oracle/src/cli.ts`:
+4. **Commit the contract.** On a clean lint, stage the feature folder's markdown and commit
+   it — this commit introduces the slice, so it names the slice rather than a criterion. No
+   "commit? y/n": the human just approved the plan and read the criteria.
 
-1. `<oracle> lint <feature-folder>` — exit `0`.
-2. `<oracle> claims <target-root>` — exit `0`: every criterion claimed by a test
-   name, every claimed id real.
-3. The project's test suite — green.
+**If the route is carve, this session ends here.** The behaviour already runs, and
+governing it is a different job with its own skill. Name `carve-feature` and stop — **do
+not invoke it**, and do not spec the slice yourself. A request that mixes governing and
+changing is a carve, then a separate `feature` session in amend mode; never one pass.
 
-A failure returns to the implement subagent with the failing output — not to the
-human. If the same failure comes back twice, stop and show the human what is stuck.
-There is no judgement here and no oracle-strength measurement — the heatmap is
-`strengthen`'s job, on its own cadence, and this gate stays seconds cheap.
+## 4. Implement — one criterion, unattended
 
-## 6. Summary, then commit — no pause
+Invoke `implement-feature` with the Skill tool, in this session, naming the feature folder
+and the one criterion `next` gave. It writes that criterion's tests, makes them green, runs
+the per-criterion checks-gate, and commits on green. When `tracerOwed` is true nothing is
+built yet, so tell it to pick the tracer — the criterion whose passing test traces the
+thinnest complete path through every layer — instead of taking `criterion` as given.
 
-Render one screen, in product voice: every criterion drafted, amended, or retired
-(ids and statements), what claims it, the implement subagent's notes, and every
-decision that was defaulted rather than agreed. This is the spec summary for the
-whole run — the human rules by reading it, not by being asked.
+When the stage is `stale-claims` there is no criterion to implement yet: a test claims an id
+no criterion declares. Delete those tests, confirm the code they defended is either still
+promised by a live criterion or gone too, commit that, and stop. `next` names the criterion
+in the following session.
 
-Then commit, automatically: stage the feature folder and only the files this run
-touched, and write the message the repo's conventions ask for, derived from the
-route — a new slice is introduced, an amendment names the behaviour that changed. No
-"commit? y/n": on a green gate the pause is ceremony, and a commit the summary makes
-the human regret is one revert away.
+When the stage is `spec` on a slice that already has a contract, the spec is unfinished —
+`next` carries the lint violations that say why. Fix them with `spec-feature`, commit, stop.
+
+## 5. End by naming the next command
+
+Every session closes the same way, whatever stage it ran: re-run `<oracle> next` and tell
+the human, in one or two lines, what it now says — the criterion the next session takes, or
+that the slice is done. The cost of one session per stage is typing, not remembering, and
+that only holds if the next command is on screen.
+
+When `done` is true, say the slice is implemented and point at `review`. Do not route there:
+review's unit is the change set, not the slice, and a slice green for a month looks
+identical to one green for a minute. That hand-off is a loop boundary, not a gap.

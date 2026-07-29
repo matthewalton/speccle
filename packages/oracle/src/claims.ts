@@ -16,6 +16,13 @@ export interface TestClaim {
 export interface CriterionClaims {
   id: string;
   statement: string;
+  /**
+   * 1-based position of this criterion in its spec, as the document reads. Ids are names, not
+   * order (ADR-0003), so on an amended slice a low-numbered criterion can sit last — and the
+   * order the spec was written in is the order the work is taken in, so the join reports it
+   * rather than losing it to the id sort below.
+   */
+  order: number;
   claimed: boolean;
   tests: TestClaim[];
 }
@@ -72,11 +79,16 @@ export async function claims(target: string, options: ClaimsOptions = {}): Promi
     specFiles.map(async (file) => parseSpec(await readFile(join(root, file), "utf8"), file)),
   );
 
-  const criteria = new Map<string, { statement: string; spec: string }>();
+  const criteria = new Map<string, { statement: string; spec: string; order: number }>();
   for (const spec of specs) {
+    let order = 0;
     for (const criterion of spec.criteria) {
       if (criterion.wellFormed && !criteria.has(criterion.id)) {
-        criteria.set(criterion.id, { statement: criterion.statement, spec: spec.file });
+        criteria.set(criterion.id, {
+          statement: criterion.statement,
+          spec: spec.file,
+          order: ++order,
+        });
       }
     }
   }
@@ -118,6 +130,7 @@ export async function claims(target: string, options: ClaimsOptions = {}): Promi
       .map(([id, value]) => ({
         id,
         statement: value.statement,
+        order: value.order,
         claimed: claimsById.has(id),
         tests: claimsById.get(id) ?? [],
       }))

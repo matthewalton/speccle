@@ -7,14 +7,15 @@ allowed-tools: Read(/${CLAUDE_PLUGIN_ROOT}/skills/*/references/**)
 # spec-feature
 
 Produce the markdown contract — `SPEC.md`, `CONTEXT.md`, `CLAUDE.md`, `decisions/` —
-for one feature, and lint it clean. Stage 2 of the `feature` pipeline, and complete
-on its own when the user wants a spec without an implementation. This skill writes
-markdown only — tests and code are `implement-feature`'s job.
+for one feature, and lint it clean. In the pipeline this runs straight after the plan,
+in the **same session**, and it is complete on its own when the user wants a spec
+without an implementation. This skill writes markdown only — tests and code are
+`implement-feature`'s job.
 
-In the pipeline this skill runs in its own subagent session: the hand-off in the
-prompt and the feature folder on disk are everything — there is no planning
-conversation to consult, and nobody to ask mid-run. The final message is the
-hand-back.
+Sharing the session with the plan is deliberate: planning settles choices about a
+single behaviour that get no file of their own, and this is the skill that lands them
+in a criterion's body. They live in the conversation until you write them down, so
+spend them here — the sessions that follow read the folder, and nothing else survives.
 
 The shape of the contract is fixed by the convention, bundled beside this skill. Read
 `${CLAUDE_SKILL_DIR}/references/convention.md` before drafting — it is the written
@@ -26,13 +27,13 @@ not "edit" or "update".
 
 ## 1. Start from a plan
 
-In the pipeline, the hand-off carries the route, the feature folder, the key, the
-scope, and every key decision the plan settled — each marked agreed or defaulted, the
+In the pipeline the plan is right there in this session: the route, the feature folder,
+the key, the scope, and every key decision it settled — each agreed or defaulted, the
 cross-criterion ones already captured as ADRs in the slice's `decisions/`, the
 per-behaviour ones noted for a criterion body. Land those notes where they belong as
-you draft; flag anything marked defaulted again in your hand-back. A decision the
-hand-off genuinely leaves open is taken on its recommendation and flagged defaulted —
-never guessed silently, and never a reason to stall.
+you draft; flag anything defaulted again when you announce the criteria. A decision the
+plan genuinely leaves open is taken on its recommendation and flagged defaulted — never
+guessed silently, and never a reason to stall.
 
 Standalone, settle those the way `plan-feature` does — route on where the behaviour
 lives, read every other `SPEC.md`'s frontmatter before picking a key, and put key
@@ -148,14 +149,17 @@ criterion has no outcome to test, not that it dislikes your wording.
 The rules are fixed and unconfigurable, and there is one severity: a spec lints clean
 or it does not.
 
-## 4. Hand back the criteria
+## 4. Announce the criteria
 
-In the pipeline, the hand-back is your final message: every criterion drafted,
-amended, or retired — ids and statements — every decision recorded and where, and
-each one flagged that was defaulted rather than agreed. The orchestrator shows it to
-the human; you do not wait, and you do not ask.
+Announce every criterion drafted, amended, or retired — ids and statements — every
+decision recorded and where, and each one flagged that was defaulted rather than agreed.
+This is the **spec summary**. In the pipeline the human is in this session and reading
+it: show it and carry on, because the criteria are cheap to read and expensive to
+implement wrongly. You do not wait, and you do not ask — an interjection is a change
+request, silence is consent. The pipeline commits the contract once it lints clean, so
+the criteria the human sees are the criteria that land.
 
-Standalone, the same content is the **spec summary**, announced in chat: the human
+Standalone, the same content is announced in chat: the human
 owns the criteria, and that ownership is exercised by interrupting or amending — not
 at a blocking pre-approval. Treat "looks good, and also…" as a change request: amend
 the spec, re-lint, announce again. Say what the contract does not yet have: tests

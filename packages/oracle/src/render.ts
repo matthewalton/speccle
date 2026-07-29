@@ -5,6 +5,7 @@ import { DEFAULT_DIALECT } from "./dialects.ts";
 import type { DoctorReport } from "./doctor.ts";
 import type { InitReport } from "./init.ts";
 import type { LensesInitReport } from "./lenses.ts";
+import type { NextReport, SliceStage } from "./next.ts";
 import type { SkillsInitReport } from "./skills.ts";
 import type { UpdateReport } from "./update.ts";
 
@@ -497,6 +498,82 @@ export function renderClaims(report: ClaimsReport): string {
   const counts = `${dialects} — ${specs}, ${criteria}, ${claimed} claimed`;
   lines.push(report.clean ? `${counts}, clean` : counts);
   return lines.join("\n");
+}
+
+export function renderNext(report: NextReport): string {
+  if (report.slices.length === 0) {
+    return "no governed slice here — nothing to derive a stage from, so plan one first";
+  }
+
+  const lines: string[] = [];
+  for (const slice of report.slices) {
+    lines.push(slice.key === undefined ? slice.folder : `${slice.folder}  ${slice.key}`);
+    for (const line of sliceDetail(slice)) lines.push(`  ${line}`);
+  }
+  lines.push("");
+
+  if (report.done) {
+    lines.push(
+      "every slice is done — implementation is complete, and review's unit is the change set",
+    );
+  } else if (report.inFlight.length > 1) {
+    lines.push(
+      `${plural(report.inFlight.length, "slice")} in flight — say which: ${report.inFlight.join(", ")}`,
+    );
+  } else {
+    lines.push(`next: ${nextMove(report.slices.find((slice) => slice.folder === report.slice)!)}`);
+  }
+  return lines.join("\n");
+}
+
+function sliceDetail(slice: SliceStage): string[] {
+  switch (slice.stage) {
+    case "spec": {
+      if (slice.spec === undefined)
+        return ["spec          no SPEC.md yet — planned, not specified"];
+      if (slice.violations.length === 0) {
+        return ["spec          the spec declares no criteria — it promises nothing yet"];
+      }
+      return [
+        `spec          ${plural(slice.violations.length, "lint violation")} — the spec is unfinished`,
+        ...slice.violations.map(
+          (violation) =>
+            `              ${violation.rule}  line ${violation.line}  ${violation.message}`,
+        ),
+      ];
+    }
+    case "stale-claims":
+      return [
+        `stale-claims  ${slice.staleClaims.join(", ")} — claimed by a test, declared by no criterion`,
+      ];
+    case "implement": {
+      const criterion = slice.criterion!;
+      const tracer = slice.tracerOwed
+        ? " — a tracer is owed, so pick the criterion that traces it"
+        : "";
+      return [
+        `implement     ${criterion.id}  ${criterion.statement}`,
+        `              ${plural(slice.unclaimed.length, "criterion", "criteria")} still unclaimed${tracer}`,
+      ];
+    }
+    case "done":
+      return ["done          every criterion claimed"];
+  }
+}
+
+function nextMove(slice: SliceStage): string {
+  switch (slice.stage) {
+    case "spec":
+      return slice.spec === undefined
+        ? `write the spec for ${slice.folder}`
+        : `finish the spec in ${slice.folder}`;
+    case "stale-claims":
+      return `clear the stale claims in ${slice.folder} — ${slice.staleClaims.join(", ")}`;
+    case "implement":
+      return `implement ${slice.criterion!.id} in ${slice.folder}`;
+    case "done":
+      return `nothing — ${slice.folder} is done`;
+  }
 }
 
 export function renderInit(report: InitReport): string {

@@ -11,6 +11,7 @@ import type { DoctorReport } from "../src/doctor.ts";
 import type { InitReport } from "../src/init.ts";
 import type { LensesInitReport } from "../src/lenses.ts";
 import type { LintReport } from "../src/lint.ts";
+import type { NextReport } from "../src/next.ts";
 import { WORKFLOW_FILE, type ReviewInitReport } from "../src/reviewinit.ts";
 import type { SkillsInitReport } from "../src/skills.ts";
 import type { UpdateReport } from "../src/update.ts";
@@ -187,6 +188,68 @@ describe("speccle claims (e2e)", () => {
 });
 
 const SWIFT = resolve(import.meta.dirname, "fixtures/swift");
+
+describe("speccle next (e2e)", () => {
+  it("reports the toy project done, exit 0", () => {
+    const { status, stdout } = run("next", TOY);
+    expect(status).toBe(0);
+    expect(stdout).toContain("done          every criterion claimed");
+    expect(stdout).toContain("every slice is done");
+  });
+
+  it("names the criterion an implement session takes, and that a tracer is owed", () => {
+    const { status, stdout } = run("next", STRENGTH);
+    expect(status).toBe(0);
+    expect(stdout).toContain("implement     ALPHA-1");
+    expect(stdout).toContain("a tracer is owed");
+    expect(stdout).toContain("next: implement ALPHA-1 in features/alpha");
+  });
+
+  it("emits the typed JSON report", () => {
+    const { status, stdout } = run("next", STRENGTH, "--json");
+    expect(status).toBe(0);
+    const report = JSON.parse(stdout) as NextReport;
+    expect(report.stage).toBe("implement");
+    expect(report.slice).toBe("features/alpha");
+    expect(report.done).toBe(false);
+    expect(report.slices[0]!.criterion).toEqual({
+      id: "ALPHA-1",
+      statement: "Adding an item increments its quantity by exactly 1",
+      order: 1,
+    });
+    expect(report.slices[0]!.tracerOwed).toBe(true);
+  });
+
+  it("holds an unlinted spec at the spec stage, and picks between no slices", () => {
+    const { status, stdout } = run("next", DIRTY);
+    expect(status).toBe(0);
+    expect(stdout).toContain("spec          ");
+    expect(stdout).toContain("the spec is unfinished");
+    expect(stdout).toContain("4 slices in flight — say which:");
+  });
+
+  it("reports no slice at all in a folder nothing governs", () => {
+    const { status, stdout } = run("next", resolve(import.meta.dirname, "support"));
+    expect(status).toBe(0);
+    expect(stdout).toContain("no governed slice here");
+  });
+
+  it("derives the swift slice's stage under --dialect swift", () => {
+    const { status, stdout } = run("next", SWIFT, "--dialect", "swift");
+    expect(status).toBe(0);
+    expect(stdout).toContain("every slice is done");
+  });
+
+  it("exits 2 on a missing path", () => {
+    expect(run("next", resolve(DIRTY, "no-such-dir")).status).toBe(2);
+  });
+
+  it("exits 2 when --dialect has no value", () => {
+    const { status, stderr } = run("next", SWIFT, "--dialect");
+    expect(status).toBe(2);
+    expect(stderr).toContain("--dialect needs a dialect name");
+  });
+});
 
 const STRENGTH = resolve(import.meta.dirname, "fixtures/strength");
 const REPORTS = ["--mutation", "mutation.json", "--coverage", "coverage-summary.json"];

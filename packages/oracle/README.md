@@ -8,6 +8,7 @@ speccle doctor          # report staleness across the CLI, skills, CI driver, an
 speccle update          # refresh the vendored skills; print the CLI + stack fix commands
 speccle lint            # enforce the convention over a repo's specs
 speccle claims          # join criteria to the test names that claim them
+speccle next            # derive the pipeline's stage from the folder: which slice, which criterion
 speccle verify          # run .speccle/checks/ over a change set: cross-file invariants
 speccle risk            # score a change set from spec-aware signals; gate on the threshold
 speccle calibrate       # record / report the calibration evidence a threshold moves on
@@ -28,6 +29,8 @@ speccle strength init   # provision the strength stack into a target
 - `lint` — enforce the [convention](https://github.com/matthewalton/speccle/blob/main/docs/convention.md) over a repo's specs.
 - `claims` — join every criterion to the test names carrying its id, statically. No
   reports needed, so it is cheap enough to gate on.
+- `next` — `lint` + `claims`, mapped to the one thing a `feature` session should do next.
+  The only command that answers "is this slice finished?"
 - `verify` / `risk` — the change-set surface. Both read the working tree's pending change
   by default, or a committed range with `--base <ref>`, measured at the merge base — which
   is what a CI run needs, where the working tree is clean. `risk` exits 1 at or above the
@@ -109,6 +112,53 @@ Names are read statically, so a name built dynamically shows up as unclaimed —
 failure mode is a false alarm, never a silent pass. `--json` emits the typed
 `ClaimsReport` (see [`src/claims.ts`](src/claims.ts)). Exit codes: `0` every criterion
 claimed and no unknown claims, `1` otherwise, `2` usage error.
+
+## next
+
+```sh
+speccle next [path] [--json] [--dialect <name>]
+```
+
+Derives what the `feature` pipeline should do next from the slice's folder, never from a
+stored record: a file claiming `spec: done` about a spec that does not lint is worse than no
+file at all. Runs `lint` and `claims` and maps their results to one stage:
+
+| What it observes                              | The stage                                      |
+| --------------------------------------------- | ---------------------------------------------- |
+| no `SPEC.md`, but a plan's `decisions/`       | spec — the slice is planned, not specified     |
+| `SPEC.md` present, `lint` fails               | spec, unfinished — the violations come with it |
+| lints clean, a stale claim names no criterion | clear the stale claims, before any criterion   |
+| lints clean, criteria still unclaimed         | implement, **and which criterion**             |
+| lints clean, every criterion claimed          | done                                           |
+
+The criterion is the first unclaimed one in **document order** — the order the spec reads,
+which is the order its criteria build on each other in. Ids are names, not order, so on an
+amended slice a low-numbered criterion can sit last in the document; `claims` reports each
+criterion's `order` so the document wins.
+
+```
+features/basket  BASKET
+  implement     BASKET-3  When an item is added twice, its quantity increments by exactly 1
+                2 criteria still unclaimed
+
+next: implement BASKET-3 in features/basket
+```
+
+`tracerOwed` says nothing in the slice is claimed yet, so the session owes a **tracer** — the
+criterion whose passing test traces the thinnest complete path through every layer. Which one
+that is takes judgement, so `next` reports only that one is owed and the session picks it.
+That is the single place where the folder does not fully determine the work.
+
+Three things it deliberately does not do: it **never runs the test suite** ("every criterion
+claimed" is enough to say implementation is done, and running a suite to answer "where am I"
+would make orientation cost more than the work); it **never routes to plan** or asks
+new-versus-amend (before planning there is no folder to read); and it **never routes to
+review**, because review's unit is the change set rather than the slice.
+
+With several slices in flight there is no single answer, so `stage` and `slice` are absent and
+`inFlight` lists them — the session asks which. `--json` emits the typed `NextReport` (see
+[`src/next.ts`](src/next.ts)). Exit code `0` always, `2` on a usage error: a stage is what this
+command reports, and work remaining is not a failure.
 
 ## verify
 
