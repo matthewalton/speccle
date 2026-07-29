@@ -1,6 +1,9 @@
 # 0051 — The local driver lands the fixes it makes
 
-- Status: accepted
+- Status: accepted; refined by
+  [ADR-0053](0053-reviewing-a-change-and-acting-on-a-posted-review-are-two-skills.md),
+  which splits the decision across two skills — the push-when-a-pull-request-was-named rule
+  becomes structural rather than a branch
 - Date: 2026-07-28
 - Completes the loop [ADR-0043](0043-review-is-the-outer-loop-the-meta-loop-routes-remedies-home.md)
   opened and [ADR-0047](0047-the-ci-driver-ships-in-the-tarball-and-is-the-one-llm-caller.md)

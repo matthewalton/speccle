@@ -1,6 +1,9 @@
 # 0034 — feature runs spec and implement in subagents; the slice's markdown is the hand-off
 
-- Status: accepted
+- Status: accepted; the subagent mechanism is superseded by
+  [ADR-0052](0052-the-feature-pipeline-runs-one-stage-per-session-and-derives-the-stage.md),
+  which replaces the subagents with sessions — the hand-off decision below is what makes
+  that possible and stands unchanged
 - Date: 2026-07-17
 - Supersedes the in-session pipeline of
   [ADR-0022](0022-feature-orchestrates-plan-spec-implement-strengthen.md) and the

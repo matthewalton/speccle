@@ -3,8 +3,10 @@
 - Status: accepted; the strengthen gate is superseded by
   [ADR-0033](0033-strengthen-leaves-the-feature-loop-and-evaluates-human-run-reports.md),
   and the in-session pipeline by
-  [ADR-0034](0034-feature-runs-spec-and-implement-in-subagents-with-the-slice-as-hand-off.md) —
-  the four-skill decomposition itself stands
+  [ADR-0034](0034-feature-runs-spec-and-implement-in-subagents-with-the-slice-as-hand-off.md),
+  then by [ADR-0052](0052-the-feature-pipeline-runs-one-stage-per-session-and-derives-the-stage.md),
+  which also amends the carried-state rule — the orchestrator re-derives its state rather
+  than holding it; the four-skill decomposition itself stands
 - Date: 2026-07-11
 - Amends [ADR-0013](0013-implement-feature-traces-one-criterion-end-to-end-first.md):
   the tracer rule now lives in the narrowed `implement-feature` and applies to the
