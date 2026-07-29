@@ -1,6 +1,6 @@
 {
   "name": "speccle",
-  "version": "0.24.0",
+  "version": "0.25.0",
   "description": "Speccle's deterministic tooling: spec lint and the oracle-strength heatmap. No LLM, bar the opt-in CI review driver.",
   "license": "MIT",
   "author": {

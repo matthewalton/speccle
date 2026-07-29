@@ -181,6 +181,7 @@ export async function reviewRun(
   const shared = {
     verdict,
     base,
+    pr: options.pr,
     ran,
     skippedLenses,
     skippedFiles,
@@ -449,6 +450,8 @@ export function anchorableLines(patch: string): { left: Set<number>; right: Set<
 interface SummaryInput {
   verdict: RiskReport | null;
   base: string;
+  /** The pull request under review — the footer names it in the command it hands back. */
+  pr: number;
   ran: { name: string; findings: number }[];
   skippedLenses: Skip[];
   skippedFiles: Skip[];
@@ -495,12 +498,42 @@ export function renderSummary(input: SummaryInput): string {
   }
 
   lines.push(
-    `Fixes come back through the local \`review\` skill, which re-runs the checks-gate and reverts what goes red.`,
-    "",
+    ...nextStep(input),
     `<sub>[Speccle](${SPECCLE_URL}) · ${input.headSha.slice(0, 7)} · comment \`@review\` to run again</sub>`,
     REVIEW_MARKER,
   );
   return lines.join("\n");
+}
+
+/**
+ * The last thing read, and the only instruction the comment gives. A reader who did not build
+ * Speccle cannot derive their move from a statement of policy, so this names the command and
+ * branches on the authority the gate already decided: below the threshold that command fixes and
+ * pushes; at or above it the same command reports and records, and only a human moves. It branches
+ * on `humanRequired` alone — a blocker raises the banner without touching fix authority, so
+ * treating one as a stop would promise a reader behaviour the local driver does not have.
+ *
+ * The command is unnamespaced because the repos that receive this comment vendor their skills:
+ * CI can only review a repo carrying `.speccle/lenses/`, which is `speccle init`'s doing, and the
+ * same run materializes the skills project-level.
+ */
+function nextStep(input: SummaryInput): string[] {
+  const command = `\`/review --pr ${String(input.pr)}\``;
+  const lead =
+    input.verdict?.humanRequired === true
+      ? `**Next step — a human.** The risk gate fired, so nothing here gets fixed for you: ${command} reports these findings and records the change without touching the code.`
+      : input.findings.length === 0
+        ? `**Next step** — nothing to fix. ${command} still records this change against the review threshold.`
+        : `**Next step** — ${command}. It reads these findings, fixes them, re-runs the checks-gate, reverts any fix that goes red, then commits and pushes what survived.`;
+
+  // The verdict the threshold moves on is the human's, and no run can compute it — a threshold
+  // that rose on a guess is worse than one that never rose, so the comment asks for it by name.
+  return [
+    lead,
+    "",
+    `<sub>It asks you the one thing this run cannot know — did this change **need** a human? The review threshold only moves on that answer.</sub>`,
+    "",
+  ];
 }
 
 /**

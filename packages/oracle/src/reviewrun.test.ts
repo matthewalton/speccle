@@ -171,6 +171,7 @@ describe("lensPrompt", () => {
 describe("renderSummary", () => {
   const base = {
     base: "origin/main",
+    pr: 42,
     ran: [{ name: "correctness.md", findings: 1 }],
     skippedLenses: [],
     skippedFiles: [],
@@ -340,6 +341,53 @@ describe("renderSummary", () => {
         partial: true,
       },
     ]);
+  });
+
+  it("closes by naming the command that fixes these findings, and what it will land", () => {
+    const summary = renderSummary({ ...base, verdict: verdict() });
+    expect(summary).toContain("**Next step** — `/review --pr 42`");
+    expect(summary).toContain("commits and pushes what survived");
+  });
+
+  // A comment that says "a human is required" and then hands over a command that fixes anyway
+  // is worse than the policy sentence it replaced, so the two are pinned to the same verdict.
+  it("says plainly that nothing gets fixed when the gate wants a human", () => {
+    const summary = renderSummary({
+      ...base,
+      verdict: verdict({ score: 4, humanRequired: true }),
+    });
+    expect(summary).toContain("**Next step — a human.**");
+    expect(summary).toContain("without touching the code");
+    expect(summary).not.toContain("commits and pushes");
+  });
+
+  // Fix authority is the risk gate's alone: a blocker shouts in the banner, it does not stop
+  // the local driver fixing what the gate let through.
+  it("keeps the fixing next step for a blocker the gate let through", () => {
+    const summary = renderSummary({
+      ...base,
+      verdict: verdict(),
+      findings: [finding({ severity: "blocker" })],
+    });
+    expect(summary).toContain("**Next step** — `/review --pr 42`");
+    expect(summary).not.toContain("Next step — a human");
+  });
+
+  it("does not offer to fix findings it never found", () => {
+    const summary = renderSummary({
+      ...base,
+      verdict: verdict(),
+      ran: [{ name: "correctness.md", findings: 0 }],
+      findings: [],
+    });
+    expect(summary).toContain("**Next step** — nothing to fix.");
+    expect(summary).toContain("`/review --pr 42`");
+  });
+
+  it("asks for the one verdict no run can compute, whoever the next move belongs to", () => {
+    for (const report of [verdict(), verdict({ score: 4, humanRequired: true })]) {
+      expect(renderSummary({ ...base, verdict: report })).toContain("did this change **need** a");
+    }
   });
 });
 
