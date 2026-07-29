@@ -1,6 +1,10 @@
 # 0052 — The `feature` pipeline runs one stage per session, and the stage is derived
 
-- Status: accepted
+- Status: accepted; the implement stage's session boundary and the `next` derivation table
+  are amended by
+  [ADR-0054](0054-implement-runs-one-criterion-per-session-and-claims-clean-is-the-terminal-condition.md) —
+  implement runs one criterion per session and the derivation names it; deriving the stage
+  from the folder rather than storing it stands unchanged
 - Date: 2026-07-29
 - Supersedes the subagent mechanism of
   [ADR-0034](0034-feature-runs-spec-and-implement-in-subagents-with-the-slice-as-hand-off.md) —

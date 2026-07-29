@@ -1,6 +1,10 @@
 # 0035 — a deterministic checks-gate and auto-commit close the pipeline
 
-- Status: accepted
+- Status: accepted; the `claims` check is narrowed from the slice to the criterion under work
+  by
+  [ADR-0054](0054-implement-runs-one-criterion-per-session-and-claims-clean-is-the-terminal-condition.md),
+  which makes slice-wide `claims` clean the pipeline's terminal condition rather than a gate
+  assertion; the gate's three checks and the auto-commit stand
 - Date: 2026-07-17
 
 ## Context
