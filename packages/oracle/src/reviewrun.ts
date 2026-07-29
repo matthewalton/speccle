@@ -511,14 +511,20 @@ export function renderSummary(input: SummaryInput): string {
  * branches on the authority the gate already decided: below the threshold that command fixes and
  * pushes; at or above it the same command reports and records, and only a human moves. It branches
  * on `humanRequired` alone — a blocker raises the banner without touching fix authority, so
- * treating one as a stop would promise a reader behaviour the local driver does not have.
+ * treating one as a stop would promise a reader behaviour `address` does not have.
+ *
+ * It names `address`, not `review`: acting on findings already posted is `address`'s whole job,
+ * and `review` derives its own. The pull request number is passed even though `address` can read
+ * it off the branch — this comment knows which pull request it is on, and a reader who runs it
+ * from another checkout gets a mismatch they can see rather than a review of whatever that branch
+ * happens to have open.
  *
  * The command is unnamespaced because the repos that receive this comment vendor their skills:
  * CI can only review a repo carrying `.speccle/lenses/`, which is `speccle init`'s doing, and the
  * same run materializes the skills project-level.
  */
 function nextStep(input: SummaryInput): string[] {
-  const command = `\`/review --pr ${String(input.pr)}\``;
+  const command = `\`/address ${String(input.pr)}\``;
   const lead =
     input.verdict?.humanRequired === true
       ? `**Next step — a human.** The risk gate fired, so nothing here gets fixed for you: ${command} reports these findings and records the change without touching the code.`

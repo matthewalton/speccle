@@ -31,6 +31,14 @@ const REFERENCES = [
     dest: "packages/plugin/skills/conform/references/convention.md",
   },
   {
+    source: "docs/review-mechanics.md",
+    dest: "packages/plugin/skills/review/references/mechanics.md",
+  },
+  {
+    source: "docs/review-mechanics.md",
+    dest: "packages/plugin/skills/address/references/mechanics.md",
+  },
+  {
     source: "docs/strength-stack.md",
     dest: "packages/plugin/skills/strengthen/references/stack.md",
   },

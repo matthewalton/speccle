@@ -345,7 +345,7 @@ describe("renderSummary", () => {
 
   it("closes by naming the command that fixes these findings, and what it will land", () => {
     const summary = renderSummary({ ...base, verdict: verdict() });
-    expect(summary).toContain("**Next step** — `/review --pr 42`");
+    expect(summary).toContain("**Next step** — `/address 42`");
     expect(summary).toContain("commits and pushes what survived");
   });
 
@@ -369,7 +369,7 @@ describe("renderSummary", () => {
       verdict: verdict(),
       findings: [finding({ severity: "blocker" })],
     });
-    expect(summary).toContain("**Next step** — `/review --pr 42`");
+    expect(summary).toContain("**Next step** — `/address 42`");
     expect(summary).not.toContain("Next step — a human");
   });
 
@@ -381,7 +381,7 @@ describe("renderSummary", () => {
       findings: [],
     });
     expect(summary).toContain("**Next step** — nothing to fix.");
-    expect(summary).toContain("`/review --pr 42`");
+    expect(summary).toContain("`/address 42`");
   });
 
   it("asks for the one verdict no run can compute, whoever the next move belongs to", () => {

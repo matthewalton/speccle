@@ -30,6 +30,14 @@ and [`conform`](skills/conform/SKILL.md) — after the convention changes, every
 governed slice → drift diagnosed against the current convention → form-only fixes,
 behaviour and criterion meaning unchanged → spec summary.
 
+The outer loop, over a change set rather than a slice, is two skills either side of the
+pull request: [`review`](skills/review/SKILL.md) — a panel of lenses over the pending
+change → risk-gated find-and-fix, every fix re-checked → one commit, never pushed;
+and [`address`](skills/address/SKILL.md) — the review CI already posted on a pull request
+→ the same risk gate and the same guarded fixes → one commit, pushed to its branch, and
+the calibration entry CI could not write. Both read the same generated
+`references/mechanics.md`.
+
 A skill that is _ordered to read_ a doc gets that doc bundled beside it, under the
 skill's `references/` — an installed plugin obeys its own instructions offline. Those
 copies are generated; edit the source in `docs/` and run `pnpm sync:plugin-refs`. The

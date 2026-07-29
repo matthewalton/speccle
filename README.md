@@ -99,6 +99,7 @@ written contract: [`docs/convention.md`](docs/convention.md).
 | `strengthen`        | Mutation + coverage → per-criterion heatmap → every surviving mutant routed.                                                               |
 | `carve-feature`     | Existing code brought under the convention — **without changing it**.                                                                      |
 | `review`            | A panel of **lenses** over a change set → risk-gated **find and fix**, every fix re-checked → an overruleable summary.                     |
+| `address`           | The review CI posted on a pull request → the same risk-gated fixes → committed **and pushed** to its branch.                               |
 
 <details>
 <summary><strong><code>feature</code></strong> — build or change a slice, end to end</summary>
@@ -163,6 +164,29 @@ lens** may escalate that line but never lower it. It ends with one overruleable 
 every finding, whether it was fixed, and the **remedy** proposed to stop the class
 recurring. The lenses are vendored by `speccle init` into `.speccle/lenses/`; the
 house-conventions lens is yours to author, and a refresh never overwrites it.
+
+`review` never pushes — there is no named place for its commit to go. Once the change is
+on a pull request and CI has reviewed it, `address` closes the loop.
+
+</details>
+
+<details>
+<summary><strong><code>address</code></strong> — clear the review on a pull request</summary>
+<br>
+
+The other half of the outer loop, after the pull request. Where `review` derives findings,
+`address` acts on the ones CI already posted: `speccle review findings` reads them back,
+the same risk gate decides fix authority, the same checks-gate guards every fix — and the
+surviving fixes are committed **and pushed to the pull request's branch**, because here
+there is a named place for them to go.
+
+You don't look up the number: it reads the pull request off the current branch, and you can
+name one to override that. With **no posted review it stops and says so** rather than
+quietly running a local panel — you asked to act on a review someone already paid for, and a
+second panel on the same commit can reach a different answer than the one you read.
+
+It also records the calibration entry CI cannot: whether the change **needed** a human is
+your answer, and the review threshold only moves on it.
 
 </details>
 
