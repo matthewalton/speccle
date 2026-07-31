@@ -34,7 +34,7 @@ Speccle's words are fixed and mandatory: "criterion id", not "tag"; "statement",
 
 **This skill does not measure oracle strength.** A slice can finish here well-specified and
 weakly defended; closing that gap is `strengthen`'s job, on its own cadence — the gate below
-verifies lint, claims, and green tests, not how hard the tests bite.
+checks lint, claims, the repo's own checks and green tests, not how hard the tests bite.
 
 ## 1. Take exactly one criterion
 
@@ -136,7 +136,7 @@ implementation would miss them.
 
 ## 3. The per-criterion checks-gate
 
-Three checks, deterministic, no judgement:
+Four checks, deterministic, no judgement:
 
 1. `<oracle> lint <feature-folder>` — exit `0`.
 2. `<oracle> claims <feature-folder> --json` — **this** criterion's `claimed` is `true`, and
@@ -144,8 +144,25 @@ Three checks, deterministic, no judgement:
    `claims` exits `1` because criteria you were never asked to build are still unclaimed, and
    that is correct — slice-wide claims are what the last session observes, not what this one
    asserts.
-3. The **whole project's** test suite — green, not just this slice's. On an amended slice the
+3. `<oracle> verify <repo-root> --json` — `clean` is `true`. Mind the path: this one takes the
+   **repo root**, not the feature folder. The repo's checks live in `.speccle/checks/` at the
+   root, and each is a predicate over the whole change set rather than over one slice, so
+   pointed at a feature folder it would find no checks and pass vacuously. It reads the working
+   tree's pending change, which at gate time is exactly this criterion's uncommitted edits.
+4. The **whole project's** test suite — green, not just this slice's. On an amended slice the
    pre-existing tests are exactly the ones a change breaks.
+
+A repo that has authored no checks has no `.speccle/checks/`; `verify` reports `clean` with an
+empty `checks` list and there is nothing to do. Where there are checks, this is the one gate the
+repo itself wrote — a **breach** names an invariant the change set failed to hold, and the
+report carries both the `message` saying what is missing and the `because` saying which finding
+bought the check. Satisfy it the way it asks, usually by making the edit the check says a change
+of this shape must come with.
+
+A **malformed** check is not a breach and is not yours to red-green away: `verify` prints an
+error naming the file and exits `2` with no report at all, because a check that silently does
+nothing is worse than no check. That is the repo's configuration broken, not this criterion.
+Stop, name the file, commit nothing.
 
 Fix what fails and re-run. **A check that fails the same way twice stops the session**: show
 the human what is stuck and commit nothing. There is nothing to hand back to — this session
