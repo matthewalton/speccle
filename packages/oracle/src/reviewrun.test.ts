@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { gitAt } from "../test/support/git.ts";
 import type { Finding } from "./finding.ts";
 import { type FetchLike, REVIEW_MARKER } from "./github.ts";
-import { LENSES_DIR, TEMPLATE_LENS } from "./lenses.ts";
+import { LENSES_DIR, PLAN_LENSES_DIR, TEMPLATE_LENS } from "./lenses.ts";
 import { unplacedFindings } from "./reviewfindings.ts";
 import {
   anchorableLines,
@@ -428,6 +428,20 @@ describe("panel", () => {
     const root = await withLenses({ [TEMPLATE_LENS]: "# our rules\n1. no raw colours" });
     const { lenses } = await panel(root);
     expect(lenses.map((lens) => lens.name)).toEqual([TEMPLATE_LENS]);
+  });
+
+  // Plan lenses live one level down, inside the panel's own directory. The listing is not
+  // recursive and keeps only *.md, so the subdirectory is invisible — pinned here because
+  // flattening it would silently run every plan lens over the change set (ADR-0057).
+  it("never fans over the plan/ subdirectory", async () => {
+    const root = await withLenses({ "correctness.md": "look" });
+    await mkdir(join(root, PLAN_LENSES_DIR), { recursive: true });
+    await writeFile(join(root, PLAN_LENSES_DIR, "design-system.md"), "a plan lens");
+
+    const { lenses, skipped } = await panel(root);
+
+    expect(lenses.map((lens) => lens.name)).toEqual(["correctness.md"]);
+    expect(skipped).toEqual([]);
   });
 
   it("points at init when the repo was never initialized for review", async () => {

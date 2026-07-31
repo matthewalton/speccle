@@ -3,7 +3,7 @@ import { join, resolve } from "node:path";
 import { readConfig, scorable } from "./config.ts";
 import { DEFAULT_DIALECT } from "./dialects.ts";
 import { ownVersion, STRENGTH_DEPS, STRYKER_CONFIG_NAMES } from "./init.ts";
-import { LENSES_DIR } from "./lenses.ts";
+import { LENSES_DIR, planLensesState, type PlanLensesState } from "./lenses.ts";
 import { pinnedVersion, WORKFLOW_FILE } from "./reviewinit.ts";
 import { SKILLS_DIR } from "./skills.ts";
 import { checksState, type ChecksState } from "./verify.ts";
@@ -46,6 +46,12 @@ export interface DoctorReport {
   skills: PayloadCheck;
   /** `recorded` is the lenses version stamped in `.speccle/config.json`. */
   lenses: PayloadCheck;
+  /**
+   * The repo's own advisory surface at plan time. Unversioned and outside `ok` for the same
+   * reason `checks` is: Speccle ships no plan lens, so there is nothing to be stale against,
+   * and a surface nobody has written to is a choice rather than a defect (ADR-0057).
+   */
+  planLenses: PlanLensesState;
   /**
    * The repo's own gating surface. Not a `PayloadCheck` and deliberately not part of `ok`:
    * Speccle ships no checks, so there is no bundled version to be stale against, and a surface
@@ -90,6 +96,7 @@ export async function doctor(target: string): Promise<DoctorReport> {
   const lensesRecorded = config?.lensesVersion ?? null;
   const lensesStatus = derivePayloadStatus(await hasLenses(root), lensesRecorded, cli);
 
+  const planLenses = await planLensesState(root);
   const checks = await checksState(root);
 
   const workflow = await readMaybe(join(root, WORKFLOW_FILE));
@@ -120,6 +127,7 @@ export async function doctor(target: string): Promise<DoctorReport> {
     cli,
     skills: { recorded: skillsRecorded, bundled: cli, status: skillsStatus },
     lenses: { recorded: lensesRecorded, bundled: cli, status: lensesStatus },
+    planLenses,
     checks,
     driver: { recorded: driverPin, bundled: cli, status: driverStatus },
     stack: { dialect, provisioned, deps, status: stackStatus },

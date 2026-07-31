@@ -138,6 +138,42 @@ describe("update: checks", () => {
   });
 });
 
+describe("update: plan lenses", () => {
+  it("scaffolds the plan surface into a repo that predates it", async () => {
+    const root = await scaffold({ "package.json": "{}", ".speccle/config.json": config("0.0.1") });
+
+    const report = await update(root);
+
+    expect(report.plan).toEqual({
+      dir: ".speccle/lenses/plan",
+      file: "README.md",
+      action: "written",
+      authored: 0,
+    });
+  });
+
+  // The lenses beside it are refreshed from the tarball on every update; these are not
+  // Speccle's, and the refresh that overwrites them would be plain data loss.
+  it("leaves an authored plan lens and the README untouched", async () => {
+    const root = await scaffold({
+      "package.json": "{}",
+      ".speccle/config.json": config("0.0.1"),
+      ".speccle/lenses/plan/README.md": "our own notes",
+      ".speccle/lenses/plan/design-system.md": "our own lens",
+    });
+
+    const report = await update(root);
+
+    expect(report.plan).toMatchObject({ action: "kept", authored: 1 });
+    expect(await readFile(join(root, ".speccle/lenses/plan/README.md"), "utf8")).toBe(
+      "our own notes",
+    );
+    expect(await readFile(join(root, ".speccle/lenses/plan/design-system.md"), "utf8")).toBe(
+      "our own lens",
+    );
+  });
+});
+
 describe("update: review driver", () => {
   it("moves an existing workflow's pin forward to the CLI version", async () => {
     const version = await ownVersion();

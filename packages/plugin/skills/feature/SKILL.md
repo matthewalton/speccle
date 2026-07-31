@@ -70,6 +70,9 @@ the session ends.
 
 2. **The gate.** The plan summary is the one approval. Where plan mode is available, enter
    plan mode and present the summary as the plan. Where it is not, show it in chat and wait.
+   - **A plan-lens finding in the summary is advice, not a blocker.** Where the repo keeps
+     plan lenses, the summary may carry what they found. Present it with the rest and let
+     the human decide; never hold the gate open for one, and never treat it as a red.
    - **Approval starts the machine.** Any decision captured only in the summary because
      writes were forbidden gets written now, before the spec — later sessions read the
      folder, not this conversation.

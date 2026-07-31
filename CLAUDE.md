@@ -53,7 +53,10 @@ Node ≥ 24 runs TypeScript directly — no build step needed to run the CLI fro
   repos, so they carry **no citations out of this package**, same as the skills.
 - `packages/oracle/templates/` — scaffolds `init` places once and never overwrites, for the
   surfaces a consumer owns outright. `checks-README.md` documents the `verify` check schema
-  into `.speccle/checks/`. Shipped in the tarball (`files`) and vendored into arbitrary repos,
+  into `.speccle/checks/`; `plan-lenses-README.md` documents the plan lens into
+  `.speccle/lenses/plan/`, whose every other `*.md` is a lens `plan-feature` runs
+  ([ADR-0057](docs/adr/0057-a-plan-lens-lives-in-a-subdirectory-and-joins-the-plan-summary.md)).
+  Shipped in the tarball (`files`) and vendored into arbitrary repos,
   so the same no-citations rule applies.
 - `packages/oracle/test/fixtures/dirty/` — specs that deliberately violate the
   convention; they are lint regression fixtures. Never "fix" them.

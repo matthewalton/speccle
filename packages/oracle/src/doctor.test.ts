@@ -173,6 +173,34 @@ describe("doctor: checks", () => {
   });
 });
 
+describe("doctor: plan lenses", () => {
+  it("is not scaffolded when the directory was never created", async () => {
+    const root = await scaffold({ [SKILL]: "", [LENS]: "" });
+    expect((await doctor(root)).planLenses).toEqual({ scaffolded: false, authored: 0 });
+  });
+
+  it("counts the authored plan lenses, and never the README", async () => {
+    const root = await scaffold({
+      ".speccle/lenses/plan/README.md": "docs",
+      ".speccle/lenses/plan/design-system.md": "a lens",
+    });
+    expect((await doctor(root)).planLenses).toEqual({ scaffolded: true, authored: 1 });
+  });
+
+  // Same reasoning as checks: Speccle ships no plan lens, so there is nothing to be stale
+  // against, and a surface a repo has not written to is a choice, not a defect.
+  it("never fails the bill of health, authored or not", async () => {
+    const current = config(await ownVersion(), await ownVersion());
+    const root = await scaffold({
+      [SKILL]: "",
+      [LENS]: "",
+      ".speccle/config.json": current,
+      ".speccle/lenses/plan/README.md": "docs",
+    });
+    expect((await doctor(root)).ok).toBe(true);
+  });
+});
+
 describe("doctor: review driver", () => {
   it("is absent, and not a failure, when the repo never opted in", async () => {
     const root = await scaffold({

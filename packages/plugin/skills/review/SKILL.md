@@ -50,7 +50,9 @@ risk gate in `references/mechanics.md`, passing `--base <ref>` if step 2 settled
 ## 4. The lens panel
 
 Fan out one subagent per lens in `.speccle/lenses/*.md`, in parallel — this is the local driver,
-so the panel runs as subagents in this session, no API key. Skip two:
+so the panel runs as subagents in this session, no API key. That glob is flat on purpose: the
+`plan/` subdirectory holds lenses aimed at a slice being planned, not at a change set, and the
+panel never reaches into it. Skip two of the files it does match:
 
 - `risk.md` — already applied in step 3; it escalates authority, it is not a finding lens.
 - `house-conventions.md` **when it still reads as the shipped template** — its body carries the

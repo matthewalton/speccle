@@ -502,6 +502,17 @@ describe("speccle init (e2e)", () => {
     expect(stdout).toContain("so is any other lens you drop here");
   });
 
+  it("scaffolds the plan lens surface beneath the lenses it vendors", async () => {
+    const root = await scaffold({ "package.json": "{}" });
+    const { status, stdout } = run("init", root);
+    expect(status).toBe(0);
+    expect(stdout).toContain(`wrote     plan/README.md`);
+    expect(stdout).toContain("judges a slice at plan time");
+    expect(await readFile(join(root, ".speccle/lenses/plan/README.md"), "utf8")).toContain(
+      "advice, never a veto",
+    );
+  });
+
   it("emits the typed JSON report for the config, the skills, the lenses, and the checks", async () => {
     const root = await scaffold({ "package.json": "{}", "pnpm-lock.yaml": "" });
     const { status, stdout } = run("init", root, "--json");
@@ -523,6 +534,12 @@ describe("speccle init (e2e)", () => {
     expect(report.skills.skills.map((skill) => skill.name)).toContain("feature");
     expect(report.lenses.dir).toBe(".speccle/lenses");
     expect(report.lenses.lenses.map((lens) => lens.name)).toContain("security.md");
+    expect(report.lenses.plan).toEqual({
+      dir: ".speccle/lenses/plan",
+      file: "README.md",
+      action: "written",
+      authored: 0,
+    });
     expect(report.checks).toEqual({
       root: root,
       dir: ".speccle/checks",
@@ -657,6 +674,18 @@ describe("speccle doctor (e2e)", () => {
     const { status, stdout } = run("doctor", root);
     expect(status).toBe(0);
     expect(stdout).toContain("checks   1 check authored");
+  });
+
+  it("reports the plan surface, and counts a plan lens the repo authored", async () => {
+    const root = await scaffold({ "package.json": "{}" });
+    expect(run("init", root).status).toBe(0);
+    expect(run("doctor", root).stdout).toContain("plan     none authored");
+
+    await writeFile(join(root, ".speccle/lenses/plan/design-system.md"), "# a lens");
+    const { status, stdout } = run("doctor", root);
+    expect(status).toBe(0);
+    expect(stdout).toContain("plan     1 plan lens authored");
+    expect(stdout).toContain("up to date");
   });
 
   it("points a repo with no checks directory at init, without failing the bill of health", async () => {

@@ -111,12 +111,37 @@ the end:
   in the plan summary, explicitly marked "to write on approval". Writing them is the
   pipeline's first act after the gate.
 
-## 6. End with the plan summary
+## 6. Ask the repo's plan lenses
+
+A repo may keep **plan lenses** in `.speccle/lenses/plan/` — its own judgement about
+the shape of a slice, one markdown prompt each. Most repos keep none, and then this
+step is nothing: look, find no lens, move on without a word about it.
+
+Where there are lenses, fan out one subagent per lens, in parallel, before you write
+the summary. Each prompt carries the lens file verbatim, the plan as it stands — route,
+folder, key, scope, and every key decision with how it was settled — and whatever
+markdown the slice already has: `CONTEXT.md`, `CLAUDE.md`, `decisions/`, and `SPEC.md`
+on an amend. There is no diff at plan time; do not invent one, and do not send a lens
+looking at code.
+
+Two names never go to a subagent. `README.md` in that directory is the scaffold's own
+documentation, not a lens. And the lenses in `.speccle/lenses/` itself belong to
+`review` — they judge a change set, and there is no change set here.
+
+**A finding is advice, never a veto.** It cannot fail the plan, and it cannot quietly
+rewrite it. Where one is plainly right, revise the plan and say so, naming the lens;
+where it is arguable, carry it into the summary and let the human rule. Do not reopen
+§4 to ask about it — a lens is not a new question, it is a comment on the answers. A
+lens that finds nothing is the common result, and it earns no line anywhere.
+
+## 7. End with the plan summary
 
 One screen, easy to read: the route, the feature folder, the key, the scope (in and
 out), and each key decision — how it was settled (from the input, agreed, or
-defaulted) and where it was captured. No jargon the reader has to decode; the summary
-is the thing the human approves, so it must be readable in one pass.
+defaulted) and where it was captured. Then what the plan lenses found, if any ran and
+any found something — each finding in a line or two, with the lens that raised it. No
+jargon the reader has to decode; the summary is the thing the human approves, so it
+must be readable in one pass.
 
 In the `feature` pipeline the summary becomes the approval gate — `feature` owns those
 mechanics, and the spec is drafted in this same session once the gate passes.

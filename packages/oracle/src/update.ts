@@ -1,7 +1,7 @@
 import { resolve } from "node:path";
 import { initConfig, readConfig } from "./config.ts";
 import { doctor, type DepCheck, type StackStatus } from "./doctor.ts";
-import { materializeLenses, type LensResult } from "./lenses.ts";
+import { materializeLenses, type LensResult, type PlanLensesScaffoldReport } from "./lenses.ts";
 import { detectPackageManager, installCommandFor } from "./packagemanager.ts";
 import { scaffoldReviewWorkflow } from "./reviewinit.ts";
 import { materializeSkills, type SkillResult } from "./skills.ts";
@@ -34,6 +34,12 @@ export interface UpdateReport {
     dir: string;
     lenses: LensResult[];
   };
+  /**
+   * Unversioned like `checks`, and scaffolded on the same terms — a repo initialized before the
+   * plan surface existed would otherwise be told by `doctor` to run a command that never
+   * creates it. It rides `materializeLenses`, which owns the directory it sits in.
+   */
+  plan: PlanLensesScaffoldReport;
   /**
    * Unversioned, so there is no from/to: the scaffold is only ever placed when missing. It runs
    * here at all because a repo initialized before the surface existed would otherwise be told by
@@ -110,6 +116,7 @@ export async function update(target: string): Promise<UpdateReport> {
       dir: materializedLenses.dir,
       lenses: materializedLenses.lenses,
     },
+    plan: materializedLenses.plan,
     checks: {
       dir: scaffoldedChecks.dir,
       action: scaffoldedChecks.action,

@@ -49,12 +49,18 @@ export function renderLensesInit(report: LensesInitReport): string {
     const verb = action === "written" ? "wrote" : action;
     lines.push(`  ${verb.padEnd(9)} ${name}`);
   }
+  lines.push(
+    `  ${(report.plan.action === "written" ? "wrote" : "kept").padEnd(9)} plan/${report.plan.file}`,
+  );
   lines.push("");
   lines.push(
     "the baseline lenses are Speccle's — refreshed each run; house-conventions.md is yours to author",
   );
   lines.push(
     "so is any other lens you drop here: the panel fans over every *.md, and a refresh never deletes",
+  );
+  lines.push(
+    "plan/ is yours as well — a lens you put there judges a slice at plan time, before it is built",
   );
   return lines.join("\n");
 }
@@ -164,6 +170,7 @@ export function renderDoctor(report: DoctorReport): string {
     "",
     `skills   ${describePayload(report.skills, "materialized")}`,
     `lenses   ${describePayload(report.lenses, "vendored")}`,
+    `plan     ${describePlanLenses(report.planLenses)}`,
     `checks   ${describeChecks(report.checks)}`,
     `driver   ${describeDriver(report.driver)}`,
     `stack    ${describeStack(report.stack)}`,
@@ -213,6 +220,13 @@ function describePayload(payload: DoctorReport["skills"], verb: string): string 
  * the two questions that can go wrong instead — can the repo find the surface, and has it used
  * it — which is why "none authored" reads as an invitation, not as a fault.
  */
+function describePlanLenses(plan: DoctorReport["planLenses"]): string {
+  if (!plan.scaffolded) return "not scaffolded — run `speccle init`";
+  return plan.authored === 0
+    ? "none authored — yours to write, see .speccle/lenses/plan/README.md"
+    : `${plural(plan.authored, "plan lens", "plan lenses")} authored`;
+}
+
 function describeChecks(checks: DoctorReport["checks"]): string {
   if (!checks.scaffolded) return "not scaffolded — run `speccle init`";
   return checks.authored === 0
@@ -272,6 +286,16 @@ export function renderUpdate(report: UpdateReport): string {
     lines.push(`lenses   already at ${report.lenses.to} — refreshed in place; review the diff`);
   } else {
     lines.push(`lenses   ${report.lenses.from} → ${report.lenses.to} — review & commit the diff`);
+  }
+
+  if (report.plan.action === "written") {
+    lines.push(`plan     ${report.plan.dir}/ scaffolded — new; yours to author, see its README`);
+  } else if (report.plan.authored === 0) {
+    lines.push("plan     none authored — still yours to write; advice at plan time, never a gate");
+  } else {
+    lines.push(
+      `plan     ${plural(report.plan.authored, "plan lens", "plan lenses")} authored — left untouched`,
+    );
   }
 
   if (report.checks.action === "written") {

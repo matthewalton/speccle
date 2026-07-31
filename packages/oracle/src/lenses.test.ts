@@ -2,7 +2,14 @@ import { access, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promise
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { LENSES_DIR, TEMPLATE_LENS, materializeLenses } from "./lenses.ts";
+import {
+  LENSES_DIR,
+  PLAN_LENSES_DIR,
+  PLAN_LENSES_README,
+  TEMPLATE_LENS,
+  materializeLenses,
+  planLensesState,
+} from "./lenses.ts";
 
 const dirs: string[] = [];
 
@@ -119,5 +126,52 @@ describe("materializeLenses", () => {
     expect(names).toContain("security.md");
     expect(names).toContain(TEMPLATE_LENS);
     expect(await readFile(join(root, LENSES_DIR, "risk.md"), "utf8")).toContain("floor");
+  });
+});
+
+describe("the plan lens surface", () => {
+  it("scaffolds .speccle/lenses/plan/ with its README", async () => {
+    const root = await tempDir("speccle-lenses-target-");
+
+    const report = await materializeLenses(root, await fixtureSource({ "correctness.md": "body" }));
+
+    expect(report.plan).toEqual({
+      dir: PLAN_LENSES_DIR,
+      file: PLAN_LENSES_README,
+      action: "written",
+      authored: 0,
+    });
+    expect(await readFile(join(root, PLAN_LENSES_DIR, PLAN_LENSES_README), "utf8")).toContain(
+      "plan lens",
+    );
+  });
+
+  it("never overwrites the README on a refresh", async () => {
+    const root = await tempDir("speccle-lenses-target-");
+    await writeTree(root, { [`${PLAN_LENSES_DIR}/${PLAN_LENSES_README}`]: "my own notes" });
+
+    const report = await materializeLenses(root, await fixtureSource({ "correctness.md": "body" }));
+
+    expect(report.plan.action).toBe("kept");
+    expect(await readFile(join(root, PLAN_LENSES_DIR, PLAN_LENSES_README), "utf8")).toBe(
+      "my own notes",
+    );
+  });
+
+  it("counts the plan lenses a repo authored, and never the README", async () => {
+    const root = await tempDir("speccle-lenses-target-");
+    await writeTree(root, {
+      [`${PLAN_LENSES_DIR}/${PLAN_LENSES_README}`]: "docs",
+      [`${PLAN_LENSES_DIR}/design-system.md`]: "a lens",
+      [`${PLAN_LENSES_DIR}/notes.txt`]: "not markdown",
+    });
+
+    expect(await planLensesState(root)).toEqual({ scaffolded: true, authored: 1 });
+  });
+
+  it("reports an unscaffolded surface rather than throwing", async () => {
+    const root = await tempDir("speccle-lenses-target-");
+
+    expect(await planLensesState(root)).toEqual({ scaffolded: false, authored: 0 });
   });
 });

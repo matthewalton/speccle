@@ -6,6 +6,23 @@ import { fileURLToPath } from "node:url";
 export const LENSES_DIR = ".speccle/lenses";
 
 /**
+ * Where a repo keeps lenses aimed at a plan rather than a change set (ADR-0057). A
+ * subdirectory, not a flag inside the file: `panel()` lists this directory non-recursively and
+ * keeps only `*.md`, so a directory is already invisible to the review panel and its glob stays
+ * as literal as it reads. A discriminator would make every reader parse each lens before it
+ * could know whether to run it.
+ */
+export const PLAN_LENSES_DIR = `${LENSES_DIR}/plan`;
+
+/**
+ * The plan scaffold's one file, and the one name in that directory that is _not_ a lens.
+ * Checks get this for free — `loadChecks` reads only `*.json`, so a `.md` there is inert — but
+ * here the documentation and the content share an extension, so the exclusion has to be by
+ * name and has to be stated wherever the fan-out is spelled (ADR-0057).
+ */
+export const PLAN_LENSES_README = "README.md";
+
+/**
  * The one lens that ships as a template and is the repo's own to author (ADR-0043) — its
  * house-conventions lens is the real IP Speccle cannot write. It is written once, when
  * absent, and a refresh never overwrites it: clobbering an authored lens would be exactly
@@ -26,6 +43,17 @@ export interface LensesInitReport {
   /** Absolute path the lenses were copied from. */
   source: string;
   lenses: LensResult[];
+  /** The plan surface beneath it: unversioned, since Speccle ships no plan lens. */
+  plan: PlanLensesScaffoldReport;
+}
+
+export interface PlanLensesScaffoldReport {
+  /** Root-relative directory the scaffold landed in. */
+  dir: string;
+  file: string;
+  action: "written" | "kept";
+  /** How many plan lenses the repo has authored here — 0 on a fresh scaffold. */
+  authored: number;
 }
 
 /**
@@ -54,7 +82,50 @@ export async function materializeLenses(root: string, source?: string): Promise<
     await copyFile(join(from, name), dest);
     lenses.push({ name, action: present ? "refreshed" : "written" });
   }
-  return { root, dir: LENSES_DIR, source: from, lenses };
+  return { root, dir: LENSES_DIR, source: from, lenses, plan: await scaffoldPlanLenses(root) };
+}
+
+/**
+ * Puts the plan surface on disk, because an extension point a repo cannot find is not an
+ * extension point (ADR-0056). Nothing here is Speccle's: no plan lens ships, the README is
+ * written only when absent, and a refresh never overwrites it — the posture the
+ * house-conventions lens and `.speccle/checks/` both take. Idempotent, and reached through
+ * `materializeLenses`, so `init` and `update` scaffold it without a call site of their own.
+ */
+export async function scaffoldPlanLenses(root: string): Promise<PlanLensesScaffoldReport> {
+  const dir = join(root, PLAN_LENSES_DIR);
+  await mkdir(dir, { recursive: true });
+
+  const readme = join(dir, PLAN_LENSES_README);
+  const present = await exists(readme);
+  if (!present) await copyFile(bundledPlanLensesReadme(), readme);
+
+  return {
+    dir: PLAN_LENSES_DIR,
+    file: PLAN_LENSES_README,
+    action: present ? "kept" : "written",
+    authored: (await planLensesState(root)).authored,
+  };
+}
+
+/** What `doctor` reports about the surface: can the repo find it, and has it used it. */
+export interface PlanLensesState {
+  scaffolded: boolean;
+  authored: number;
+}
+
+export async function planLensesState(root: string): Promise<PlanLensesState> {
+  try {
+    const entries = await readdir(join(root, PLAN_LENSES_DIR));
+    return { scaffolded: true, authored: entries.filter(isPlanLens).length };
+  } catch {
+    return { scaffolded: false, authored: 0 };
+  }
+}
+
+/** Every `*.md` here is a lens the fan-out runs — except the scaffold's own documentation. */
+export function isPlanLens(name: string): boolean {
+  return name.endsWith(".md") && name !== PLAN_LENSES_README;
 }
 
 async function lensNames(source: string): Promise<string[]> {
@@ -75,6 +146,15 @@ async function lensNames(source: string): Promise<string[]> {
  */
 function bundledLensesDir(): string {
   return fileURLToPath(new URL("../lenses", import.meta.url));
+}
+
+/**
+ * The plan scaffold's source: a top-level `templates/` beside `dist/` in the published
+ * tarball, resolved the same way, and deliberately not under `lenses/` — `materializeLenses`
+ * copies every `*.md` it finds there into the repo as a review lens.
+ */
+function bundledPlanLensesReadme(): string {
+  return fileURLToPath(new URL(`../templates/plan-lenses-${PLAN_LENSES_README}`, import.meta.url));
 }
 
 async function exists(path: string): Promise<boolean> {

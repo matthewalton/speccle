@@ -232,6 +232,15 @@ Speccle ships a baseline set; a repo's house-conventions lens is its own. A lens
 dimension, independent of whether it runs in a local session or in CI.
 _Avoid_: agent, reviewer, rule, check, rubric.
 
+**Plan lens**:
+A lens aimed at a slice being planned instead of at a change set: it reads the plan and
+the slice's markdown, and its findings join the **plan summary**, where a human is already
+ruling on something. A repo's own — Speccle ships none — and advisory always: only a
+deterministic check may fail a stage. It lives in `.speccle/lenses/plan/`, and the review
+panel never reaches into that directory
+([ADR-0057](docs/adr/0057-a-plan-lens-lives-in-a-subdirectory-and-joins-the-plan-summary.md)).
+_Avoid_: plan check, plan gate, design review (for this), pre-flight.
+
 **Driver**:
 What runs a review. The **local driver** is the `review` skill: it fans the lenses as
 subagents in a session, needs no API key, and — below the review threshold — fixes what it
@@ -242,7 +251,8 @@ driver is what runs it, and the same lens file feeds both
 _Avoid_: runner, backend, mode, integration.
 
 **Finding**:
-One thing a lens reports, anchored to a changed line. A finding is fixed in the code and
+One thing a lens reports, anchored to a changed line — or, from a plan lens, to an element
+of the plan, since there is no change set yet. A finding is fixed in the code and
 then **routed** to a durable artefact so the class cannot recur: a new acceptance
 criterion, a deterministic check, or a sharpened lens — the same posture `strengthen`
 takes to a surviving mutant, routed on what the finding is and never on a count.

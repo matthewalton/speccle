@@ -3,7 +3,7 @@
 The deterministic tooling the skills invoke — one bin:
 
 ```
-speccle init            # record repo facts + vendor the skills, lenses, and checks scaffold
+speccle init            # record repo facts + vendor the skills, lenses, and the two scaffolds
 speccle doctor          # report staleness across the CLI, skills, CI driver, and strength stack
 speccle update          # refresh the vendored skills; print the CLI + stack fix commands
 speccle lint            # enforce the convention over a repo's specs
@@ -21,12 +21,15 @@ speccle strength init   # provision the strength stack into a target
 
 - `init` / `doctor` / `update` — the setup and staleness surface: `init` records the
   repo's test facts in `.speccle/config.json`, vendors the skills into `.claude/skills/`
-  and the lenses into `.speccle/lenses/`, and scaffolds `.speccle/checks/`; `doctor`
+  and the lenses into `.speccle/lenses/`, and scaffolds `.speccle/lenses/plan/` and
+  `.speccle/checks/`; `doctor`
   reports whether those payloads, the CI driver's pinned version, and the strength stack
-  still match this CLI, and how many checks the repo has authored; `update` refreshes them
-  forward and prints the CLI + stack fix commands. The two extension surfaces —
-  `.speccle/lenses/` and `.speccle/checks/` — are the repo's own: nothing it authors in
-  either is overwritten or deleted. See
+  still match this CLI, and how many checks and plan lenses the repo has authored;
+  `update` refreshes them
+  forward and prints the CLI + stack fix commands. The extension surfaces —
+  `.speccle/lenses/`, its `plan/` subdirectory, and `.speccle/checks/` — are the repo's
+  own: nothing it authors in any of them is overwritten or deleted. Only a check can fail
+  a stage; a lens advises. See
   [Install](https://github.com/matthewalton/speccle/blob/main/README.md#install)
   and [Updating](https://github.com/matthewalton/speccle/blob/main/README.md#updating).
 - `lint` — enforce the [convention](https://github.com/matthewalton/speccle/blob/main/docs/convention.md) over a repo's specs.
@@ -499,6 +502,12 @@ driver's job.
 _Every_ `*.md` in that directory is a lens, so a repo adds a dimension of its own by dropping
 a markdown prompt in beside the baseline ones — it runs here and locally, and an `update`
 never deletes it. A lens only ever advises; to gate on something, write a `verify` check.
+
+The listing is flat, which is what the `plan/` subdirectory beneath it relies on. A markdown
+prompt dropped in there is a **plan lens**: `plan-feature` fans it over a slice being planned
+and its findings join the plan summary a human approves, while no review — here or local —
+ever reads it. Speccle ships none; `init` scaffolds the directory with a README, and every
+`*.md` there but that README is a lens.
 
 - Skips `risk.md` (it escalates authority rather than reporting findings) and an unauthored
   `house-conventions.md`, exactly as the local driver does.
