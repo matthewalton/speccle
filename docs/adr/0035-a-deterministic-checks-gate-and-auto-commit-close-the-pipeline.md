@@ -4,7 +4,9 @@
   by
   [ADR-0054](0054-implement-runs-one-criterion-per-session-and-claims-clean-is-the-terminal-condition.md),
   which makes slice-wide `claims` clean the pipeline's terminal condition rather than a gate
-  assertion; the gate's three checks and the auto-commit stand
+  assertion, and narrowed again for the outer loop's per-fix gate by
+  [ADR-0055](0055-a-review-fix-is-judged-by-what-it-touched-not-by-a-clean-tree.md); the gate's
+  three checks and the auto-commit stand
 - Date: 2026-07-17
 
 ## Context

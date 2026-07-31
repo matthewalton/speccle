@@ -79,11 +79,29 @@ Otherwise fix each finding, smallest change first, and guard every one:
 
 1. Apply the fix the finding names.
 2. **Re-run the checks-gate** — resolve the same oracle and run `<oracle> lint` on any governed
-   slice the fix touched, `<oracle> claims <root>`, `<oracle> verify <root>` (the cross-file
-   invariants), and the project's own test suite.
-3. **Green** — keep the fix. **Red** — **revert it, do not salvage**: restore the file to its
-   pre-fix state and carry the finding forward as unfixed. A fix that cannot pass the gate is the
-   human's call, not a thing to patch around.
+   slice the fix touched, `<oracle> claims <root> --json`, `<oracle> verify <root>` (the
+   cross-file invariants), and the project's own test suite.
+3. **Green** — keep the fix. **Red because of this fix** — **revert it, do not salvage**: restore
+   the file to its pre-fix state and carry the finding forward as unfixed. A fix that cannot pass
+   the gate is the human's call, not a thing to patch around. Which reds are this fix's is the
+   paragraph below, and it is not "all of them".
+
+**A fix is judged by what it touched.** A red the fix did not cause is not the fix's red. That
+only ever bites on `claims`, so read its report rather than its exit code: a change set is
+routinely mid-slice — criteria specced and not yet built — and `claims` goes red on that before
+you have fixed anything, which would revert every fix for a reason that has nothing to do with
+any of them. Of the fix just applied, ask only:
+
+- every criterion whose defending tests the fix touched is still `claimed`;
+- no `unknownClaims` entry names a test the fix touched.
+
+A fix that leaves a criterion it was defending undefended, or that renames a test into a claim on
+an id no spec declares, has broken something it was holding. Everything else the report holds
+describes the change set you arrived at — carry it to the summary, never to the revert decision.
+
+The other three checks stay absolute: `lint` is already scoped to the slice the fix touched,
+`verify` to the change set, and a red suite is worth stopping on whoever caused it. Red on any of
+them means revert.
 
 Batch sensibly, but keep each fix independently revertible — a fix you cannot back out on its own
 is one you cannot safely apply. Revertibility is a property of how you apply and gate them, not of
@@ -181,8 +199,9 @@ Fixes that stay in the working tree are not fixed; they are a chore handed back 
 ran this. Land them.
 
 **Nothing to land** — the risk gate required a human (so nothing was fixed), or every fix was
-reverted, or the checks-gate is red now. Leave the tree alone and say so in the summary. A red
-gate is never committed around.
+reverted, or the checks-gate is red on something a fix caused. Leave the tree alone and say so in
+the summary. A red a fix caused is never committed around — but a red the change set arrived with
+is not one, and does not hold back fixes that each passed their own gate.
 
 **Otherwise, one commit.** Not one per finding: the fix loop already bought revertibility where it
 counts, and a commit per `nit` buys a log nobody reads. Stage only what the fixes touched — never
@@ -218,7 +237,9 @@ Render one screen, in product voice. The human rules by reading it, not by being
    **reverted** (the checks-gate went red — say what failed), or **left for the human** (a human
    was required, so nothing was fixed).
 4. **The proposed remedy** per finding.
-5. **The checks-gate now** — green or red, named.
+5. **The checks-gate now** — green or red, named; and separately, any red the change set arrived
+   with, the criteria it leaves unclaimed above all. Narrowing the gate drops a false blame, not
+   a true signal — say which of the two a red is.
 6. **What landed** — the commit, and whether it was pushed and where; or why nothing was.
 
 The summary is the only view most readers get, so it holds the bar every lens is held to: the

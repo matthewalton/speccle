@@ -3,7 +3,9 @@
 - Status: accepted; refined by
   [ADR-0053](0053-reviewing-a-change-and-acting-on-a-posted-review-are-two-skills.md),
   which splits the decision across two skills — the push-when-a-pull-request-was-named rule
-  becomes structural rather than a branch
+  becomes structural rather than a branch — and by
+  [ADR-0055](0055-a-review-fix-is-judged-by-what-it-touched-not-by-a-clean-tree.md), which
+  settles what counts as the fix's red before it is reverted
 - Date: 2026-07-28
 - Completes the loop [ADR-0043](0043-review-is-the-outer-loop-the-meta-loop-routes-remedies-home.md)
   opened and [ADR-0047](0047-the-ci-driver-ships-in-the-tarball-and-is-the-one-llm-caller.md)
