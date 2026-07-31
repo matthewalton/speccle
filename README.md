@@ -6,7 +6,7 @@
   <img alt="Speccle" src="docs/assets/logo.svg" width="380">
 </picture>
 
-**Coverage says your code ran.<br>Speccle says whether your tests would _notice if it broke_.**
+**A software factory for Claude Code.<br>An inner loop builds the feature, an outer loop reviews the change,<br>and a meta loop turns every finding into prevention.**
 
 <br>
 
@@ -21,10 +21,30 @@
 
 ## What is Speccle?
 
-Speccle builds features as **vertical slices** in Claude Code — a set of skills plus a
-`speccle` CLI, shipped as one npm package you vendor into a repo (or a Claude Code
-plugin, for just you). Its unit of work is the feature folder — one directory owning
-everything a feature needs, side by side:
+Speccle is a software factory for Claude Code — a set of skills plus a `speccle` CLI,
+shipped as one npm package you vendor into a repo (or a Claude Code plugin, for just
+you). It is built as three nested loops:
+
+- The **inner loop** builds features as **vertical slices** — plan → spec → implement →
+  strengthen, closed by a deterministic **checks-gate**. It drives _autonomy_: past one
+  planning conversation, the agent runs unattended and commits on green.
+- The **outer loop** reviews the **change set** — a panel of lenses over the working
+  diff, with fix authority gated by a deterministic risk score. It drives _automation_:
+  below your review threshold it fixes what it finds; at or above, a human is required.
+- The **meta loop** turns what review found into prevention — every finding is fixed
+  and then routed to a durable artefact that stops its class recurring. It drives
+  _quality_: the factory's checks, specs, and lenses get sharper with every change that
+  ships through it.
+
+The skills hold the judgement; everything deterministic is delegated to the `speccle`
+CLI, which **never calls an LLM** (bar the opt-in CI review driver). This matters most
+when code and tests are AI-generated and review is the bottleneck: your attention moves
+up to the spec and the summaries, and everything downstream is mechanically attested.
+
+## The inner loop — build
+
+The unit of work is the feature folder — one directory owning everything a feature
+needs, side by side:
 
 ```
 checkout/              ← named for the feature, never a catch-all like src/
@@ -36,14 +56,6 @@ checkout/              ← named for the feature, never a catch-all like src/
     checkout.ts
     checkout.test.ts   ← tests claim criteria by carrying the [CHECKOUT-n] token
 ```
-
-The skills hold the judgement; everything deterministic is delegated to the
-`speccle` CLI, which lints the specs and scores the tests — and **never calls
-an LLM**. This matters most when code and tests are AI-generated and review is the
-bottleneck: your attention moves up to the spec, and everything downstream is
-mechanically attested.
-
-## The loop
 
 Every skill drives the same loop, and it blocks on you exactly once — at plan time,
 to agree any **key decision** your input leaves open. Past that, **you own the
@@ -62,6 +74,13 @@ flowchart LR
     F -->|"survivor nothing promises<br/>→ sharpen the spec"| B
     E --> G(["📋 spec summary<br/>you amend or accept"])
 ```
+
+The pipeline runs **one stage per session**: plan + spec is the attended session — the
+pipeline's one human gate — then each criterion is implemented in its own unattended
+session that ends at the **checks-gate** (`lint`, `claims`, the test suite, and every
+`verify` check the meta loop has written) and commits on green. No state is carried
+between sessions: `speccle next` derives the stage from the feature folder itself, so
+`/feature` always resumes exactly where the slice really is — the folder is the record.
 
 A criterion is an H2 heading with a one-line testable **statement**; the body beneath
 is free — rationale, edge cases, examples:
@@ -88,32 +107,74 @@ string name, the id takes an identifier-safe spelling instead —
 `func test_CHECKOUT_1_taxRounds()` claims the same criterion. The full format is a
 written contract: [`docs/convention.md`](docs/convention.md).
 
+## The outer loop — review
+
+The unit changes: not a slice, but a **change set** — the working tree's pending
+change, or the commits on a branch. `review` fans a panel of **lenses** (correctness,
+security, accessibility, architecture, performance, test-quality, plus any your repo
+authors) over it, each an independent subagent, while `speccle risk` scores the change
+deterministically. The score gates **fix authority**: below your repo's review
+threshold, `review` fixes what it finds — re-running the checks-gate after every fix
+and reverting any that turns it red; at or above it, findings stop for a human, and a
+risk lens may escalate that line but never lower it. The same lens files also run in CI
+on every pull request (`speccle review init`), where they find and comment only, and
+`address` closes the loop by acting on the review CI posted — same risk gate, same
+checks-gate, fixes pushed back to the pull request's branch.
+
+## The meta loop — reviews that improve the factory
+
+A fix alone means meeting the same finding again next week. So every finding is fixed
+**and then routed** — the same posture `strengthen` takes to a surviving mutant — to
+whichever loop catches its class next time:
+
+| The class is best caught by…        | Remedy                                       | Where it lands                                         |
+| ----------------------------------- | -------------------------------------------- | ------------------------------------------------------ |
+| a deterministic invariant           | a **verify check**                           | `.speccle/checks/` — enforced by the inner checks-gate |
+| a behaviour the spec should promise | a new **acceptance criterion** + tagged test | the slice's `SPEC.md`                                  |
+| judgement at review time            | a **sharpened lens**                         | `.speccle/lenses/` — the next panel                    |
+
+Two durable records make this memory rather than mood. The **remedy record**
+(`speccle remedy record` / `recall`) logs each finding, the fix applied, and the
+prevention chosen, so a repeat finding is answered the way the first one was. The
+**calibration record** (`speccle calibrate`) logs every reviewed change — risk score,
+signals fired, and the human's actual verdict — and is the only evidence on which risk
+weights and the review threshold move. Speccle reports and proposes; **only a human
+acts**, because nothing that reduces supervision may apply itself.
+
+The same two surfaces are yours to extend by hand, and the rule is fixed: a
+`.speccle/checks/*.json` check **gates** (deterministic, so it may fail a stage); a
+`.speccle/lenses/*.md` lens **advises** (judgement, so it never blocks). A lens in
+`.speccle/lenses/plan/` aims at the slice being planned instead of a change set, and
+its findings join the plan summary — where you are already ruling on something.
+
 ## The skills
 
 | Skill               | One line                                                                                                                                   |
 | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| `feature`           | The pipeline: plan → spec → implement → strengthen, ending in one **spec summary**.                                                        |
+| `feature`           | The router: asks the folder what stage the slice is at, runs that one stage, names the next command.                                       |
 | `plan-feature`      | Any input → the route (**new** slice, **amend** its owning slice, or a carve) + folder + key, with open **key decisions** agreed together. |
 | `spec-feature`      | Draft or amend the markdown contract → lint clean → criteria announced.                                                                    |
 | `implement-feature` | A linted spec → tagged tests → green code, one criterion at a time.                                                                        |
 | `strengthen`        | Mutation + coverage → per-criterion heatmap → every surviving mutant routed.                                                               |
 | `carve-feature`     | Existing code brought under the convention — **without changing it**.                                                                      |
+| `conform`           | Already-governed slices brought up to the convention after it moves — form only, behaviour never.                                          |
 | `review`            | A panel of **lenses** over a change set → risk-gated **find and fix**, every fix re-checked → an overruleable summary.                     |
 | `address`           | The review CI posted on a pull request → the same risk-gated fixes → committed **and pushed** to its branch.                               |
 
 <details>
-<summary><strong><code>feature</code></strong> — build or change a slice, end to end</summary>
+<summary><strong><code>feature</code></strong> — build or change a slice, one stage per session</summary>
 <br>
 
-The orchestrator and the normal entry point. Takes a feature request in any form —
-prose, a ticket, a file — and runs the child skills in order: `plan-feature` routes
+The normal entry point, and a router rather than a pipeline: it asks `speccle next`
+what stage the slice is at — derived from the folder, never stored — runs that one
+stage, and ends by naming the command for the next session. A feature request in any
+form — prose, a ticket, a file — starts at the attended session: `plan-feature` routes
 the work (a **new** slice, or an **amendment** to the slice that already owns the
-behaviour — extending it with new criteria or changing existing ones), `spec-feature`
-drafts or amends the contract, `implement-feature` makes it green, and `strengthen`
-measures how well the result is defended. The one blocking stop is at plan time —
-key decisions your input leaves open are agreed with you, not guessed; there is no
-approval step anywhere else, and the run ends with one **spec summary** of every
-criterion drafted, amended, or retired, for you to amend or overrule.
+behaviour) and settles open **key decisions** with you, then `spec-feature` drafts or
+amends the contract and the criteria are announced in one **spec summary**. Every
+session after that is unattended: `implement-feature` takes one criterion end to end,
+and the checks-gate commits it on green. Invoke `/feature` again and it resumes
+exactly where the folder says the slice is.
 
 Each child is also a skill in its own right: hand a hand-written `SPEC.md` straight
 to `implement-feature`, or ask `spec-feature` for a contract with no code yet.
@@ -245,13 +306,15 @@ So you can skip this step entirely if every repo you work in provisions its own
 cloning; commit what lands. With the CLI installed (step 1), from the repo root:
 
 ```sh
-speccle init   # → .claude/skills/ + .speccle/lenses/ + .speccle/config.json, all committed
+speccle init   # → .claude/skills/ + .speccle/lenses/ + .speccle/checks/ + .speccle/config.json, all committed
 ```
 
 `init` materializes the skills and the review lenses from the CLI's own tarball, so
 `speccle@X` names one skill↔oracle pairing — nothing to drift. It also records the repo's
-test facts in `.speccle/config.json`. Re-run it any time to refresh them as a reviewable
-diff; your own house-conventions lens is never overwritten.
+test facts in `.speccle/config.json` and scaffolds the two extension surfaces —
+`.speccle/checks/` and `.speccle/lenses/plan/` — with a README each. Re-run it any time
+to refresh as a reviewable diff; your own house-conventions lens, checks, and plan
+lenses are never overwritten.
 
 **User-level** — the plugin, for just you, across all your projects:
 
@@ -355,10 +418,10 @@ cd speccle && pnpm install
 
 ## Packages
 
-| Package                              | Role                                                                                                                                        |
-| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| [`packages/plugin`](packages/plugin) | The Claude Code plugin: the skills. Judgement lives here.                                                                                   |
-| [`packages/oracle`](packages/oracle) | The deterministic tooling the skills invoke: one bin — `lint`, `claims`, and the oracle-strength heatmap. No LLM, bar the opt-in CI driver. |
+| Package                              | Role                                                                                                                                                                                         |
+| ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`packages/plugin`](packages/plugin) | The Claude Code plugin: the skills. Judgement lives here.                                                                                                                                    |
+| [`packages/oracle`](packages/oracle) | The deterministic tooling the skills invoke: one bin — `lint`, `claims`, `next`, `verify`, `risk`, `remedy`, `calibrate`, and the oracle-strength heatmap. No LLM, bar the opt-in CI driver. |
 
 ## Development
 
