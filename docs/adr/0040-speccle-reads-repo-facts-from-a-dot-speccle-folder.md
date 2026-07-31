@@ -2,7 +2,10 @@
 
 - Status: accepted, amended by
   [ADR-0041](0041-risk-gates-fix-authority-deterministic-floor-lens-escalates.md) — risk
-  policy is the one sanctioned exception to "no configurable judgement"
+  policy is the one sanctioned exception to "no configurable judgement" — and by
+  [ADR-0056](0056-a-repo-extends-speccle-with-checks-that-gate-and-lenses-that-advise.md),
+  which narrows the rule to _Speccle's_ judgement: a repo may author judgement of its own,
+  and may never make it binding
 - Date: 2026-07-23
 - Amends [ADR-0007](0007-lint-rules-are-fixed-heuristics.md) — "no configuration" narrows
   to no configurable judgement; repo facts are configuration

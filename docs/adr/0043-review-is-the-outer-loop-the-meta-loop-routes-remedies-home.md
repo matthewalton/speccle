@@ -1,6 +1,9 @@
 # 0043 — `review` is the outer loop; the meta loop routes remedies back down
 
-- Status: accepted
+- Status: accepted; the inner-loop destination of the routing table below is completed by
+  [ADR-0056](0056-a-repo-extends-speccle-with-checks-that-gate-and-lenses-that-advise.md) —
+  the checks-gate must actually run `verify`, and `.speccle/checks/` is one of the two
+  surfaces a repo extends Speccle through
 - Date: 2026-07-23
 
 ## Context
