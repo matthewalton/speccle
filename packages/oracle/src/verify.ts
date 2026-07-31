@@ -1,5 +1,6 @@
-import { readdir, readFile } from "node:fs/promises";
+import { access, copyFile, mkdir, readdir, readFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import {
   anyMatches,
   assertPredicate,
@@ -14,6 +15,14 @@ import {
 
 /** Where a repo keeps its hand- and meta-loop-authored checks (ADR-0043). */
 export const CHECKS_DIR = ".speccle/checks";
+
+/**
+ * The scaffold's one file. Markdown, not an example `*.json`: `loadChecks` reads every JSON
+ * file in this directory, so a shipped example would either enforce something the repo never
+ * asked for or report as `inactive` in every run forever. A `.md` is inert to the loader, which
+ * lets the schema be documented where the surface lives at no runtime cost (ADR-0056).
+ */
+export const CHECKS_README = "README.md";
 
 /**
  * One cross-file invariant, one `.speccle/checks/*.json` file. Its reason to exist is the
@@ -104,6 +113,73 @@ export async function verify(target: string, options: VerifyOptions = {}): Promi
 /** The working tree's pending change, or the commits a base ref and HEAD differ by. */
 function changeSetOf(root: string, base: string | undefined): string[] {
   return base === undefined ? gitChangeSet(root) : gitRangeChangeSet(root, base).changed;
+}
+
+export interface ChecksScaffoldReport {
+  root: string;
+  /** Root-relative directory the scaffold landed in. */
+  dir: string;
+  file: string;
+  action: "written" | "kept";
+  /** How many checks the repo has authored here — 0 on a fresh scaffold. */
+  authored: number;
+}
+
+/**
+ * Makes the checks surface discoverable by putting it on disk, because an extension point a
+ * repo cannot find is not an extension point (ADR-0056). Nothing here is Speccle's: no check
+ * ships, the README is written only when absent, and a refresh never overwrites it — the same
+ * posture the house-conventions lens takes, for the same reason. Idempotent, so `init` and
+ * `update` can both call it.
+ */
+export async function scaffoldChecks(root: string): Promise<ChecksScaffoldReport> {
+  const dir = join(root, CHECKS_DIR);
+  await mkdir(dir, { recursive: true });
+
+  const readme = join(dir, CHECKS_README);
+  const present = await exists(readme);
+  if (!present) await copyFile(bundledChecksReadme(), readme);
+
+  return {
+    root,
+    dir: CHECKS_DIR,
+    file: CHECKS_README,
+    action: present ? "kept" : "written",
+    authored: (await checksState(root)).authored,
+  };
+}
+
+/** What `doctor` reports about the surface: can the repo find it, and has it used it. */
+export interface ChecksState {
+  scaffolded: boolean;
+  authored: number;
+}
+
+export async function checksState(root: string): Promise<ChecksState> {
+  try {
+    const entries = await readdir(join(root, CHECKS_DIR));
+    return { scaffolded: true, authored: entries.filter((n) => n.endsWith(".json")).length };
+  } catch {
+    return { scaffolded: false, authored: 0 };
+  }
+}
+
+/**
+ * The scaffold's source: a top-level `templates/` beside `dist/` in the published tarball, the
+ * same shape the lenses take, so one relative path resolves whether the CLI runs from `dist/`
+ * or straight from `src/`.
+ */
+function bundledChecksReadme(): string {
+  return fileURLToPath(new URL(`../templates/checks-${CHECKS_README}`, import.meta.url));
+}
+
+async function exists(path: string): Promise<boolean> {
+  try {
+    await access(path);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 async function evaluate(

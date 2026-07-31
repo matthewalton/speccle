@@ -3,7 +3,7 @@
 The deterministic tooling the skills invoke — one bin:
 
 ```
-speccle init            # record repo facts + vendor the skills into .claude/skills/
+speccle init            # record repo facts + vendor the skills, lenses, and checks scaffold
 speccle doctor          # report staleness across the CLI, skills, CI driver, and strength stack
 speccle update          # refresh the vendored skills; print the CLI + stack fix commands
 speccle lint            # enforce the convention over a repo's specs
@@ -20,10 +20,13 @@ speccle strength init   # provision the strength stack into a target
 ```
 
 - `init` / `doctor` / `update` — the setup and staleness surface: `init` records the
-  repo's test facts in `.speccle/config.json` and vendors the skills into
-  `.claude/skills/`; `doctor` reports whether those skills, the CI driver's pinned
-  version, and the strength stack still match this CLI; `update` refreshes the skills
-  forward and prints the CLI + stack fix commands. See
+  repo's test facts in `.speccle/config.json`, vendors the skills into `.claude/skills/`
+  and the lenses into `.speccle/lenses/`, and scaffolds `.speccle/checks/`; `doctor`
+  reports whether those payloads, the CI driver's pinned version, and the strength stack
+  still match this CLI, and how many checks the repo has authored; `update` refreshes them
+  forward and prints the CLI + stack fix commands. The two extension surfaces —
+  `.speccle/lenses/` and `.speccle/checks/` — are the repo's own: nothing it authors in
+  either is overwritten or deleted. See
   [Install](https://github.com/matthewalton/speccle/blob/main/README.md#install)
   and [Updating](https://github.com/matthewalton/speccle/blob/main/README.md#updating).
 - `lint` — enforce the [convention](https://github.com/matthewalton/speccle/blob/main/docs/convention.md) over a repo's specs.
@@ -169,6 +172,10 @@ speccle verify [path] [--json] [--base <ref>]
 Runs every check in `.speccle/checks/` over a **change set**. Its reason to exist is the
 class of invariant no linter can hold, because the fact is about the whole change rather
 than any one file: _a changed `@Model` requires a round-trip test in the same change._
+
+Checks are one of the two surfaces a repo extends Speccle through, and the only one that can
+fail a stage — a lens advises, a check gates. `init` scaffolds the directory with a README
+documenting the schema; everything in it is the repo's own, written once and never overwritten.
 
 One check, one JSON file:
 
@@ -488,6 +495,10 @@ per lens, findings forced into shape by a tool schema — and posts them as a si
 with inline comments. It **finds and comments only**: it never edits the tree, commits, or
 pushes, because a fix has to re-run the checks-gate and be revertible, which is the local
 driver's job.
+
+_Every_ `*.md` in that directory is a lens, so a repo adds a dimension of its own by dropping
+a markdown prompt in beside the baseline ones — it runs here and locally, and an `update`
+never deletes it. A lens only ever advises; to gate on something, write a `verify` check.
 
 - Skips `risk.md` (it escalates authority rather than reporting findings) and an unauthored
   `house-conventions.md`, exactly as the local driver does.

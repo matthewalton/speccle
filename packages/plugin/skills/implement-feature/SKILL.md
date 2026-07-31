@@ -152,7 +152,8 @@ Four checks, deterministic, no judgement:
 4. The **whole project's** test suite — green, not just this slice's. On an amended slice the
    pre-existing tests are exactly the ones a change breaks.
 
-A repo that has authored no checks has no `.speccle/checks/`; `verify` reports `clean` with an
+A repo that has authored no checks has an empty `.speccle/checks/` — `speccle init` scaffolds
+the directory with a README, and only `*.json` is a check — so `verify` reports `clean` with an
 empty `checks` list and there is nothing to do. Where there are checks, this is the one gate the
 repo itself wrote — a **breach** names an invariant the change set failed to hold, and the
 report carries both the `message` saying what is missing and the `because` saying which finding

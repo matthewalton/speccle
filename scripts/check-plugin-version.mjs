@@ -25,12 +25,13 @@ const MARKETPLACE_MANIFEST = ".claude-plugin/marketplace.json";
 const ORACLE_MANIFEST = "packages/oracle/package.json";
 
 // What reaches a consumer, and so what a version number has to name (ADR-0050). The tarball's
-// `files` are dist + skills + lenses: src compiles to dist, packages/plugin/skills is copied
-// in at build time, and lenses ship verbatim. Tests, fixtures, docs, and scripts ship to
-// no one.
+// `files` are dist + skills + lenses + templates: src compiles to dist, packages/plugin/skills
+// is copied in at build time, and lenses and templates ship verbatim. Tests, fixtures, docs,
+// and scripts ship to no one.
 const SHIPPED = [
   { prefix: "packages/plugin/", carriedBy: "the marketplace tree, and the tarball's skills/" },
   { prefix: "packages/oracle/lenses/", carriedBy: "the tarball's lenses/" },
+  { prefix: "packages/oracle/templates/", carriedBy: "the tarball's templates/" },
   {
     prefix: "packages/oracle/src/",
     carriedBy: "the tarball's dist/",

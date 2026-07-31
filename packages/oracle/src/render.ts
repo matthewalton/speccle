@@ -8,6 +8,7 @@ import type { LensesInitReport } from "./lenses.ts";
 import type { NextReport, SliceStage } from "./next.ts";
 import type { SkillsInitReport } from "./skills.ts";
 import type { UpdateReport } from "./update.ts";
+import type { ChecksScaffoldReport } from "./verify.ts";
 
 export function renderConfigInit(report: ConfigInitReport): string {
   const lines = [
@@ -51,6 +52,24 @@ export function renderLensesInit(report: LensesInitReport): string {
   lines.push("");
   lines.push(
     "the baseline lenses are Speccle's — refreshed each run; house-conventions.md is yours to author",
+  );
+  lines.push(
+    "so is any other lens you drop here: the panel fans over every *.md, and a refresh never deletes",
+  );
+  return lines.join("\n");
+}
+
+export function renderChecksInit(report: ChecksScaffoldReport): string {
+  const lines = [
+    `scaffolded ${report.dir}/`,
+    `  ${(report.action === "written" ? "wrote" : "kept").padEnd(9)} ${report.file}`,
+  ];
+  if (report.authored > 0) {
+    lines.push(`  ${plural(report.authored, "check").padEnd(9)} already authored here`);
+  }
+  lines.push("");
+  lines.push(
+    "checks are yours too — Speccle ships none and overwrites none; unlike a lens, a breach fails the stage",
   );
   return lines.join("\n");
 }
@@ -145,6 +164,7 @@ export function renderDoctor(report: DoctorReport): string {
     "",
     `skills   ${describePayload(report.skills, "materialized")}`,
     `lenses   ${describePayload(report.lenses, "vendored")}`,
+    `checks   ${describeChecks(report.checks)}`,
     `driver   ${describeDriver(report.driver)}`,
     `stack    ${describeStack(report.stack)}`,
   ];
@@ -186,6 +206,18 @@ function describePayload(payload: DoctorReport["skills"], verb: string): string 
     case "absent":
       return `not ${verb} — run \`speccle init\``;
   }
+}
+
+/**
+ * Never a staleness line: nothing is vendored here, so nothing can be out of date. It answers
+ * the two questions that can go wrong instead — can the repo find the surface, and has it used
+ * it — which is why "none authored" reads as an invitation, not as a fault.
+ */
+function describeChecks(checks: DoctorReport["checks"]): string {
+  if (!checks.scaffolded) return "not scaffolded — run `speccle init`";
+  return checks.authored === 0
+    ? "scaffolded, none authored — yours to write; a breach fails the stage"
+    : `${plural(checks.authored, "check")} authored`;
 }
 
 /**
@@ -240,6 +272,14 @@ export function renderUpdate(report: UpdateReport): string {
     lines.push(`lenses   already at ${report.lenses.to} — refreshed in place; review the diff`);
   } else {
     lines.push(`lenses   ${report.lenses.from} → ${report.lenses.to} — review & commit the diff`);
+  }
+
+  if (report.checks.action === "written") {
+    lines.push(`checks   ${report.checks.dir}/ scaffolded — new; yours to author, see its README`);
+  } else if (report.checks.authored === 0) {
+    lines.push(`checks   none authored — still yours to write; a breach fails the stage`);
+  } else {
+    lines.push(`checks   ${plural(report.checks.authored, "check")} authored — left untouched`);
   }
 
   if (report.driver.to === null) {

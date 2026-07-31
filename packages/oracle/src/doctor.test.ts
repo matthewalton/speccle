@@ -132,6 +132,47 @@ describe("doctor: lenses staleness", () => {
   });
 });
 
+describe("doctor: checks", () => {
+  it("is not scaffolded when the directory was never created", async () => {
+    const root = await scaffold({
+      [SKILL]: "",
+      ".speccle/config.json": config(await ownVersion()),
+    });
+    const report = await doctor(root);
+    expect(report.checks).toEqual({ scaffolded: false, authored: 0 });
+  });
+
+  it("is scaffolded with none authored when only the README is there", async () => {
+    const root = await scaffold({ ".speccle/checks/README.md": "docs" });
+    const report = await doctor(root);
+    expect(report.checks).toEqual({ scaffolded: true, authored: 0 });
+  });
+
+  it("counts only the JSON checks — the README is documentation, not a check", async () => {
+    const root = await scaffold({
+      ".speccle/checks/README.md": "docs",
+      ".speccle/checks/model-roundtrip.json": "{}",
+      ".speccle/checks/no-debug.json": "{}",
+    });
+    expect((await doctor(root)).checks).toEqual({ scaffolded: true, authored: 2 });
+  });
+
+  // Speccle ships no checks, so there is no version to be stale against and nothing here can
+  // be "out of date" — an unauthored surface is a repo's choice, never a red bill of health.
+  it("never fails the bill of health, scaffolded or not", async () => {
+    const current = config(await ownVersion(), await ownVersion());
+    const bare = await scaffold({ [SKILL]: "", [LENS]: "", ".speccle/config.json": current });
+    const scaffolded = await scaffold({
+      [SKILL]: "",
+      [LENS]: "",
+      ".speccle/config.json": current,
+      ".speccle/checks/README.md": "docs",
+    });
+    expect((await doctor(bare)).ok).toBe(true);
+    expect((await doctor(scaffolded)).ok).toBe(true);
+  });
+});
+
 describe("doctor: review driver", () => {
   it("is absent, and not a failure, when the repo never opted in", async () => {
     const root = await scaffold({

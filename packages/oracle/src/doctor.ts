@@ -6,6 +6,7 @@ import { ownVersion, STRENGTH_DEPS, STRYKER_CONFIG_NAMES } from "./init.ts";
 import { LENSES_DIR } from "./lenses.ts";
 import { pinnedVersion, WORKFLOW_FILE } from "./reviewinit.ts";
 import { SKILLS_DIR } from "./skills.ts";
+import { checksState, type ChecksState } from "./verify.ts";
 
 /** How a repo's versioned payload — skills, lenses, driver — stands against this CLI. */
 export type PayloadStatus = "current" | "stale" | "ahead" | "unstamped" | "absent";
@@ -46,6 +47,13 @@ export interface DoctorReport {
   /** `recorded` is the lenses version stamped in `.speccle/config.json`. */
   lenses: PayloadCheck;
   /**
+   * The repo's own gating surface. Not a `PayloadCheck` and deliberately not part of `ok`:
+   * Speccle ships no checks, so there is no bundled version to be stale against, and a surface
+   * nobody has written to is a choice rather than a defect. What it reports is discoverability
+   * and use — the only two things that can be wrong here (ADR-0056).
+   */
+  checks: ChecksState;
+  /**
    * The opt-in CI review driver. Unlike the other two, `recorded` is the `speccle@X` pin read
    * out of the workflow file itself — the driver is not vendored, so nothing stamps it in
    * config. `absent` means the repo never opted in, which is a choice, not staleness.
@@ -82,6 +90,8 @@ export async function doctor(target: string): Promise<DoctorReport> {
   const lensesRecorded = config?.lensesVersion ?? null;
   const lensesStatus = derivePayloadStatus(await hasLenses(root), lensesRecorded, cli);
 
+  const checks = await checksState(root);
+
   const workflow = await readMaybe(join(root, WORKFLOW_FILE));
   const driverPin = workflow === undefined ? null : (pinnedVersion(workflow) ?? null);
   const driverStatus = derivePayloadStatus(workflow !== undefined, driverPin, cli);
@@ -110,6 +120,7 @@ export async function doctor(target: string): Promise<DoctorReport> {
     cli,
     skills: { recorded: skillsRecorded, bundled: cli, status: skillsStatus },
     lenses: { recorded: lensesRecorded, bundled: cli, status: lensesStatus },
+    checks,
     driver: { recorded: driverPin, bundled: cli, status: driverStatus },
     stack: { dialect, provisioned, deps, status: stackStatus },
     ok,

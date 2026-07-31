@@ -1,9 +1,16 @@
-import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { gitAt } from "../test/support/git.ts";
-import { type Check, verify } from "./verify.ts";
+import {
+  CHECKS_DIR,
+  CHECKS_README,
+  checksState,
+  scaffoldChecks,
+  type Check,
+  verify,
+} from "./verify.ts";
 
 describe("verify", () => {
   const roots: string[] = [];
@@ -255,5 +262,89 @@ describe("verify", () => {
     const report = await verify(root);
     expect(report.changed).toContain("src/new.ts");
     expect(report.checks[0]).toMatchObject({ status: "breach", offenders: ["src/new.ts"] });
+  });
+});
+
+describe("scaffoldChecks", () => {
+  const roots: string[] = [];
+
+  afterEach(async () => {
+    await Promise.all(roots.splice(0).map((root) => rm(root, { recursive: true, force: true })));
+  });
+
+  async function tempRoot(): Promise<string> {
+    const root = await mkdtemp(join(tmpdir(), "speccle-checks-"));
+    roots.push(root);
+    return root;
+  }
+
+  async function write(root: string, file: string, body: string) {
+    await mkdir(dirname(join(root, file)), { recursive: true });
+    await writeFile(join(root, file), body);
+  }
+
+  it("creates the directory and places the README", async () => {
+    const root = await tempRoot();
+
+    const report = await scaffoldChecks(root);
+
+    expect(report).toMatchObject({ dir: CHECKS_DIR, file: CHECKS_README, action: "written" });
+    expect(await checksState(root)).toEqual({ scaffolded: true, authored: 0 });
+    expect(await readFile(join(root, CHECKS_DIR, CHECKS_README), "utf8")).toContain("`when`");
+  });
+
+  it("never overwrites a README the repo has edited", async () => {
+    const root = await tempRoot();
+    await write(root, `${CHECKS_DIR}/${CHECKS_README}`, "our own notes");
+
+    const report = await scaffoldChecks(root);
+
+    expect(report.action).toBe("kept");
+    expect(await readFile(join(root, CHECKS_DIR, CHECKS_README), "utf8")).toBe("our own notes");
+  });
+
+  it("is idempotent — a second run keeps what the first wrote", async () => {
+    const root = await tempRoot();
+    const first = await scaffoldChecks(root);
+    const body = await readFile(join(root, CHECKS_DIR, CHECKS_README), "utf8");
+
+    const second = await scaffoldChecks(root);
+
+    expect(first.action).toBe("written");
+    expect(second.action).toBe("kept");
+    expect(await readFile(join(root, CHECKS_DIR, CHECKS_README), "utf8")).toBe(body);
+  });
+
+  it("counts the checks already authored, and leaves them alone", async () => {
+    const root = await tempRoot();
+    await write(root, `${CHECKS_DIR}/model-roundtrip.json`, "{}");
+    await write(root, `${CHECKS_DIR}/no-debug.json`, "{}");
+
+    const report = await scaffoldChecks(root);
+
+    expect(report.authored).toBe(2);
+    expect(await readFile(join(root, CHECKS_DIR, "no-debug.json"), "utf8")).toBe("{}");
+  });
+
+  // The README has to be inert to the loader, or the scaffold itself would fail every run.
+  it("leaves the scaffolded repo passing verify", async () => {
+    const root = await tempRoot();
+    await scaffoldChecks(root);
+
+    const report = await verify(root, { changed: ["src/a.ts"] });
+
+    expect(report.checks).toEqual([]);
+    expect(report.clean).toBe(true);
+  });
+});
+
+describe("checksState", () => {
+  it("reports a repo with no checks directory as unscaffolded, not as an error", async () => {
+    const root = await mkdtemp(join(tmpdir(), "speccle-checks-"));
+    try {
+      expect(await checksState(root)).toEqual({ scaffolded: false, authored: 0 });
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
   });
 });

@@ -5,6 +5,7 @@ import { materializeLenses, type LensResult } from "./lenses.ts";
 import { detectPackageManager, installCommandFor } from "./packagemanager.ts";
 import { scaffoldReviewWorkflow } from "./reviewinit.ts";
 import { materializeSkills, type SkillResult } from "./skills.ts";
+import { scaffoldChecks } from "./verify.ts";
 
 /** The global-install one-liner. npm is the portable choice: it ships with Node. */
 const BINARY_UPDATE = "npm install -g speccle@latest";
@@ -32,6 +33,17 @@ export interface UpdateReport {
     to: string;
     dir: string;
     lenses: LensResult[];
+  };
+  /**
+   * Unversioned, so there is no from/to: the scaffold is only ever placed when missing. It runs
+   * here at all because a repo initialized before the surface existed would otherwise be told by
+   * `doctor` to run a command that never creates it.
+   */
+  checks: {
+    dir: string;
+    /** `written` — the scaffold was missing and was placed. `kept` — already there. */
+    action: "written" | "kept";
+    authored: number;
   };
   driver: {
     /** The version the workflow pinned before this run, or null when there is no workflow. */
@@ -68,6 +80,7 @@ export async function update(target: string): Promise<UpdateReport> {
   const version = diagnosis.cli;
   const materializedSkills = await materializeSkills(root);
   const materializedLenses = await materializeLenses(root);
+  const scaffoldedChecks = await scaffoldChecks(root);
   await initConfig(root, version); // re-stamp both anchors; the repo facts stay kept
 
   const hasDriver = diagnosis.driver.status !== "absent";
@@ -96,6 +109,11 @@ export async function update(target: string): Promise<UpdateReport> {
       to: version,
       dir: materializedLenses.dir,
       lenses: materializedLenses.lenses,
+    },
+    checks: {
+      dir: scaffoldedChecks.dir,
+      action: scaffoldedChecks.action,
+      authored: scaffoldedChecks.authored,
     },
     driver: { from: diagnosis.driver.recorded, to: hasDriver ? version : null },
     stack: { status: diagnosis.stack.status, deps: diagnosis.stack.deps, fixCommand },

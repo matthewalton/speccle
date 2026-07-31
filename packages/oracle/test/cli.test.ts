@@ -16,6 +16,7 @@ import { WORKFLOW_FILE, type ReviewInitReport } from "../src/reviewinit.ts";
 import type { SkillsInitReport } from "../src/skills.ts";
 import type { UpdateReport } from "../src/update.ts";
 import type { StrengthReport } from "../src/strength.ts";
+import type { ChecksScaffoldReport } from "../src/verify.ts";
 
 const CLI = resolve(import.meta.dirname, "../src/cli.ts");
 const TOY = resolve(import.meta.dirname, "../../..", "targets/checkout");
@@ -485,7 +486,23 @@ describe("speccle init (e2e)", () => {
     expect(await readFile(join(root, ".claude/skills/feature/SKILL.md"), "utf8")).toContain("---");
   });
 
-  it("emits the typed JSON report for the config, the skills, and the lenses", async () => {
+  it("scaffolds the checks surface and says it is the repo's to author", async () => {
+    const root = await scaffold({ "package.json": "{}" });
+    const { status, stdout } = run("init", root);
+    expect(status).toBe(0);
+    expect(stdout).toContain(`scaffolded ${join(".speccle", "checks")}`);
+    expect(stdout).toContain("a breach fails the stage");
+    expect(await readFile(join(root, ".speccle/checks/README.md"), "utf8")).toContain("`when`");
+  });
+
+  it("tells the repo it may author a lens of its own, not only the template", async () => {
+    const root = await scaffold({ "package.json": "{}" });
+    const { stdout } = run("init", root);
+    expect(stdout).toContain("house-conventions.md is yours to author");
+    expect(stdout).toContain("so is any other lens you drop here");
+  });
+
+  it("emits the typed JSON report for the config, the skills, the lenses, and the checks", async () => {
     const root = await scaffold({ "package.json": "{}", "pnpm-lock.yaml": "" });
     const { status, stdout } = run("init", root, "--json");
     expect(status).toBe(0);
@@ -493,6 +510,7 @@ describe("speccle init (e2e)", () => {
       config: ConfigInitReport;
       skills: SkillsInitReport;
       lenses: LensesInitReport;
+      checks: ChecksScaffoldReport;
     };
     expect(report.config.action).toBe("written");
     expect(report.config.config).toEqual({
@@ -505,6 +523,13 @@ describe("speccle init (e2e)", () => {
     expect(report.skills.skills.map((skill) => skill.name)).toContain("feature");
     expect(report.lenses.dir).toBe(".speccle/lenses");
     expect(report.lenses.lenses.map((lens) => lens.name)).toContain("security.md");
+    expect(report.checks).toEqual({
+      root: root,
+      dir: ".speccle/checks",
+      file: "README.md",
+      action: "written",
+      authored: 0,
+    });
   });
 
   it("keeps an existing config on a second run", async () => {
@@ -614,6 +639,34 @@ describe("speccle doctor (e2e)", () => {
     expect(status).toBe(1);
     expect(stdout).toContain("stale — committed 0.0.1");
     expect(stdout).toContain("out of date");
+  });
+
+  it("reports the checks surface as scaffolded but unauthored, still exit 0", async () => {
+    const root = await scaffold({ "package.json": "{}" });
+    expect(run("init", root).status).toBe(0);
+    const { status, stdout } = run("doctor", root);
+    expect(status).toBe(0);
+    expect(stdout).toContain("checks   scaffolded, none authored");
+    expect(stdout).toContain("up to date");
+  });
+
+  it("counts the checks a repo has authored", async () => {
+    const root = await scaffold({ "package.json": "{}" });
+    run("init", root);
+    await writeFile(join(root, ".speccle/checks/model-roundtrip.json"), "{}");
+    const { status, stdout } = run("doctor", root);
+    expect(status).toBe(0);
+    expect(stdout).toContain("checks   1 check authored");
+  });
+
+  it("points a repo with no checks directory at init, without failing the bill of health", async () => {
+    const root = await scaffold({ "package.json": "{}" });
+    run("init", root);
+    await rm(join(root, ".speccle/checks"), { recursive: true, force: true });
+    const { status, stdout } = run("doctor", root);
+    expect(status).toBe(0);
+    expect(stdout).toContain("checks   not scaffolded — run `speccle init`");
+    expect(stdout).toContain("up to date");
   });
 
   it("reports an opt-in driver the repo never installed, without failing the bill of health", async () => {

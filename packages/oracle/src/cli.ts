@@ -14,6 +14,7 @@ import {
   renderCalibrateRecord,
   renderCalibrateReport,
   renderCheck,
+  renderChecksInit,
   renderClaims,
   renderConfigInit,
   renderDoctor,
@@ -40,7 +41,7 @@ import { risk } from "./risk.ts";
 import { materializeSkills } from "./skills.ts";
 import { DEFAULT_COVERAGE_SUMMARY, DEFAULT_MUTATION_REPORT, strength } from "./strength.ts";
 import { update } from "./update.ts";
-import { verify } from "./verify.ts";
+import { scaffoldChecks, verify } from "./verify.ts";
 
 const USAGE = `Usage: speccle <command> [options]
 
@@ -688,12 +689,14 @@ async function runInit(args: string[]): Promise<number> {
   let config;
   let skills;
   let lenses;
+  let checks;
   let doubleLoad;
   try {
     // Materialize first, then stamp the version onto the config — so the recorded anchors
     // only ever name the skills and lenses that actually landed on disk.
     skills = await materializeSkills(root);
     lenses = await materializeLenses(root);
+    checks = await scaffoldChecks(root);
     config = await initConfig(root, await ownVersion());
     // Asked after materializing: this run is what makes the repo a project-level vendor, so
     // the double-load it may have just created is exactly what the human needs told (#183).
@@ -703,13 +706,15 @@ async function runInit(args: string[]): Promise<number> {
     return 2;
   }
   if (json) {
-    console.log(JSON.stringify({ config, skills, lenses, doubleLoad }, null, 2));
+    console.log(JSON.stringify({ config, skills, lenses, checks, doubleLoad }, null, 2));
   } else {
     console.log(renderConfigInit(config));
     console.log("");
     console.log(renderSkillsInit(skills));
     console.log("");
     console.log(renderLensesInit(lenses));
+    console.log("");
+    console.log(renderChecksInit(checks));
     if (doubleLoad) {
       console.log("");
       console.log(renderDoubleLoad());

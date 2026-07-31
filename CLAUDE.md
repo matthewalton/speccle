@@ -51,6 +51,10 @@ Node ≥ 24 runs TypeScript directly — no build step needed to run the CLI fro
   `speccle init`/`update` vendor into a consumer's `.speccle/lenses/`. `house-conventions.md`
   is a template the consumer owns; a refresh never overwrites it. Vendored into arbitrary
   repos, so they carry **no citations out of this package**, same as the skills.
+- `packages/oracle/templates/` — scaffolds `init` places once and never overwrites, for the
+  surfaces a consumer owns outright. `checks-README.md` documents the `verify` check schema
+  into `.speccle/checks/`. Shipped in the tarball (`files`) and vendored into arbitrary repos,
+  so the same no-citations rule applies.
 - `packages/oracle/test/fixtures/dirty/` — specs that deliberately violate the
   convention; they are lint regression fixtures. Never "fix" them.
 - `packages/oracle/test/fixtures/strength/` — a spec plus a hand-written mutation report
@@ -107,9 +111,9 @@ commit:
 | `.claude-plugin/marketplace.json`            | the mirror of the above |
 
 **Shipped content** is what reaches a consumer: `packages/plugin/` (its skills are copied
-into the tarball at build time), `packages/oracle/lenses/`, and `packages/oracle/src/` —
-except `*.test.ts`, which the build excludes. Tests, fixtures, `docs/`, `scripts/`, and
-repo-level prose ship to no one and bump nothing.
+into the tarball at build time), `packages/oracle/lenses/`, `packages/oracle/templates/`, and
+`packages/oracle/src/` — except `*.test.ts`, which the build excludes. Tests, fixtures,
+`docs/`, `scripts/`, and repo-level prose ship to no one and bump nothing.
 
 Bumping only one line is the mistake this rule exists to stop: the marketplace cache is
 keyed by version, so unchanged numbers serve a stale tree, while npm's duplicate rejection

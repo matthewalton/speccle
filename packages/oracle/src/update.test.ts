@@ -108,6 +108,36 @@ describe("update: lenses", () => {
   });
 });
 
+describe("update: checks", () => {
+  // The reason this runs on update at all: a repo initialized before the surface existed would
+  // otherwise be told by doctor to run `speccle init`, which is not the command it reaches for.
+  it("scaffolds the checks surface into a repo that predates it", async () => {
+    const root = await scaffold({ "package.json": "{}", ".speccle/config.json": config("0.0.1") });
+
+    const report = await update(root);
+
+    expect(report.checks).toEqual({ dir: ".speccle/checks", action: "written", authored: 0 });
+    expect(await readFile(join(root, ".speccle/checks/README.md"), "utf8")).toContain("`when`");
+  });
+
+  it("leaves an authored README and the checks themselves untouched", async () => {
+    const root = await scaffold({
+      "package.json": "{}",
+      ".speccle/config.json": config("0.0.1"),
+      ".speccle/checks/README.md": "our own notes",
+      ".speccle/checks/model-roundtrip.json": '{"kept":true}',
+    });
+
+    const report = await update(root);
+
+    expect(report.checks).toEqual({ dir: ".speccle/checks", action: "kept", authored: 1 });
+    expect(await readFile(join(root, ".speccle/checks/README.md"), "utf8")).toBe("our own notes");
+    expect(await readFile(join(root, ".speccle/checks/model-roundtrip.json"), "utf8")).toBe(
+      '{"kept":true}',
+    );
+  });
+});
+
 describe("update: review driver", () => {
   it("moves an existing workflow's pin forward to the CLI version", async () => {
     const version = await ownVersion();
